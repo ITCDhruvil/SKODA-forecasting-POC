@@ -1,0 +1,19 @@
+# Exact versions this POC was developed and verified against.
+# Captured from `pip freeze` on Python 3.11.9 / Windows.
+#
+# Install with:
+#   pip install -r requirements.txt
+#   pip install -e .
+
+matplotlib==3.11.1
+numpy==2.2.6
+pandas==2.3.3
+PyYAML==6.0.2
+scikit-learn==1.8.0
+scipy==1.16.3
+seaborn==0.13.2
+statsmodels==0.14.6
+xgboost==3.2.0
+
+# Test suite
+pytest==8.3.4

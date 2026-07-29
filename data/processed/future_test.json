@@ -1,0 +1,824 @@
+{
+  "available": true,
+  "targetMode": "log_return",
+  "noiseFloor": {
+    "byHorizon": [
+      {
+        "horizon": 1,
+        "label": "h1",
+        "achieved": 2.431,
+        "floor": 1.436,
+        "excess": 0.995,
+        "efficiencyPct": 59.1
+      },
+      {
+        "horizon": 2,
+        "label": "h2",
+        "achieved": 2.44,
+        "floor": 1.575,
+        "excess": 0.865,
+        "efficiencyPct": 64.5
+      },
+      {
+        "horizon": 3,
+        "label": "h3",
+        "achieved": 2.282,
+        "floor": 1.602,
+        "excess": 0.68,
+        "efficiencyPct": 70.2
+      },
+      {
+        "horizon": 4,
+        "label": "h4",
+        "achieved": 2.522,
+        "floor": 1.607,
+        "excess": 0.915,
+        "efficiencyPct": 63.7
+      },
+      {
+        "horizon": 5,
+        "label": "h5",
+        "achieved": 2.923,
+        "floor": 1.608,
+        "excess": 1.315,
+        "efficiencyPct": 55.0
+      },
+      {
+        "horizon": 6,
+        "label": "h6",
+        "achieved": 3.009,
+        "floor": 1.608,
+        "excess": 1.401,
+        "efficiencyPct": 53.5
+      }
+    ],
+    "meanFloorPct": 1.573,
+    "bestAchievedPct": 2.601,
+    "aggregateNoisePct": 0.092,
+    "note": "The generator injects AR(1) noise, so a portion of every future price is unpredictable by construction. This floor is what a perfect model would score. Per-part error near the floor is as good as the data allows. The aggregate mean-price line is a different matter: idiosyncratic noise averages out across parts, so any visible gap there is systematic model error, not noise."
+  },
+  "futureMonths": 6,
+  "trainEnd": "2026-06",
+  "revealedRange": [
+    "2026-07",
+    "2026-12"
+  ],
+  "nParts": 480,
+  "scores": [
+    {
+      "model": "sarima",
+      "mae": 65.1867,
+      "rmse": 112.0261,
+      "mape": 2.6007,
+      "mean_signed_pct": -0.4717,
+      "worst_month": "2026-12",
+      "worst_month_mape": 3.0087,
+      "n": 353,
+      "by_horizon": [
+        {
+          "horizon": 1,
+          "target_month": "2026-07",
+          "mae": 67.4413,
+          "rmse": 113.1724,
+          "mape": 2.4313,
+          "mean_signed_pct": -0.5162,
+          "n": 60
+        },
+        {
+          "horizon": 2,
+          "target_month": "2026-08",
+          "mae": 64.6968,
+          "rmse": 117.2618,
+          "mape": 2.4399,
+          "mean_signed_pct": -0.5062,
+          "n": 59
+        },
+        {
+          "horizon": 3,
+          "target_month": "2026-09",
+          "mae": 64.8493,
+          "rmse": 121.6573,
+          "mape": 2.282,
+          "mean_signed_pct": -0.2481,
+          "n": 58
+        },
+        {
+          "horizon": 4,
+          "target_month": "2026-10",
+          "mae": 48.2998,
+          "rmse": 72.4174,
+          "mape": 2.5222,
+          "mean_signed_pct": 0.0387,
+          "n": 59
+        },
+        {
+          "horizon": 5,
+          "target_month": "2026-11",
+          "mae": 73.8825,
+          "rmse": 118.5147,
+          "mape": 2.9232,
+          "mean_signed_pct": -1.113,
+          "n": 58
+        },
+        {
+          "horizon": 6,
+          "target_month": "2026-12",
+          "mae": 72.054,
+          "rmse": 121.2823,
+          "mape": 3.0087,
+          "mean_signed_pct": -0.4916,
+          "n": 59
+        }
+      ]
+    },
+    {
+      "model": "xgboost",
+      "mae": 114.0799,
+      "rmse": 192.5024,
+      "mape": 2.9716,
+      "mean_signed_pct": -0.1901,
+      "worst_month": "2026-12",
+      "worst_month_mape": 3.6582,
+      "n": 2851,
+      "by_horizon": [
+        {
+          "horizon": 1,
+          "target_month": "2026-07",
+          "mae": 66.5993,
+          "rmse": 110.7092,
+          "mape": 1.8522,
+          "mean_signed_pct": 0.3268,
+          "n": 476
+        },
+        {
+          "horizon": 2,
+          "target_month": "2026-08",
+          "mae": 94.6626,
+          "rmse": 148.1349,
+          "mape": 2.5125,
+          "mean_signed_pct": -1.0322,
+          "n": 474
+        },
+        {
+          "horizon": 3,
+          "target_month": "2026-09",
+          "mae": 115.8157,
+          "rmse": 197.4941,
+          "mape": 2.9435,
+          "mean_signed_pct": -0.7009,
+          "n": 477
+        },
+        {
+          "horizon": 4,
+          "target_month": "2026-10",
+          "mae": 128.2844,
+          "rmse": 203.527,
+          "mape": 3.5213,
+          "mean_signed_pct": 0.6565,
+          "n": 477
+        },
+        {
+          "horizon": 5,
+          "target_month": "2026-11",
+          "mae": 127.7107,
+          "rmse": 204.7878,
+          "mape": 3.3441,
+          "mean_signed_pct": 0.1689,
+          "n": 473
+        },
+        {
+          "horizon": 6,
+          "target_month": "2026-12",
+          "mae": 151.5351,
+          "rmse": 256.6173,
+          "mape": 3.6582,
+          "mean_signed_pct": -0.5633,
+          "n": 474
+        }
+      ]
+    },
+    {
+      "model": "seasonal_naive",
+      "mae": 180.9482,
+      "rmse": 283.861,
+      "mape": 4.9362,
+      "mean_signed_pct": -4.5058,
+      "worst_month": "2026-11",
+      "worst_month_mape": 5.3319,
+      "n": 2851,
+      "by_horizon": [
+        {
+          "horizon": 1,
+          "target_month": "2026-07",
+          "mae": 175.4964,
+          "rmse": 275.9377,
+          "mape": 4.8579,
+          "mean_signed_pct": -4.3488,
+          "n": 476
+        },
+        {
+          "horizon": 2,
+          "target_month": "2026-08",
+          "mae": 172.6432,
+          "rmse": 257.4401,
+          "mape": 4.9718,
+          "mean_signed_pct": -4.557,
+          "n": 474
+        },
+        {
+          "horizon": 3,
+          "target_month": "2026-09",
+          "mae": 176.1785,
+          "rmse": 273.1528,
+          "mape": 4.7946,
+          "mean_signed_pct": -4.385,
+          "n": 477
+        },
+        {
+          "horizon": 4,
+          "target_month": "2026-10",
+          "mae": 185.0685,
+          "rmse": 298.2469,
+          "mape": 4.9456,
+          "mean_signed_pct": -4.5122,
+          "n": 477
+        },
+        {
+          "horizon": 5,
+          "target_month": "2026-11",
+          "mae": 204.0085,
+          "rmse": 320.5781,
+          "mape": 5.3319,
+          "mean_signed_pct": -5.1142,
+          "n": 473
+        },
+        {
+          "horizon": 6,
+          "target_month": "2026-12",
+          "mae": 172.3696,
+          "rmse": 273.4259,
+          "mape": 4.7173,
+          "mean_signed_pct": -4.1202,
+          "n": 474
+        }
+      ]
+    }
+  ],
+  "series": [
+    {
+      "month": "2023-07",
+      "label": "Jul 2023",
+      "actual": 3266.774,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2023-08",
+      "label": "Aug 2023",
+      "actual": 3266.903,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2023-09",
+      "label": "Sep 2023",
+      "actual": 3269.636,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2023-10",
+      "label": "Oct 2023",
+      "actual": 3267.802,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2023-11",
+      "label": "Nov 2023",
+      "actual": 3264.868,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2023-12",
+      "label": "Dec 2023",
+      "actual": 3256.231,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-01",
+      "label": "Jan 2024",
+      "actual": 3267.966,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-02",
+      "label": "Feb 2024",
+      "actual": 3266.087,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-03",
+      "label": "Mar 2024",
+      "actual": 3274.862,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-04",
+      "label": "Apr 2024",
+      "actual": 3283.481,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-05",
+      "label": "May 2024",
+      "actual": 3316.591,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-06",
+      "label": "Jun 2024",
+      "actual": 3322.205,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-07",
+      "label": "Jul 2024",
+      "actual": 3345.254,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-08",
+      "label": "Aug 2024",
+      "actual": 3345.085,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-09",
+      "label": "Sep 2024",
+      "actual": 3374.486,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-10",
+      "label": "Oct 2024",
+      "actual": 3378.226,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-11",
+      "label": "Nov 2024",
+      "actual": 3356.899,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2024-12",
+      "label": "Dec 2024",
+      "actual": 3355.951,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-01",
+      "label": "Jan 2025",
+      "actual": 3381.226,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-02",
+      "label": "Feb 2025",
+      "actual": 3369.489,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-03",
+      "label": "Mar 2025",
+      "actual": 3366.697,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-04",
+      "label": "Apr 2025",
+      "actual": 3390.599,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-05",
+      "label": "May 2025",
+      "actual": 3445.015,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-06",
+      "label": "Jun 2025",
+      "actual": 3487.939,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-07",
+      "label": "Jul 2025",
+      "actual": 3527.054,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-08",
+      "label": "Aug 2025",
+      "actual": 3554.395,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-09",
+      "label": "Sep 2025",
+      "actual": 3565.407,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-10",
+      "label": "Oct 2025",
+      "actual": 3545.584,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-11",
+      "label": "Nov 2025",
+      "actual": 3530.53,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2025-12",
+      "label": "Dec 2025",
+      "actual": 3573.993,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-01",
+      "label": "Jan 2026",
+      "actual": 3559.692,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-02",
+      "label": "Feb 2026",
+      "actual": 3581.125,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-03",
+      "label": "Mar 2026",
+      "actual": 3613.364,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-04",
+      "label": "Apr 2026",
+      "actual": 3626.213,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-05",
+      "label": "May 2026",
+      "actual": 3627.583,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-06",
+      "label": "Jun 2026",
+      "actual": 3645.649,
+      "revealed": null,
+      "pred_sarima": null,
+      "pred_xgboost": null,
+      "pred_seasonal_naive": null
+    },
+    {
+      "month": "2026-07",
+      "label": "Jul 2026",
+      "actual": null,
+      "revealed": 3690.47,
+      "pred_sarima": 2687.69,
+      "pred_xgboost": 3688.819,
+      "pred_seasonal_naive": 3527.054
+    },
+    {
+      "month": "2026-08",
+      "label": "Aug 2026",
+      "actual": null,
+      "revealed": 3706.402,
+      "pred_sarima": 2702.119,
+      "pred_xgboost": 3662.765,
+      "pred_seasonal_naive": 3554.395
+    },
+    {
+      "month": "2026-09",
+      "label": "Sep 2026",
+      "actual": null,
+      "revealed": 3737.797,
+      "pred_sarima": 2713.744,
+      "pred_xgboost": 3676.205,
+      "pred_seasonal_naive": 3565.407
+    },
+    {
+      "month": "2026-10",
+      "label": "Oct 2026",
+      "actual": null,
+      "revealed": 3710.195,
+      "pred_sarima": 2715.588,
+      "pred_xgboost": 3723.736,
+      "pred_seasonal_naive": 3545.584
+    },
+    {
+      "month": "2026-11",
+      "label": "Nov 2026",
+      "actual": null,
+      "revealed": 3762.051,
+      "pred_sarima": 2700.884,
+      "pred_xgboost": 3719.468,
+      "pred_seasonal_naive": 3530.53
+    },
+    {
+      "month": "2026-12",
+      "label": "Dec 2026",
+      "actual": null,
+      "revealed": 3739.91,
+      "pred_sarima": 2703.298,
+      "pred_xgboost": 3700.425,
+      "pred_seasonal_naive": 3573.993
+    }
+  ],
+  "byCategory": [
+    {
+      "category": "Fasteners",
+      "mape": 3.589,
+      "mae": 1.771,
+      "mean_signed_pct": -0.23,
+      "n": 70
+    },
+    {
+      "category": "Braking",
+      "mape": 3.015,
+      "mae": 95.703,
+      "mean_signed_pct": -0.864,
+      "n": 46
+    },
+    {
+      "category": "HVAC",
+      "mape": 2.64,
+      "mae": 187.298,
+      "mean_signed_pct": -1.831,
+      "n": 47
+    },
+    {
+      "category": "Chassis",
+      "mape": 2.503,
+      "mae": 83.683,
+      "mean_signed_pct": -0.813,
+      "n": 48
+    },
+    {
+      "category": "Interior Trim",
+      "mape": 2.323,
+      "mae": 32.931,
+      "mean_signed_pct": 1.093,
+      "n": 47
+    },
+    {
+      "category": "Body Stampings",
+      "mape": 2.164,
+      "mae": 22.727,
+      "mean_signed_pct": -0.805,
+      "n": 48
+    },
+    {
+      "category": "Electrical",
+      "mape": 1.509,
+      "mae": 64.387,
+      "mean_signed_pct": 0.036,
+      "n": 47
+    }
+  ],
+  "disclaimer": "Hidden months come from the same generative process as the training months. This measures how well each model recovers a known process at each horizon - a valid comparison between models, but not evidence of real-world accuracy. For that, see the real-data validation scored against published BLS observations.",
+  "targetModeComparison": {
+    "level": {
+      "mape": 4.9311,
+      "mae": 110.6449,
+      "mean_signed_pct": 1.6462,
+      "by_horizon": [
+        {
+          "horizon": 1,
+          "target_month": "2026-07",
+          "mae": 78.9268,
+          "rmse": 137.8192,
+          "mape": 4.1113,
+          "mean_signed_pct": 2.2843,
+          "n": 476
+        },
+        {
+          "horizon": 2,
+          "target_month": "2026-08",
+          "mae": 110.5984,
+          "rmse": 185.7986,
+          "mape": 4.7154,
+          "mean_signed_pct": 0.8359,
+          "n": 474
+        },
+        {
+          "horizon": 3,
+          "target_month": "2026-09",
+          "mae": 120.8934,
+          "rmse": 193.9665,
+          "mape": 5.3225,
+          "mean_signed_pct": 1.6546,
+          "n": 477
+        },
+        {
+          "horizon": 4,
+          "target_month": "2026-10",
+          "mae": 122.7001,
+          "rmse": 194.6454,
+          "mape": 6.1179,
+          "mean_signed_pct": 2.8711,
+          "n": 477
+        },
+        {
+          "horizon": 5,
+          "target_month": "2026-11",
+          "mae": 114.847,
+          "rmse": 182.2622,
+          "mape": 4.4303,
+          "mean_signed_pct": 0.7736,
+          "n": 473
+        },
+        {
+          "horizon": 6,
+          "target_month": "2026-12",
+          "mae": 115.905,
+          "rmse": 186.9819,
+          "mape": 4.8817,
+          "mean_signed_pct": 1.4455,
+          "n": 474
+        }
+      ]
+    },
+    "log_return": {
+      "mape": 2.9716,
+      "mae": 114.0799,
+      "mean_signed_pct": -0.1901,
+      "by_horizon": [
+        {
+          "horizon": 1,
+          "target_month": "2026-07",
+          "mae": 66.5993,
+          "rmse": 110.7092,
+          "mape": 1.8522,
+          "mean_signed_pct": 0.3268,
+          "n": 476
+        },
+        {
+          "horizon": 2,
+          "target_month": "2026-08",
+          "mae": 94.6626,
+          "rmse": 148.1349,
+          "mape": 2.5125,
+          "mean_signed_pct": -1.0322,
+          "n": 474
+        },
+        {
+          "horizon": 3,
+          "target_month": "2026-09",
+          "mae": 115.8157,
+          "rmse": 197.4941,
+          "mape": 2.9435,
+          "mean_signed_pct": -0.7009,
+          "n": 477
+        },
+        {
+          "horizon": 4,
+          "target_month": "2026-10",
+          "mae": 128.2844,
+          "rmse": 203.527,
+          "mape": 3.5213,
+          "mean_signed_pct": 0.6565,
+          "n": 477
+        },
+        {
+          "horizon": 5,
+          "target_month": "2026-11",
+          "mae": 127.7107,
+          "rmse": 204.7878,
+          "mape": 3.3441,
+          "mean_signed_pct": 0.1689,
+          "n": 473
+        },
+        {
+          "horizon": 6,
+          "target_month": "2026-12",
+          "mae": 151.5351,
+          "rmse": 256.6173,
+          "mape": 3.6582,
+          "mean_signed_pct": -0.5633,
+          "n": 474
+        }
+      ]
+    },
+    "improvementPct": 39.74
+  }
+}

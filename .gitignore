@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Node / frontend
+node_modules/
+dashboard/dist/
+dashboard/dist-ssr/
+
+# Env / editor
+.env
+.env.*
+.venv/
+venv/
+.claude/
+.DS_Store
+
+# Run logs
+*.log
+
+# Generated data and reports are deliverables for this POC and are kept in the
+# tree deliberately. Uncomment these if the pipeline output should not be
+# version-controlled.
+# data/
+# reports/

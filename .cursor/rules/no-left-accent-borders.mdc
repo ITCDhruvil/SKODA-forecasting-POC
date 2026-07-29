@@ -1,0 +1,23 @@
+---
+description: Never use left colored accent border stripes on cards or callouts
+alwaysApply: true
+---
+
+# No Left Accent Side Lines
+
+Never add a colored vertical accent bar on the left edge of cards, callouts, panels, alerts, or verdict boxes.
+
+## Forbidden
+
+- `border-l-4`, `border-l-[N]`, or similar left accent borders used as status/severity decoration
+- Classes like `border-l-red-500`, `border-l-amber-500`, `border-l-blue-500`, `border-l-emerald-500` on card containers
+- Pseudo-element or absolute-positioned left stripes that mimic this pattern
+
+## Preferred
+
+- Plain cards (`card`, normal `border border-slate-200`)
+- Convey status with icons, text color, badges, or background tints — not a left side line
+
+## Exception
+
+Hierarchy/indent borders inside nested lists (e.g. tree rows) are fine when they indicate nesting, not card severity.
