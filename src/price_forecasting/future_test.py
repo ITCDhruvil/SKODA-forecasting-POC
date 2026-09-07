@@ -32,6 +32,7 @@ from .config import Config
 from .data_generation import generate_price_panel
 from .data_sourcing import MacroSeries, load_macro_anchor
 from .fx import FxSeries, load_fx_series
+from .geopolitical import GeoBundle, MediatorSeries, load_geo_bundle
 from .evaluation import (
     mean_absolute_error,
     mean_absolute_percentage_error,
@@ -182,11 +183,59 @@ def _extend_fx(
     return extended
 
 
+def _extend_mediator(series: MediatorSeries, extra_months: int) -> MediatorSeries:
+    values = series.values
+    log_steps = np.diff(np.log(values.clip(lower=1e-9).to_numpy()))
+    drift = float(log_steps.mean()) if len(log_steps) else 0.0
+    future_index = pd.date_range(
+        values.index.max() + pd.DateOffset(months=1), periods=extra_months, freq="MS"
+    )
+    future_values = float(values.iloc[-1]) * np.exp(drift * np.arange(1, extra_months + 1))
+    return MediatorSeries(
+        values=pd.concat(
+            [values, pd.Series(future_values, index=future_index, name=values.name)]
+        ),
+        name=series.name,
+        source=series.source,
+        unit=series.unit,
+    )
+
+
+def _extend_geo(geo: GeoBundle, extra_months: int) -> GeoBundle:
+    """Extend mediators forward at observed drift for hidden-month generation."""
+    return GeoBundle(
+        commodities={k: _extend_mediator(v, extra_months) for k, v in geo.commodities.items()},
+        freight=_extend_mediator(geo.freight, extra_months),
+        gpr={k: _extend_mediator(v, extra_months) for k, v in geo.gpr.items()},
+        chokepoint=_extend_mediator(geo.chokepoint, extra_months),
+        events=list(geo.events),
+    )
+
+
+def _truncate_geo(geo: GeoBundle, cutoff: pd.Timestamp) -> GeoBundle:
+    def trunc(series: MediatorSeries) -> MediatorSeries:
+        return MediatorSeries(
+            values=series.values[series.values.index <= cutoff],
+            name=series.name,
+            source=series.source,
+            unit=series.unit,
+        )
+
+    return GeoBundle(
+        commodities={k: trunc(v) for k, v in geo.commodities.items()},
+        freight=trunc(geo.freight),
+        gpr={k: trunc(v) for k, v in geo.gpr.items()},
+        chokepoint=trunc(geo.chokepoint),
+        events=list(geo.events),
+    )
+
+
 def run_future_test(
     config: Config,
     macro: Optional[MacroSeries] = None,
     future_months: Optional[int] = None,
     fx: Optional[Dict[str, FxSeries]] = None,
+    geo: Optional[GeoBundle] = None,
 ) -> Dict[str, object]:
     """Generate extra months, forecast them blind, then reveal and score.
 
@@ -195,15 +244,19 @@ def run_future_test(
     """
     macro = macro or load_macro_anchor(config)
     fx = fx or load_fx_series(config, macro.values.index)
+    geo = geo or load_geo_bundle(config, macro.values.index)
     future_months = future_months or config.evaluation.future_test_months
     horizons = list(range(1, future_months + 1))
 
     # --- 1. Build a world that runs `future_months` past the normal history --
     extended_macro = _extend_macro(macro, future_months, config)
     extended_fx = _extend_fx(fx, future_months)
+    extended_geo = _extend_geo(geo, future_months)
 
     extended_config = _with_history(config, config.generation.history_months + future_months)
-    full_panel = generate_price_panel(extended_config, extended_macro, extended_fx)
+    full_panel = generate_price_panel(
+        extended_config, extended_macro, extended_fx, geo=extended_geo
+    )
 
     months = pd.DatetimeIndex(sorted(full_panel["month"].unique()))
     cutoff = months[-(future_months + 1)]
@@ -244,8 +297,9 @@ def run_future_test(
         )
         for pair, series in extended_fx.items()
     }
+    visible_geo = _truncate_geo(extended_geo, cutoff)
     visible_features = build_features(
-        visible_clean, config, visible_macro, report, fx=visible_fx
+        visible_clean, config, visible_macro, report, fx=visible_fx, geo=visible_geo
     )
 
     # --- 3. Forecast the hidden window --------------------------------------
@@ -502,6 +556,7 @@ def compare_target_modes(
     config: Config,
     macro: Optional[MacroSeries] = None,
     fx: Optional[Dict[str, FxSeries]] = None,
+    geo: Optional[GeoBundle] = None,
 ) -> Dict[str, object]:
     """Run the future test under both target formulations and compare.
 
@@ -512,13 +567,14 @@ def compare_target_modes(
 
     macro = macro or load_macro_anchor(config)
     fx = fx or load_fx_series(config, macro.values.index)
+    geo = geo or load_geo_bundle(config, macro.values.index)
     results = {}
 
     for mode in ("level", "log_return"):
         modeling = dataclasses.replace(config.modeling, xgboost_target_mode=mode)
         variant = dataclasses.replace(config, modeling=modeling)
         logger.info("--- future test with xgboost_target_mode=%s ---", mode)
-        payload = run_future_test(variant, macro, fx=fx)
+        payload = run_future_test(variant, macro, fx=fx, geo=geo)
         xgb = next((s for s in payload["scores"] if s["model"] == "xgboost"), None)
         results[mode] = {
             "mape": xgb["mape"] if xgb else None,

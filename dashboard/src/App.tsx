@@ -16,6 +16,7 @@ import { ValidationPanel } from './components/ValidationPanel';
 import { FutureTestPanel } from './components/FutureTestPanel';
 import { HierarchyPanel } from './components/HierarchyPanel';
 import { FxScenarioPanel } from './components/FxScenarioPanel';
+import { GeoScenarioPanel } from './components/GeoScenarioPanel';
 import { DrillDownTree } from './components/DrillDownTree';
 import { DataSourcePanel } from './components/DataSourcePanel';
 import { FaqPanel } from './components/FaqPanel';
@@ -24,6 +25,7 @@ import { RiskStrip } from './components/RiskStrip';
 import { ModelComparison } from './components/ModelComparison';
 import { MacroChart } from './components/MacroChart';
 import { ProvenanceBanner } from './components/ProvenanceBanner';
+import { OpsStrip } from './components/OpsStrip';
 import { IconCalendar, IconExport } from './components/Icons';
 import { monthLabel, setCurrencySymbol } from './lib/format';
 
@@ -51,6 +53,11 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
     subtitle:
       'How currency moves reach part prices, and whether that effect can be trusted.',
   },
+  geo: {
+    title: 'Geopolitical Risk',
+    subtitle:
+      'Review news signals before applying them. Confirm to see price impact; sources are verified per channel.',
+  },
   parts: {
     title: 'Parts',
     subtitle: 'Every part ranked by forecast price movement.',
@@ -58,7 +65,7 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
   futuretest: {
     title: 'Simulated-Future Test',
     subtitle:
-      'Six months generated, hidden, forecast blind, then revealed and scored per horizon.',
+      'Extra months generated, hidden, forecast blind, then revealed — scored for the configured horizon (default: next month).',
   },
   validation: {
     title: 'Real-Data Validation',
@@ -135,6 +142,7 @@ export default function App() {
         onChange={setView}
         insight={data.insight}
         alertCount={data.alerts.length}
+        geoAlertCount={data.geoAnalysis?.hitl?.alerts?.length ?? 0}
         onViewInsight={() => setView('validation')}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((c) => !c)}
@@ -178,6 +186,9 @@ export default function App() {
 
         <div className="flex flex-col gap-4 px-8 pb-10">
           <ProvenanceBanner data={data} />
+          <div className="mt-3">
+            <OpsStrip data={data} />
+          </div>
 
           {/* ---- Dashboard ---------------------------------------------- */}
           {view === 'dashboard' && (
@@ -244,6 +255,9 @@ export default function App() {
 
           {/* ---- FX impact ----------------------------------------------- */}
           {view === 'fx' && <FxScenarioPanel fx={data.fxAnalysis} />}
+
+          {/* ---- Geopolitical risk --------------------------------------- */}
+          {view === 'geo' && <GeoScenarioPanel geo={data.geoAnalysis} />}
 
           {/* ---- Parts --------------------------------------------------- */}
           {view === 'parts' && <TopPartsTable parts={data.topParts} />}

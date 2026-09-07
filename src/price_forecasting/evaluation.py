@@ -178,6 +178,7 @@ def generate_all_predictions(
     origin_month: pd.Timestamp,
     horizons: Sequence[int],
     fit_sarima: bool = True,
+    feature_columns: Optional[Sequence[str]] = None,
 ) -> pd.DataFrame:
     """Train every model up to ``origin_month`` and predict forward.
 
@@ -199,7 +200,13 @@ def generate_all_predictions(
     frames.append(naive)
 
     # --- Global XGBoost -----------------------------------------------------
-    xgb_model = train_global_xgboost(history_features, config, origin_month, horizons)
+    xgb_model = train_global_xgboost(
+        history_features,
+        config,
+        origin_month,
+        horizons,
+        feature_columns=feature_columns,
+    )
     xgb_predictions = _xgboost_predictions(
         xgb_model, history_features, origin_month, horizons
     )
@@ -244,13 +251,21 @@ def generate_all_predictions(
 
 
 def evaluate_holdout(
-    features: pd.DataFrame, panel: pd.DataFrame, config: Config
+    features: pd.DataFrame,
+    panel: pd.DataFrame,
+    config: Config,
+    fit_sarima: bool = True,
+    feature_columns: Optional[Sequence[str]] = None,
 ) -> pd.DataFrame:
     """Single-origin evaluation across the test and validation windows.
 
     The origin is the end of training. Horizons 1..test_months land in the test
     window; the remainder land in validation, which no model has seen in any
     form.
+
+    Set ``fit_sarima=False`` for feature-ablation runs: SARIMA is univariate and
+    ignores the feature matrix, so refitting it per arm costs runtime without
+    changing the comparison.
     """
     splits = split_by_time(features, config)
     origin = splits["train_end"]
@@ -263,7 +278,13 @@ def evaluate_holdout(
         total_horizon,
     )
     predictions = generate_all_predictions(
-        features, panel, config, origin, horizons, fit_sarima=True
+        features,
+        panel,
+        config,
+        origin,
+        horizons,
+        fit_sarima=fit_sarima,
+        feature_columns=feature_columns,
     )
 
     predictions["split"] = np.where(
@@ -283,7 +304,10 @@ def evaluate_holdout(
 
 
 def rolling_origin_backtest(
-    features: pd.DataFrame, panel: pd.DataFrame, config: Config
+    features: pd.DataFrame,
+    panel: pd.DataFrame,
+    config: Config,
+    feature_columns: Optional[Sequence[str]] = None,
 ) -> pd.DataFrame:
     """Re-fit and forecast from several successive origins.
 
@@ -316,6 +340,7 @@ def rolling_origin_backtest(
             origin,
             list(range(1, fold_horizon + 1)),
             fit_sarima=True,
+            feature_columns=feature_columns,
         )
         predictions["fold"] = fold
         frames.append(predictions)
@@ -369,8 +394,13 @@ def empirical_prediction_intervals(
     Residuals are expressed as a *ratio* to the prediction, so the interval
     scales with price level: a $12 filter and a $240 alternator do not share an
     absolute error band.
+
+    After computing raw quantiles, a conformal-style inflate expands the band
+    until in-sample residual coverage meets ``interval_coverage_target``.
     """
     alpha = config.evaluation.prediction_interval
+    target = config.evaluation.interval_coverage_target
+    max_inflate = config.evaluation.interval_max_inflate
     lower_q = (1.0 - alpha) / 2.0
     upper_q = 1.0 - lower_q
 
@@ -388,19 +418,38 @@ def empirical_prediction_intervals(
                 len(ratio),
                 horizon,
             )
+        lo = float(ratio.quantile(lower_q)) if len(ratio) else 0.9
+        hi = float(ratio.quantile(upper_q)) if len(ratio) else 1.1
+
+        # Inflate symmetrically in log-ratio space until residual coverage hits target
+        inflate = 1.0
+        if len(ratio) >= 10:
+            for candidate in np.linspace(1.0, max_inflate, 41):
+                lo_c = 1.0 - (1.0 - lo) * candidate
+                hi_c = 1.0 + (hi - 1.0) * candidate
+                covered = float(((ratio >= lo_c) & (ratio <= hi_c)).mean())
+                inflate = float(candidate)
+                if covered >= target:
+                    break
+            lo = 1.0 - (1.0 - lo) * inflate
+            hi = 1.0 + (hi - 1.0) * inflate
+
         intervals[int(horizon)] = {
-            "lower_ratio": float(ratio.quantile(lower_q)) if len(ratio) else 0.9,
-            "upper_ratio": float(ratio.quantile(upper_q)) if len(ratio) else 1.1,
+            "lower_ratio": lo,
+            "upper_ratio": hi,
             "n": int(len(ratio)),
+            "inflate": round(inflate, 3),
         }
 
     if intervals:
         logger.info(
-            "empirical %.0f%% intervals for %s by horizon: %s",
+            "empirical %.0f%% intervals for %s by horizon (target coverage %.0f%%): %s",
             alpha * 100,
             model,
+            target * 100,
             ", ".join(
                 f"h{h}=[{v['lower_ratio']:.3f}, {v['upper_ratio']:.3f}]"
+                f"x{v.get('inflate', 1):.2f}"
                 for h, v in sorted(intervals.items())
             ),
         )

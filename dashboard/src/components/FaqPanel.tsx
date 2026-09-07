@@ -176,16 +176,22 @@ They were not tuned by search. For a proof of concept, an extensive hyperparamet
     {
       tag: 'Data',
       q: 'Where does the data come from, and how much of it is real?',
-      a: `Two real sources and one simulated layer, and we are explicit about which is which.
+      a: `Two real sources and one SKU layer, and we are explicit about which is which.
 
 Real: the ${data.provenance.macroSeriesId} price index from the US Bureau of Labor Statistics, and EUR/INR plus USD/INR reference rates from the European Central Bank. Neither requires an API key.
 
-Simulated: the part-level price panel. No public source publishes monthly piece prices per SKU per vendor per programme — that data exists only inside OEM purchasing systems. In a real deployment this layer is replaced by your purchase-order history, and nothing else in the pipeline changes.`,
+${
+        data.provenance.skuLayer === 'purchase_orders' || data.provenance.skuIsReal
+          ? 'SKU panel: aggregated from purchase-order / invoice lines (volume-weighted monthly unit prices). Absolute error figures on this panel are meaningful for the covered parts.'
+          : 'SKU panel: synthetic. No public source publishes monthly piece prices per SKU per vendor per programme. Drop data/raw/purchase_orders.csv (sku.mode=auto) to switch generate onto real POs — nothing else in the pipeline changes.'
+      }`,
     },
     {
       tag: 'Data',
       q: 'If the part-level data is synthetic, what does the accuracy number actually mean?',
-      a: `It measures how well the pipeline recovers a known generative process — splits, feature construction, multi-step strategy, target formulation. That is a valid test of the machinery and a valid basis for comparing models against each other.
+      a: data.provenance.skuLayer === 'purchase_orders' || data.provenance.skuIsReal
+        ? `This run used purchase-order history, so holdout MAPE describes error on those covered SKUs — still subject to coverage, contract mix, and how well dimensions (vendor origin, localisation) were filled on the PO file.`
+        : `It measures how well the pipeline recovers a known generative process — splits, feature construction, multi-step strategy, target formulation. That is a valid test of the machinery and a valid basis for comparing models against each other.
 
 It is not evidence of real-world accuracy, and we do not present it as such. The transferable result is the model *ranking* and the methodology; the absolute MAPE figure would change on your data.
 
@@ -194,7 +200,7 @@ The one real-world accuracy claim in the system is the BLS backtest, described u
     {
       tag: 'Data',
       q: 'What would you need from SKODA to run this on real data?',
-      a: `Purchase-order history at part level: part number, vehicle programme, vendor, commodity category, transaction date, and unit price. Monthly granularity over at least 24–36 months.
+      a: `Purchase-order history at part level: part number, vehicle programme, vendor, commodity category, transaction date, and unit price. Monthly granularity over at least 24–36 months. Drop the file at data/raw/purchase_orders.csv (see README / po_ingest aliases).
 
 Useful but optional: vendor master data (country of origin, contract repricing cadence, share of imported input cost), part characteristics (weight, material, tooling status), and programme volumes. The model uses all of these where present and degrades gracefully where absent.
 

@@ -87,6 +87,44 @@ class FxConfig:
 
 
 @dataclass(frozen=True)
+class GeoConfig:
+    """Geopolitical mediators, event calendar and scenario shocks."""
+
+    enabled: bool
+    cache_ttl_days: int
+    events_filename: str
+    gpr_url: str
+    pink_sheet_url: str
+    pink_sheet_discover_url: str
+    freight_filename: str
+    freight_url: str
+    feature_mode: str
+    mediator_lags: List[int]
+    mediator_return_periods: List[int]
+    gpr_lags: List[int]
+    event_decay_half_life_months: float
+    commodity_pass_through: float
+    freight_pass_through: float
+    gpr_direct_pass_through: float
+    scenario_freight_shocks: List[float]
+    scenario_gpr_shocks: List[float]
+    scenario_duty_shocks: List[float]
+
+
+@dataclass(frozen=True)
+class SkuConfig:
+    """Where part-level prices come from.
+
+    ``auto`` uses ``purchase_orders.csv`` when present, otherwise the synthetic
+    generator. Flip to ``purchase_orders`` to fail loudly if the file is missing.
+    """
+
+    mode: str
+    purchase_orders_filename: str
+    panel_filename: str
+
+
+@dataclass(frozen=True)
 class GenerationConfig:
     n_parts: int
     history_months: int
@@ -141,6 +179,25 @@ class XGBoostConfig:
 
 
 @dataclass(frozen=True)
+class FeatureSelectionConfig:
+    top_k: int
+    min_ablation_lift_pct: float
+    always_keep_prefixes: List[str]
+    run_ablation: bool = True
+
+
+@dataclass(frozen=True)
+class OpsConfig:
+    """Monthly retrain / weekly score operating loop."""
+
+    retrain_cadence: str
+    score_cadence: str
+    mape_drift_alert_pp: float
+    psi_alert_threshold: float
+    feature_selection: FeatureSelectionConfig
+
+
+@dataclass(frozen=True)
 class ModelingConfig:
     forecast_horizon: int
     validation_months: int
@@ -155,6 +212,8 @@ class EvaluationConfig:
     backtest_folds: int
     backtest_horizon: int
     prediction_interval: float
+    interval_coverage_target: float
+    interval_max_inflate: float
     future_test_months: int
 
 
@@ -182,10 +241,13 @@ class Config:
     paths: PathsConfig
     sourcing: SourcingConfig
     fx: FxConfig
+    geo: GeoConfig
+    sku: SkuConfig
     generation: GenerationConfig
     preprocessing: PreprocessingConfig
     modeling: ModelingConfig
     evaluation: EvaluationConfig
+    ops: OpsConfig
     visualization: VisualizationConfig
     logging: LoggingConfig
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
@@ -260,17 +322,28 @@ def load_config(path: str | Path) -> Config:
     modeling_raw["sarima"] = sarima
     modeling_raw["xgboost"] = xgboost_cfg
 
+    ops_raw = dict(_require(raw, "ops"))
+    fs_cfg = _build(
+        FeatureSelectionConfig,
+        _require(ops_raw, "feature_selection"),
+        "ops.feature_selection",
+    )
+    ops_raw["feature_selection"] = fs_cfg
+
     config = Config(
         project=_build(ProjectConfig, _require(raw, "project"), "project"),
         paths=paths,
         sourcing=_build(SourcingConfig, _require(raw, "sourcing"), "sourcing"),
         fx=_build(FxConfig, _require(raw, "fx"), "fx"),
+        geo=_build(GeoConfig, _require(raw, "geo"), "geo"),
+        sku=_build(SkuConfig, _require(raw, "sku"), "sku"),
         generation=_build(GenerationConfig, _require(raw, "generation"), "generation"),
         preprocessing=_build(
             PreprocessingConfig, _require(raw, "preprocessing"), "preprocessing"
         ),
         modeling=_build(ModelingConfig, modeling_raw, "modeling"),
         evaluation=_build(EvaluationConfig, _require(raw, "evaluation"), "evaluation"),
+        ops=_build(OpsConfig, ops_raw, "ops"),
         visualization=_build(
             VisualizationConfig, _require(raw, "visualization"), "visualization"
         ),
@@ -339,6 +412,18 @@ def _validate(config: Config) -> None:
     if config.fx.default_pass_through_lag < 0:
         raise ConfigError("fx.default_pass_through_lag must be >= 0")
 
+    geo = config.geo
+    for field_name in (
+        "commodity_pass_through",
+        "freight_pass_through",
+        "gpr_direct_pass_through",
+    ):
+        value = getattr(geo, field_name)
+        if not 0.0 <= value <= 1.0:
+            raise ConfigError(f"geo.{field_name} must be in [0, 1]")
+    if geo.event_decay_half_life_months <= 0:
+        raise ConfigError("geo.event_decay_half_life_months must be > 0")
+
     if mod.xgboost_target_mode not in ("level", "log_return"):
         raise ConfigError(
             f"modeling.xgboost_target_mode must be 'level' or 'log_return', "
@@ -347,6 +432,29 @@ def _validate(config: Config) -> None:
 
     if not 0.0 < config.evaluation.prediction_interval < 1.0:
         raise ConfigError("evaluation.prediction_interval must be in (0, 1)")
+
+    if not 0.0 < config.evaluation.interval_coverage_target < 1.0:
+        raise ConfigError("evaluation.interval_coverage_target must be in (0, 1)")
+    if config.evaluation.interval_max_inflate < 1.0:
+        raise ConfigError("evaluation.interval_max_inflate must be >= 1")
+
+    if config.geo.feature_mode not in ("sparse", "full"):
+        raise ConfigError("geo.feature_mode must be 'sparse' or 'full'")
+
+    if config.sku.mode not in ("auto", "synthetic", "purchase_orders"):
+        raise ConfigError(
+            "sku.mode must be 'auto', 'synthetic', or 'purchase_orders'"
+        )
+
+    if mod.forecast_horizon < 1:
+        raise ConfigError("modeling.forecast_horizon must be >= 1")
+
+    if config.ops.feature_selection.top_k < 1:
+        raise ConfigError("ops.feature_selection.top_k must be >= 1")
+    if config.ops.mape_drift_alert_pp < 0:
+        raise ConfigError("ops.mape_drift_alert_pp must be >= 0")
+    if config.ops.psi_alert_threshold < 0:
+        raise ConfigError("ops.psi_alert_threshold must be >= 0")
 
     if not 0.0 <= gen.missing_value_rate < 0.5:
         raise ConfigError("generation.missing_value_rate must be in [0, 0.5)")

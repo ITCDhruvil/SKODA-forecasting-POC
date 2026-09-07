@@ -253,6 +253,7 @@ def train_global_xgboost(
     config: Config,
     train_end: pd.Timestamp,
     horizons: Sequence[int],
+    feature_columns: Optional[Sequence[str]] = None,
 ) -> GlobalXGBModel:
     """Fit one XGBoost regressor per forecast horizon.
 
@@ -263,6 +264,8 @@ def train_global_xgboost(
             its target month must fall at or before this boundary, otherwise the
             model would train on a target it should not have seen.
         horizons: Forecast horizons to train.
+        feature_columns: Optional relevance-gated column list. Defaults to every
+            non-label column on ``features``.
 
     Returns:
         A fitted :class:`GlobalXGBModel`.
@@ -270,8 +273,12 @@ def train_global_xgboost(
     from xgboost import XGBRegressor  # imported here so the module loads without it
 
     target_mode = config.modeling.xgboost_target_mode
-    feature_columns = get_feature_columns(features)
-    model = GlobalXGBModel(feature_columns=feature_columns, target_mode=target_mode)
+    cols = list(feature_columns) if feature_columns is not None else get_feature_columns(features)
+    # Drop anything missing from the frame (stale selection vs new preprocess)
+    cols = [c for c in cols if c in features.columns]
+    if not cols:
+        cols = get_feature_columns(features)
+    model = GlobalXGBModel(feature_columns=cols, target_mode=target_mode)
 
     model.categories = {
         column: features[column].cat.categories
@@ -299,7 +306,7 @@ def train_global_xgboost(
         regressor = XGBRegressor(enable_categorical=True, tree_method="hist", **params)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            regressor.fit(train[feature_columns], train["target"])
+            regressor.fit(train[cols], train["target"])
 
         model.models[h] = regressor
         logger.debug(
@@ -311,9 +318,10 @@ def train_global_xgboost(
         )
 
     logger.info(
-        "trained %d XGBoost horizon model(s) with target_mode=%s",
+        "trained %d XGBoost horizon model(s) with target_mode=%s on %d feature(s)",
         len(model.models),
         target_mode,
+        len(cols),
     )
     return model
 

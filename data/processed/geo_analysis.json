@@ -1,0 +1,4473 @@
+{
+  "scenarios": [
+    {
+      "name": "freight -20%",
+      "shockPct": -20.0,
+      "pairs": [
+        "freight"
+      ],
+      "overallPriceChangePct": 0.3044,
+      "impliedElasticity": -0.0152,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": 0.3656,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": 0.3541,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": 0.3169,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": 0.2896,
+            "nParts": 80
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": 0.2614,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": 0.2373,
+            "nParts": 79
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Sona BLW",
+            "priceChangePct": 0.5123,
+            "nParts": 27
+          },
+          {
+            "name": "Subros",
+            "priceChangePct": 0.4979,
+            "nParts": 13
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": 0.383,
+            "nParts": 36
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": 0.374,
+            "nParts": 35
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": 0.3703,
+            "nParts": 29
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": 0.3677,
+            "nParts": 30
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": 0.3675,
+            "nParts": 36
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": 0.3547,
+            "nParts": 27
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": 0.3406,
+            "nParts": 21
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": 0.3176,
+            "nParts": 27
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": 0.3011,
+            "nParts": 27
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": 0.2946,
+            "nParts": 10
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": 0.2459,
+            "nParts": 26
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": 0.244,
+            "nParts": 30
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": 0.2185,
+            "nParts": 4
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": 0.1826,
+            "nParts": 13
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": 0.1601,
+            "nParts": 22
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": 0.1281,
+            "nParts": 35
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": 0.0979,
+            "nParts": 17
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": 0.0608,
+            "nParts": 15
+          }
+        ],
+        "category": [
+          {
+            "name": "Powertrain",
+            "priceChangePct": 0.469,
+            "nParts": 48
+          },
+          {
+            "name": "HVAC",
+            "priceChangePct": 0.3995,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": 0.3452,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": 0.3378,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": 0.3274,
+            "nParts": 49
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": 0.2842,
+            "nParts": 47
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": 0.251,
+            "nParts": 48
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.2399,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": 0.2295,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": 0.1595,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "freight"
+    },
+    {
+      "name": "freight -10%",
+      "shockPct": -10.0,
+      "pairs": [
+        "freight"
+      ],
+      "overallPriceChangePct": 0.1621,
+      "impliedElasticity": -0.0162,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": 0.2066,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": 0.179,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": 0.171,
+            "nParts": 80
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": 0.1543,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": 0.138,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": 0.1225,
+            "nParts": 79
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Subros",
+            "priceChangePct": 0.4423,
+            "nParts": 13
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": 0.3677,
+            "nParts": 30
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": 0.3406,
+            "nParts": 21
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": 0.3176,
+            "nParts": 27
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": 0.3011,
+            "nParts": 27
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": 0.2694,
+            "nParts": 35
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": 0.244,
+            "nParts": 30
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": 0.2185,
+            "nParts": 4
+          },
+          {
+            "name": "Sona BLW",
+            "priceChangePct": 0.1945,
+            "nParts": 27
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": 0.1601,
+            "nParts": 22
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": 0.1335,
+            "nParts": 26
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": 0.1281,
+            "nParts": 35
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": 0.0979,
+            "nParts": 17
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": 0.061,
+            "nParts": 27
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": 0.0608,
+            "nParts": 15
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": 0.0305,
+            "nParts": 36
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": -0.0057,
+            "nParts": 29
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": -0.0162,
+            "nParts": 36
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": -0.0692,
+            "nParts": 10
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": -0.0823,
+            "nParts": 13
+          }
+        ],
+        "category": [
+          {
+            "name": "HVAC",
+            "priceChangePct": 0.3845,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": 0.2507,
+            "nParts": 48
+          },
+          {
+            "name": "Powertrain",
+            "priceChangePct": 0.2302,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": 0.1983,
+            "nParts": 48
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.1726,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": 0.1595,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": 0.1024,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": 0.0723,
+            "nParts": 49
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": 0.0298,
+            "nParts": 47
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": 0.0197,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "freight"
+    },
+    {
+      "name": "freight +10%",
+      "shockPct": 10.0,
+      "pairs": [
+        "freight"
+      ],
+      "overallPriceChangePct": -0.17,
+      "impliedElasticity": -0.017,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": -0.136,
+            "nParts": 80
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": -0.1535,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": -0.167,
+            "nParts": 79
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": -0.1731,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": -0.1882,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": -0.2018,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Rane Group",
+            "priceChangePct": -0.0325,
+            "nParts": 10
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": -0.0658,
+            "nParts": 21
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": -0.0691,
+            "nParts": 27
+          },
+          {
+            "name": "Subros",
+            "priceChangePct": -0.0784,
+            "nParts": 13
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": -0.0823,
+            "nParts": 36
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": -0.1114,
+            "nParts": 36
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": -0.1127,
+            "nParts": 27
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": -0.1187,
+            "nParts": 4
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": -0.1201,
+            "nParts": 35
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": -0.1347,
+            "nParts": 30
+          },
+          {
+            "name": "Sona BLW",
+            "priceChangePct": -0.1373,
+            "nParts": 27
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.1458,
+            "nParts": 26
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": -0.1485,
+            "nParts": 27
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": -0.1519,
+            "nParts": 30
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": -0.1551,
+            "nParts": 29
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": -0.1868,
+            "nParts": 13
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": -0.2849,
+            "nParts": 17
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": -0.3635,
+            "nParts": 15
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": -0.4308,
+            "nParts": 22
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": -0.4425,
+            "nParts": 35
+          }
+        ],
+        "category": [
+          {
+            "name": "HVAC",
+            "priceChangePct": -0.067,
+            "nParts": 48
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": -0.0683,
+            "nParts": 48
+          },
+          {
+            "name": "Powertrain",
+            "priceChangePct": -0.0882,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": -0.123,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": -0.1271,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": -0.1838,
+            "nParts": 47
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": -0.2064,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": -0.2223,
+            "nParts": 49
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.2755,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": -0.337,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "freight"
+    },
+    {
+      "name": "freight +20%",
+      "shockPct": 20.0,
+      "pairs": [
+        "freight"
+      ],
+      "overallPriceChangePct": -0.1976,
+      "impliedElasticity": -0.0099,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": -0.1295,
+            "nParts": 80
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": -0.1671,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": -0.2037,
+            "nParts": 79
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": -0.208,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": -0.2107,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": -0.2665,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Subros",
+            "priceChangePct": -0.0004,
+            "nParts": 13
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": -0.0349,
+            "nParts": 27
+          },
+          {
+            "name": "Sona BLW",
+            "priceChangePct": -0.0498,
+            "nParts": 27
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": -0.0597,
+            "nParts": 10
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": -0.0603,
+            "nParts": 29
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": -0.0766,
+            "nParts": 21
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.102,
+            "nParts": 26
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": -0.1022,
+            "nParts": 35
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": -0.146,
+            "nParts": 27
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": -0.1564,
+            "nParts": 36
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": -0.1586,
+            "nParts": 4
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": -0.1901,
+            "nParts": 36
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": -0.1921,
+            "nParts": 30
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": -0.2295,
+            "nParts": 30
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": -0.2433,
+            "nParts": 27
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": -0.3463,
+            "nParts": 13
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": -0.3623,
+            "nParts": 17
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": -0.4542,
+            "nParts": 15
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": -0.4997,
+            "nParts": 22
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": -0.5039,
+            "nParts": 35
+          }
+        ],
+        "category": [
+          {
+            "name": "Powertrain",
+            "priceChangePct": -0.0525,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": -0.0529,
+            "nParts": 48
+          },
+          {
+            "name": "HVAC",
+            "priceChangePct": -0.0573,
+            "nParts": 48
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": -0.0726,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": -0.1882,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": -0.2523,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": -0.255,
+            "nParts": 47
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": -0.2814,
+            "nParts": 49
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.338,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": -0.4253,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "freight"
+    },
+    {
+      "name": "freight +40%",
+      "shockPct": 40.0,
+      "pairs": [
+        "freight"
+      ],
+      "overallPriceChangePct": -0.3268,
+      "impliedElasticity": -0.0082,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": -0.2657,
+            "nParts": 80
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": -0.2937,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": -0.3272,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": -0.3277,
+            "nParts": 79
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": -0.3406,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": -0.406,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Subros",
+            "priceChangePct": -0.0363,
+            "nParts": 13
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": -0.1,
+            "nParts": 10
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": -0.151,
+            "nParts": 27
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": -0.2057,
+            "nParts": 21
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": -0.2156,
+            "nParts": 30
+          },
+          {
+            "name": "Sona BLW",
+            "priceChangePct": -0.222,
+            "nParts": 27
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": -0.2373,
+            "nParts": 36
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": -0.2515,
+            "nParts": 29
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": -0.2571,
+            "nParts": 35
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.2729,
+            "nParts": 26
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": -0.3207,
+            "nParts": 36
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": -0.3276,
+            "nParts": 27
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": -0.3495,
+            "nParts": 30
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": -0.365,
+            "nParts": 27
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": -0.3828,
+            "nParts": 13
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": -0.3969,
+            "nParts": 4
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": -0.5155,
+            "nParts": 15
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": -0.5486,
+            "nParts": 17
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": -0.6653,
+            "nParts": 35
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": -0.6811,
+            "nParts": 22
+          }
+        ],
+        "category": [
+          {
+            "name": "HVAC",
+            "priceChangePct": -0.0733,
+            "nParts": 48
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": -0.0917,
+            "nParts": 48
+          },
+          {
+            "name": "Powertrain",
+            "priceChangePct": -0.2514,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": -0.328,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": -0.336,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": -0.3463,
+            "nParts": 47
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": -0.3469,
+            "nParts": 49
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": -0.4328,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.4338,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": -0.628,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "freight"
+    },
+    {
+      "name": "gpr +25%",
+      "shockPct": 25.0,
+      "pairs": [
+        "gpr"
+      ],
+      "overallPriceChangePct": 0.0013,
+      "impliedElasticity": 0.0001,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": 0.0023,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": 0.0023,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": 0.0018,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": 0.0008,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": 0.0005,
+            "nParts": 79
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": 0.0002,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Sona BLW",
+            "priceChangePct": 0.0272,
+            "nParts": 27
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": 0.0,
+            "nParts": 36
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": 0.0,
+            "nParts": 36
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": 0.0,
+            "nParts": 29
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": 0.0,
+            "nParts": 10
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": 0.0,
+            "nParts": 35
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": 0.0,
+            "nParts": 13
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": 0.0,
+            "nParts": 35
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": 0.0,
+            "nParts": 17
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": 0.0,
+            "nParts": 30
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": 0.0,
+            "nParts": 30
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": 0.0,
+            "nParts": 21
+          },
+          {
+            "name": "Subros",
+            "priceChangePct": 0.0,
+            "nParts": 13
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": 0.0,
+            "nParts": 15
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": 0.0,
+            "nParts": 22
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": 0.0,
+            "nParts": 4
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.0039,
+            "nParts": 26
+          }
+        ],
+        "category": [
+          {
+            "name": "Powertrain",
+            "priceChangePct": 0.0153,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": 0.0,
+            "nParts": 47
+          },
+          {
+            "name": "HVAC",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": 0.0,
+            "nParts": 49
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.0021,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "gpr"
+    },
+    {
+      "name": "gpr +50%",
+      "shockPct": 50.0,
+      "pairs": [
+        "gpr"
+      ],
+      "overallPriceChangePct": 0.0022,
+      "impliedElasticity": 0.0,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": 0.004,
+            "nParts": 81
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": 0.0025,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": 0.0023,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": 0.0019,
+            "nParts": 79
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": 0.0018,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": 0.0008,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Sona BLW",
+            "priceChangePct": 0.0272,
+            "nParts": 27
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": 0.0061,
+            "nParts": 36
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": 0.0061,
+            "nParts": 36
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": 0.0,
+            "nParts": 29
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": 0.0,
+            "nParts": 10
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": 0.0,
+            "nParts": 35
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": 0.0,
+            "nParts": 13
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": 0.0,
+            "nParts": 35
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": 0.0,
+            "nParts": 17
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": 0.0,
+            "nParts": 30
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": 0.0,
+            "nParts": 30
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": 0.0,
+            "nParts": 21
+          },
+          {
+            "name": "Subros",
+            "priceChangePct": 0.0,
+            "nParts": 13
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": 0.0,
+            "nParts": 15
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": 0.0,
+            "nParts": 22
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": 0.0,
+            "nParts": 4
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.0039,
+            "nParts": 26
+          }
+        ],
+        "category": [
+          {
+            "name": "Powertrain",
+            "priceChangePct": 0.0245,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": 0.0,
+            "nParts": 47
+          },
+          {
+            "name": "HVAC",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": 0.0,
+            "nParts": 49
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.0021,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "gpr"
+    },
+    {
+      "name": "gpr +100%",
+      "shockPct": 100.0,
+      "pairs": [
+        "gpr"
+      ],
+      "overallPriceChangePct": 0.0022,
+      "impliedElasticity": 0.0,
+      "byLevel": {
+        "project": [
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": 0.004,
+            "nParts": 81
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": 0.0025,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": 0.0023,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": 0.0019,
+            "nParts": 79
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": 0.0018,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": 0.0008,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Sona BLW",
+            "priceChangePct": 0.0272,
+            "nParts": 27
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": 0.0061,
+            "nParts": 36
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": 0.0061,
+            "nParts": 36
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": 0.0,
+            "nParts": 29
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": 0.0,
+            "nParts": 10
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": 0.0,
+            "nParts": 35
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": 0.0,
+            "nParts": 13
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": 0.0,
+            "nParts": 35
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": 0.0,
+            "nParts": 17
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": 0.0,
+            "nParts": 30
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": 0.0,
+            "nParts": 27
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": 0.0,
+            "nParts": 30
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": 0.0,
+            "nParts": 21
+          },
+          {
+            "name": "Subros",
+            "priceChangePct": 0.0,
+            "nParts": 13
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": 0.0,
+            "nParts": 15
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": 0.0,
+            "nParts": 22
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": 0.0,
+            "nParts": 4
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.0039,
+            "nParts": 26
+          }
+        ],
+        "category": [
+          {
+            "name": "Powertrain",
+            "priceChangePct": 0.0245,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": 0.0,
+            "nParts": 47
+          },
+          {
+            "name": "HVAC",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": 0.0,
+            "nParts": 49
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": 0.0,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.0021,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "gpr"
+    },
+    {
+      "name": "duty +5%",
+      "shockPct": 5.0,
+      "pairs": [
+        "duty"
+      ],
+      "overallPriceChangePct": -0.0376,
+      "impliedElasticity": -0.0075,
+      "byLevel": {
+        "project": [
+          {
+            "name": "VW Virtus",
+            "priceChangePct": -0.0286,
+            "nParts": 79
+          },
+          {
+            "name": "VW Taigun",
+            "priceChangePct": -0.0342,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": -0.0359,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": -0.0414,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": -0.042,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": -0.0436,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Mahle India",
+            "priceChangePct": 0.0695,
+            "nParts": 21
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": 0.0683,
+            "nParts": 30
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": 0.0327,
+            "nParts": 27
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": 0.0302,
+            "nParts": 26
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": 0.0233,
+            "nParts": 35
+          },
+          {
+            "name": "Subros",
+            "priceChangePct": 0.0196,
+            "nParts": 13
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": -0.0056,
+            "nParts": 10
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": -0.0166,
+            "nParts": 30
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": -0.0346,
+            "nParts": 27
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": -0.045,
+            "nParts": 4
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": -0.0558,
+            "nParts": 29
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": -0.068,
+            "nParts": 22
+          },
+          {
+            "name": "Sona BLW",
+            "priceChangePct": -0.072,
+            "nParts": 27
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": -0.0754,
+            "nParts": 13
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": -0.0806,
+            "nParts": 36
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": -0.0865,
+            "nParts": 36
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": -0.0933,
+            "nParts": 15
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": -0.0952,
+            "nParts": 17
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": -0.0966,
+            "nParts": 27
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": -0.1417,
+            "nParts": 35
+          }
+        ],
+        "category": [
+          {
+            "name": "HVAC",
+            "priceChangePct": 0.1179,
+            "nParts": 48
+          },
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.0486,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": 0.008,
+            "nParts": 48
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": -0.018,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.0232,
+            "nParts": 48
+          },
+          {
+            "name": "Powertrain",
+            "priceChangePct": -0.0394,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": -0.0867,
+            "nParts": 49
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": -0.0878,
+            "nParts": 47
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": -0.1025,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": -0.1932,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "duty"
+    },
+    {
+      "name": "duty +10%",
+      "shockPct": 10.0,
+      "pairs": [
+        "duty"
+      ],
+      "overallPriceChangePct": -0.1518,
+      "impliedElasticity": -0.0152,
+      "byLevel": {
+        "project": [
+          {
+            "name": "VW Taigun",
+            "priceChangePct": -0.1372,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kodiaq",
+            "priceChangePct": -0.1437,
+            "nParts": 80
+          },
+          {
+            "name": "SKODA Kylaq",
+            "priceChangePct": -0.1504,
+            "nParts": 80
+          },
+          {
+            "name": "VW Virtus",
+            "priceChangePct": -0.1533,
+            "nParts": 79
+          },
+          {
+            "name": "SKODA Kushaq",
+            "priceChangePct": -0.1547,
+            "nParts": 81
+          },
+          {
+            "name": "SKODA Slavia",
+            "priceChangePct": -0.1716,
+            "nParts": 80
+          }
+        ],
+        "vendor": [
+          {
+            "name": "Subros",
+            "priceChangePct": 0.0339,
+            "nParts": 13
+          },
+          {
+            "name": "Minda Industries",
+            "priceChangePct": -0.0199,
+            "nParts": 35
+          },
+          {
+            "name": "Varroc Engineering",
+            "priceChangePct": -0.0376,
+            "nParts": 26
+          },
+          {
+            "name": "Lumax Industries",
+            "priceChangePct": -0.0446,
+            "nParts": 27
+          },
+          {
+            "name": "Rane Group",
+            "priceChangePct": -0.0562,
+            "nParts": 10
+          },
+          {
+            "name": "Sandhar Technologies",
+            "priceChangePct": -0.0623,
+            "nParts": 29
+          },
+          {
+            "name": "Valeo India",
+            "priceChangePct": -0.069,
+            "nParts": 30
+          },
+          {
+            "name": "JBM Auto",
+            "priceChangePct": -0.0819,
+            "nParts": 27
+          },
+          {
+            "name": "Sundram Fasteners",
+            "priceChangePct": -0.1039,
+            "nParts": 15
+          },
+          {
+            "name": "Bharat Forge",
+            "priceChangePct": -0.122,
+            "nParts": 36
+          },
+          {
+            "name": "Endurance Technologies",
+            "priceChangePct": -0.1431,
+            "nParts": 36
+          },
+          {
+            "name": "Gabriel India",
+            "priceChangePct": -0.1676,
+            "nParts": 13
+          },
+          {
+            "name": "Sona BLW",
+            "priceChangePct": -0.1846,
+            "nParts": 27
+          },
+          {
+            "name": "Mahle India",
+            "priceChangePct": -0.1997,
+            "nParts": 21
+          },
+          {
+            "name": "Denso India",
+            "priceChangePct": -0.2411,
+            "nParts": 30
+          },
+          {
+            "name": "Aptiv India",
+            "priceChangePct": -0.2509,
+            "nParts": 17
+          },
+          {
+            "name": "Brose India",
+            "priceChangePct": -0.3058,
+            "nParts": 4
+          },
+          {
+            "name": "Continental India",
+            "priceChangePct": -0.3134,
+            "nParts": 22
+          },
+          {
+            "name": "ZF India",
+            "priceChangePct": -0.3174,
+            "nParts": 27
+          },
+          {
+            "name": "Bosch India",
+            "priceChangePct": -0.3758,
+            "nParts": 35
+          }
+        ],
+        "category": [
+          {
+            "name": "Lighting",
+            "priceChangePct": 0.0015,
+            "nParts": 48
+          },
+          {
+            "name": "Interior Trim",
+            "priceChangePct": -0.0717,
+            "nParts": 48
+          },
+          {
+            "name": "Body Stampings",
+            "priceChangePct": -0.0848,
+            "nParts": 48
+          },
+          {
+            "name": "Fasteners",
+            "priceChangePct": -0.0959,
+            "nParts": 49
+          },
+          {
+            "name": "HVAC",
+            "priceChangePct": -0.1177,
+            "nParts": 48
+          },
+          {
+            "name": "Electrical",
+            "priceChangePct": -0.155,
+            "nParts": 48
+          },
+          {
+            "name": "Powertrain",
+            "priceChangePct": -0.2144,
+            "nParts": 48
+          },
+          {
+            "name": "Chassis",
+            "priceChangePct": -0.2229,
+            "nParts": 47
+          },
+          {
+            "name": "Braking",
+            "priceChangePct": -0.2268,
+            "nParts": 48
+          },
+          {
+            "name": "Sensors",
+            "priceChangePct": -0.3331,
+            "nParts": 48
+          }
+        ]
+      },
+      "family": "duty"
+    }
+  ],
+  "mediation": {
+    "available": true,
+    "nMonths": 35,
+    "totalCorrGprPrice": 0.1871,
+    "partialCorrGprPriceGivenMediators": 0.1404,
+    "mediators": [
+      "freight_ret_1m",
+      "cmd_steel_ret_1m",
+      "fx_eurinr_ret_1m"
+    ],
+    "interpretation": "If the partial correlation shrinks toward zero relative to the total correlation, GPR's link to prices is largely mediated by freight / commodities / FX \u2014 consistent with the channel model."
+  },
+  "eventStudies": [
+    {
+      "eventId": "red_sea_houthi_2023",
+      "category": "chokepoint",
+      "severity": 4,
+      "regionScope": "RED-SEA",
+      "narrative": "Red Sea / Bab el-Mandeb diversions: Asia-Europe transit +10-14 days and freight spike.",
+      "anchorMonth": "2023-12",
+      "path": [
+        {
+          "offset": -6,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -5,
+          "logDelta": -0.00681,
+          "pctDelta": -0.678
+        },
+        {
+          "offset": -4,
+          "logDelta": -0.00376,
+          "pctDelta": -0.375
+        },
+        {
+          "offset": -3,
+          "logDelta": -0.00233,
+          "pctDelta": -0.232
+        },
+        {
+          "offset": -2,
+          "logDelta": -0.00286,
+          "pctDelta": -0.286
+        },
+        {
+          "offset": -1,
+          "logDelta": -0.00078,
+          "pctDelta": -0.078
+        },
+        {
+          "offset": 0,
+          "logDelta": 0.0,
+          "pctDelta": 0.0
+        },
+        {
+          "offset": 1,
+          "logDelta": 0.0011,
+          "pctDelta": 0.11
+        },
+        {
+          "offset": 2,
+          "logDelta": -0.00115,
+          "pctDelta": -0.115
+        },
+        {
+          "offset": 3,
+          "logDelta": 0.00137,
+          "pctDelta": 0.137
+        },
+        {
+          "offset": 4,
+          "logDelta": 0.00317,
+          "pctDelta": 0.317
+        },
+        {
+          "offset": 5,
+          "logDelta": 0.01139,
+          "pctDelta": 1.145
+        },
+        {
+          "offset": 6,
+          "logDelta": 0.01332,
+          "pctDelta": 1.341
+        }
+      ]
+    },
+    {
+      "eventId": "israel_hamas_2023",
+      "category": "conflict",
+      "severity": 4,
+      "regionScope": "ME-GLOBAL",
+      "narrative": "Middle East escalation after 7 Oct 2023: energy risk premium and shipping caution.",
+      "anchorMonth": "2023-10",
+      "path": [
+        {
+          "offset": -6,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -5,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -4,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -3,
+          "logDelta": -0.00394,
+          "pctDelta": -0.393
+        },
+        {
+          "offset": -2,
+          "logDelta": -0.00089,
+          "pctDelta": -0.089
+        },
+        {
+          "offset": -1,
+          "logDelta": 0.00054,
+          "pctDelta": 0.054
+        },
+        {
+          "offset": 0,
+          "logDelta": 0.0,
+          "pctDelta": 0.0
+        },
+        {
+          "offset": 1,
+          "logDelta": 0.00208,
+          "pctDelta": 0.208
+        },
+        {
+          "offset": 2,
+          "logDelta": 0.00286,
+          "pctDelta": 0.287
+        },
+        {
+          "offset": 3,
+          "logDelta": 0.00396,
+          "pctDelta": 0.397
+        },
+        {
+          "offset": 4,
+          "logDelta": 0.00172,
+          "pctDelta": 0.172
+        },
+        {
+          "offset": 5,
+          "logDelta": 0.00424,
+          "pctDelta": 0.425
+        },
+        {
+          "offset": 6,
+          "logDelta": 0.00603,
+          "pctDelta": 0.605
+        }
+      ]
+    },
+    {
+      "eventId": "eu_cbam_phasein_2023",
+      "category": "trade_agreement",
+      "severity": 2,
+      "regionScope": "EU-IN",
+      "narrative": "EU CBAM transitional phase begins; steel-intensive supply chains face reporting/cost pressure.",
+      "anchorMonth": "2023-10",
+      "path": [
+        {
+          "offset": -6,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -5,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -4,
+          "logDelta": null,
+          "pctDelta": null
+        },
+        {
+          "offset": -3,
+          "logDelta": -0.00394,
+          "pctDelta": -0.393
+        },
+        {
+          "offset": -2,
+          "logDelta": -0.00089,
+          "pctDelta": -0.089
+        },
+        {
+          "offset": -1,
+          "logDelta": 0.00054,
+          "pctDelta": 0.054
+        },
+        {
+          "offset": 0,
+          "logDelta": 0.0,
+          "pctDelta": 0.0
+        },
+        {
+          "offset": 1,
+          "logDelta": 0.00208,
+          "pctDelta": 0.208
+        },
+        {
+          "offset": 2,
+          "logDelta": 0.00286,
+          "pctDelta": 0.287
+        },
+        {
+          "offset": 3,
+          "logDelta": 0.00396,
+          "pctDelta": 0.397
+        },
+        {
+          "offset": 4,
+          "logDelta": 0.00172,
+          "pctDelta": 0.172
+        },
+        {
+          "offset": 5,
+          "logDelta": 0.00424,
+          "pctDelta": 0.425
+        },
+        {
+          "offset": 6,
+          "logDelta": 0.00603,
+          "pctDelta": 0.605
+        }
+      ]
+    },
+    {
+      "eventId": "india_auto_duty_review_2024",
+      "category": "tariff",
+      "severity": 3,
+      "regionScope": "IN-DOMESTIC",
+      "narrative": "Illustrative mid-2024 customs review on selected imported auto components (in-sample demo event).",
+      "anchorMonth": "2024-07",
+      "path": [
+        {
+          "offset": -6,
+          "logDelta": -0.01879,
+          "pctDelta": -1.862
+        },
+        {
+          "offset": -5,
+          "logDelta": -0.02104,
+          "pctDelta": -2.082
+        },
+        {
+          "offset": -4,
+          "logDelta": -0.01852,
+          "pctDelta": -1.835
+        },
+        {
+          "offset": -3,
+          "logDelta": -0.01673,
+          "pctDelta": -1.659
+        },
+        {
+          "offset": -2,
+          "logDelta": -0.00851,
+          "pctDelta": -0.847
+        },
+        {
+          "offset": -1,
+          "logDelta": -0.00657,
+          "pctDelta": -0.655
+        },
+        {
+          "offset": 0,
+          "logDelta": 0.0,
+          "pctDelta": 0.0
+        },
+        {
+          "offset": 1,
+          "logDelta": 0.00247,
+          "pctDelta": 0.247
+        },
+        {
+          "offset": 2,
+          "logDelta": 0.01115,
+          "pctDelta": 1.121
+        },
+        {
+          "offset": 3,
+          "logDelta": 0.01166,
+          "pctDelta": 1.173
+        },
+        {
+          "offset": 4,
+          "logDelta": 0.00529,
+          "pctDelta": 0.53
+        },
+        {
+          "offset": 5,
+          "logDelta": 0.005,
+          "pctDelta": 0.501
+        },
+        {
+          "offset": 6,
+          "logDelta": 0.01291,
+          "pctDelta": 1.3
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "mediators": [
+      {
+        "name": "steel",
+        "source": "offline-fallback",
+        "isReal": false,
+        "unit": "usd",
+        "first": 700.0,
+        "last": 787.1871,
+        "totalMovePct": 12.455
+      },
+      {
+        "name": "aluminium",
+        "source": "offline-fallback",
+        "isReal": false,
+        "unit": "usd",
+        "first": 2200.0,
+        "last": 1771.9662,
+        "totalMovePct": -19.456
+      },
+      {
+        "name": "copper",
+        "source": "offline-fallback",
+        "isReal": false,
+        "unit": "usd",
+        "first": 8500.0,
+        "last": 10235.6322,
+        "totalMovePct": 20.419
+      },
+      {
+        "name": "freight",
+        "source": "offline-fallback",
+        "isReal": false,
+        "unit": "index",
+        "first": 98.1852,
+        "last": 80.5162,
+        "totalMovePct": -17.996
+      },
+      {
+        "name": "gpr_overall",
+        "source": "gpr-cache",
+        "isReal": true,
+        "unit": "index",
+        "first": 107.4488,
+        "last": 179.7224,
+        "totalMovePct": 67.263
+      },
+      {
+        "name": "gpr_threat",
+        "source": "gpr-cache",
+        "isReal": true,
+        "unit": "index",
+        "first": 123.8092,
+        "last": 214.929,
+        "totalMovePct": 73.597
+      },
+      {
+        "name": "gpr_act",
+        "source": "gpr-cache",
+        "isReal": true,
+        "unit": "index",
+        "first": 91.768,
+        "last": 184.4063,
+        "totalMovePct": 100.948
+      },
+      {
+        "name": "chokepoint",
+        "source": "event+freight-offline",
+        "isReal": true,
+        "unit": "intensity",
+        "first": 0.0,
+        "last": 0.0,
+        "totalMovePct": 0.0
+      }
+    ],
+    "nEvents": 6,
+    "events": [
+      {
+        "event_id": "ukraine_invasion_2022",
+        "date_start": "2022-02-01",
+        "date_end": "2022-12-01",
+        "category": "conflict",
+        "severity": 5,
+        "region_scope": "UA-EU",
+        "channels_affected": [
+          "fx",
+          "commodity:energy",
+          "commodity:steel",
+          "freight",
+          "insurance"
+        ],
+        "source": "manual_calendar",
+        "confidence": 1.0,
+        "narrative": "Russia's invasion of Ukraine: multi-channel shock (energy, metals, freight, FX).",
+        "nlp_severity": 5.0
+      },
+      {
+        "event_id": "red_sea_houthi_2023",
+        "date_start": "2023-12-01",
+        "date_end": "2024-06-01",
+        "category": "chokepoint",
+        "severity": 4,
+        "region_scope": "RED-SEA",
+        "channels_affected": [
+          "freight",
+          "insurance"
+        ],
+        "source": "manual_calendar",
+        "confidence": 1.0,
+        "narrative": "Red Sea / Bab el-Mandeb diversions: Asia-Europe transit +10-14 days and freight spike.",
+        "nlp_severity": 5.0
+      },
+      {
+        "event_id": "india_budget_duty_2023",
+        "date_start": "2023-02-01",
+        "date_end": "2023-02-01",
+        "category": "tariff",
+        "severity": 3,
+        "region_scope": "IN-DOMESTIC",
+        "channels_affected": [
+          "duty"
+        ],
+        "source": "manual_calendar",
+        "confidence": 0.9,
+        "narrative": "Union Budget customs adjustments on selected auto components / CKD-related lines.",
+        "nlp_severity": 5.0
+      },
+      {
+        "event_id": "israel_hamas_2023",
+        "date_start": "2023-10-01",
+        "date_end": "2024-03-01",
+        "category": "conflict",
+        "severity": 4,
+        "region_scope": "ME-GLOBAL",
+        "channels_affected": [
+          "fx",
+          "commodity:energy",
+          "freight",
+          "insurance"
+        ],
+        "source": "manual_calendar",
+        "confidence": 0.95,
+        "narrative": "Middle East escalation after 7 Oct 2023: energy risk premium and shipping caution.",
+        "nlp_severity": 5.0
+      },
+      {
+        "event_id": "eu_cbam_phasein_2023",
+        "date_start": "2023-10-01",
+        "date_end": null,
+        "category": "trade_agreement",
+        "severity": 2,
+        "region_scope": "EU-IN",
+        "channels_affected": [
+          "duty",
+          "commodity:steel"
+        ],
+        "source": "manual_calendar",
+        "confidence": 0.8,
+        "narrative": "EU CBAM transitional phase begins; steel-intensive supply chains face reporting/cost pressure.",
+        "nlp_severity": 1.4
+      },
+      {
+        "event_id": "india_auto_duty_review_2024",
+        "date_start": "2024-07-01",
+        "date_end": "2024-07-01",
+        "category": "tariff",
+        "severity": 3,
+        "region_scope": "IN-DOMESTIC",
+        "channels_affected": [
+          "duty"
+        ],
+        "source": "manual_calendar",
+        "confidence": 0.85,
+        "narrative": "Illustrative mid-2024 customs review on selected imported auto components (in-sample demo event).",
+        "nlp_severity": 2.0
+      }
+    ],
+    "framework": {
+      "layers": [
+        {
+          "id": "events",
+          "name": "Geopolitical layer",
+          "items": [
+            "conflict",
+            "tariff",
+            "chokepoint",
+            "sanction",
+            "trade_agreement",
+            "other"
+          ]
+        },
+        {
+          "id": "channels",
+          "name": "Transmission channels",
+          "items": [
+            "fx",
+            "freight",
+            "commodity:steel",
+            "commodity:aluminium",
+            "commodity:copper",
+            "commodity:energy",
+            "duty",
+            "insurance"
+          ]
+        },
+        {
+          "id": "exposure",
+          "name": "Exposure layer",
+          "items": [
+            "import_dependency",
+            "material_intensity",
+            "localisation",
+            "sourcing_corridor"
+          ]
+        },
+        {
+          "id": "price",
+          "name": "Price target",
+          "items": [
+            "part_monthly_inr"
+          ]
+        }
+      ],
+      "claim": "Geopolitics moves mediators; mediator x exposure produces the part-level price effect. A lone geo regressor without channels is not a mechanism.",
+      "causalityNote": "Observational monthly data supports association and channel-consistent identification, not RCT-grade causality."
+    },
+    "allReal": false
+  },
+  "hitl": {
+    "available": true,
+    "policy": "Alerts surface recent geopolitical signals with source verification. Price impact is hidden until you explicitly confirm \u2014 the model does not auto-apply news to forecasts.",
+    "alerts": [
+      {
+        "alertId": "red_sea_houthi_2023_3",
+        "headline": "Asia-Europe container rates jump on longer routes",
+        "reportedAt": "2024-01-08T09:45:00+00:00",
+        "eventId": "red_sea_houthi_2023",
+        "category": "chokepoint",
+        "severity": 4,
+        "regionScope": "RED-SEA",
+        "narrative": "Red Sea / Bab el-Mandeb diversions: Asia-Europe transit +10-14 days and freight spike.",
+        "channelsAffected": [
+          "freight",
+          "insurance"
+        ],
+        "confidence": 1.0,
+        "source": "manual_calendar",
+        "nlpSeverity": 5.0,
+        "sourceVerifications": [
+          {
+            "channel": "freight",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "insurance",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "gpr",
+            "source": "gpr-cache",
+            "isVerified": true,
+            "note": "GPR index moved +67.3% over the observation window."
+          }
+        ],
+        "allSourcesVerified": false,
+        "prompt": "This signal was reported recently. Do you want to see the estimated impact on auto part prices?",
+        "impact": {
+          "available": true,
+          "eventId": "red_sea_houthi_2023",
+          "shockPct": 20.0,
+          "horizonMonths": 6,
+          "overallPriceChangePct": -1.3953,
+          "direction": "down",
+          "channelsUsed": [
+            "freight",
+            "insurance"
+          ],
+          "prefixesShocked": [
+            "freight_",
+            "chokepoint_",
+            "geo_event_",
+            "geo_event_chokepoint"
+          ],
+          "byLevel": {
+            "project": [
+              {
+                "name": "VW Taigun",
+                "priceChangePct": -1.2777,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kodiaq",
+                "priceChangePct": -1.3065,
+                "nParts": 80
+              },
+              {
+                "name": "VW Virtus",
+                "priceChangePct": -1.3524,
+                "nParts": 79
+              },
+              {
+                "name": "SKODA Kylaq",
+                "priceChangePct": -1.4305,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kushaq",
+                "priceChangePct": -1.4527,
+                "nParts": 81
+              },
+              {
+                "name": "SKODA Slavia",
+                "priceChangePct": -1.5507,
+                "nParts": 80
+              }
+            ],
+            "vendor": [
+              {
+                "name": "Subros",
+                "priceChangePct": -0.657,
+                "nParts": 13
+              },
+              {
+                "name": "Mahle India",
+                "priceChangePct": -0.8957,
+                "nParts": 21
+              },
+              {
+                "name": "Valeo India",
+                "priceChangePct": -0.9174,
+                "nParts": 30
+              },
+              {
+                "name": "Varroc Engineering",
+                "priceChangePct": -0.9888,
+                "nParts": 26
+              },
+              {
+                "name": "Rane Group",
+                "priceChangePct": -1.0157,
+                "nParts": 10
+              },
+              {
+                "name": "Lumax Industries",
+                "priceChangePct": -1.1222,
+                "nParts": 27
+              },
+              {
+                "name": "Minda Industries",
+                "priceChangePct": -1.1726,
+                "nParts": 35
+              },
+              {
+                "name": "Bharat Forge",
+                "priceChangePct": -1.2036,
+                "nParts": 36
+              },
+              {
+                "name": "Sona BLW",
+                "priceChangePct": -1.2494,
+                "nParts": 27
+              },
+              {
+                "name": "Brose India",
+                "priceChangePct": -1.3667,
+                "nParts": 4
+              },
+              {
+                "name": "Denso India",
+                "priceChangePct": -1.4344,
+                "nParts": 30
+              },
+              {
+                "name": "Sandhar Technologies",
+                "priceChangePct": -1.477,
+                "nParts": 29
+              },
+              {
+                "name": "Endurance Technologies",
+                "priceChangePct": -1.5297,
+                "nParts": 36
+              },
+              {
+                "name": "JBM Auto",
+                "priceChangePct": -1.5347,
+                "nParts": 27
+              },
+              {
+                "name": "Gabriel India",
+                "priceChangePct": -1.6132,
+                "nParts": 13
+              },
+              {
+                "name": "ZF India",
+                "priceChangePct": -1.6147,
+                "nParts": 27
+              },
+              {
+                "name": "Aptiv India",
+                "priceChangePct": -1.9066,
+                "nParts": 17
+              },
+              {
+                "name": "Sundram Fasteners",
+                "priceChangePct": -1.9118,
+                "nParts": 15
+              },
+              {
+                "name": "Continental India",
+                "priceChangePct": -2.0424,
+                "nParts": 22
+              },
+              {
+                "name": "Bosch India",
+                "priceChangePct": -2.062,
+                "nParts": 35
+              }
+            ],
+            "category": [
+              {
+                "name": "HVAC",
+                "priceChangePct": -0.6613,
+                "nParts": 48
+              },
+              {
+                "name": "Lighting",
+                "priceChangePct": -0.7497,
+                "nParts": 48
+              },
+              {
+                "name": "Powertrain",
+                "priceChangePct": -0.9849,
+                "nParts": 48
+              },
+              {
+                "name": "Electrical",
+                "priceChangePct": -1.1903,
+                "nParts": 48
+              },
+              {
+                "name": "Interior Trim",
+                "priceChangePct": -1.5591,
+                "nParts": 48
+              },
+              {
+                "name": "Chassis",
+                "priceChangePct": -1.5605,
+                "nParts": 47
+              },
+              {
+                "name": "Fasteners",
+                "priceChangePct": -1.636,
+                "nParts": 49
+              },
+              {
+                "name": "Body Stampings",
+                "priceChangePct": -1.638,
+                "nParts": 48
+              },
+              {
+                "name": "Braking",
+                "priceChangePct": -1.7514,
+                "nParts": 48
+              },
+              {
+                "name": "Sensors",
+                "priceChangePct": -2.2202,
+                "nParts": 48
+              }
+            ]
+          },
+          "byCategory": [
+            {
+              "name": "HVAC",
+              "priceChangePct": -0.6613,
+              "nParts": 48
+            },
+            {
+              "name": "Lighting",
+              "priceChangePct": -0.7497,
+              "nParts": 48
+            },
+            {
+              "name": "Powertrain",
+              "priceChangePct": -0.9849,
+              "nParts": 48
+            },
+            {
+              "name": "Electrical",
+              "priceChangePct": -1.1903,
+              "nParts": 48
+            },
+            {
+              "name": "Interior Trim",
+              "priceChangePct": -1.5591,
+              "nParts": 48
+            },
+            {
+              "name": "Chassis",
+              "priceChangePct": -1.5605,
+              "nParts": 47
+            },
+            {
+              "name": "Fasteners",
+              "priceChangePct": -1.636,
+              "nParts": 49
+            },
+            {
+              "name": "Body Stampings",
+              "priceChangePct": -1.638,
+              "nParts": 48
+            },
+            {
+              "name": "Braking",
+              "priceChangePct": -1.7514,
+              "nParts": 48
+            },
+            {
+              "name": "Sensors",
+              "priceChangePct": -2.2202,
+              "nParts": 48
+            }
+          ],
+          "explanation": "If chokepoint severity 4/5 materialises through freight, insurance, the model estimates a portfolio-wide -1.40% price move at horizon 6 month(s). Largest upward pressure: HVAC (-0.66%). Largest downward pressure: Sensors (-2.22%).",
+          "causalityNote": "Counterfactual shock on model features \u2014 association, not proof of causation. Treat as directional until confirmed on real PO history."
+        }
+      },
+      {
+        "alertId": "red_sea_houthi_2023_2",
+        "headline": "Houthi attacks force Red Sea shipping diversions",
+        "reportedAt": "2023-12-15T11:00:00+00:00",
+        "eventId": "red_sea_houthi_2023",
+        "category": "chokepoint",
+        "severity": 4,
+        "regionScope": "RED-SEA",
+        "narrative": "Red Sea / Bab el-Mandeb diversions: Asia-Europe transit +10-14 days and freight spike.",
+        "channelsAffected": [
+          "freight",
+          "insurance"
+        ],
+        "confidence": 1.0,
+        "source": "manual_calendar",
+        "nlpSeverity": 5.0,
+        "sourceVerifications": [
+          {
+            "channel": "freight",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "insurance",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "gpr",
+            "source": "gpr-cache",
+            "isVerified": true,
+            "note": "GPR index moved +67.3% over the observation window."
+          }
+        ],
+        "allSourcesVerified": false,
+        "prompt": "This signal was reported recently. Do you want to see the estimated impact on auto part prices?",
+        "impact": {
+          "available": true,
+          "eventId": "red_sea_houthi_2023",
+          "shockPct": 20.0,
+          "horizonMonths": 6,
+          "overallPriceChangePct": -1.3953,
+          "direction": "down",
+          "channelsUsed": [
+            "freight",
+            "insurance"
+          ],
+          "prefixesShocked": [
+            "freight_",
+            "chokepoint_",
+            "geo_event_",
+            "geo_event_chokepoint"
+          ],
+          "byLevel": {
+            "project": [
+              {
+                "name": "VW Taigun",
+                "priceChangePct": -1.2777,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kodiaq",
+                "priceChangePct": -1.3065,
+                "nParts": 80
+              },
+              {
+                "name": "VW Virtus",
+                "priceChangePct": -1.3524,
+                "nParts": 79
+              },
+              {
+                "name": "SKODA Kylaq",
+                "priceChangePct": -1.4305,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kushaq",
+                "priceChangePct": -1.4527,
+                "nParts": 81
+              },
+              {
+                "name": "SKODA Slavia",
+                "priceChangePct": -1.5507,
+                "nParts": 80
+              }
+            ],
+            "vendor": [
+              {
+                "name": "Subros",
+                "priceChangePct": -0.657,
+                "nParts": 13
+              },
+              {
+                "name": "Mahle India",
+                "priceChangePct": -0.8957,
+                "nParts": 21
+              },
+              {
+                "name": "Valeo India",
+                "priceChangePct": -0.9174,
+                "nParts": 30
+              },
+              {
+                "name": "Varroc Engineering",
+                "priceChangePct": -0.9888,
+                "nParts": 26
+              },
+              {
+                "name": "Rane Group",
+                "priceChangePct": -1.0157,
+                "nParts": 10
+              },
+              {
+                "name": "Lumax Industries",
+                "priceChangePct": -1.1222,
+                "nParts": 27
+              },
+              {
+                "name": "Minda Industries",
+                "priceChangePct": -1.1726,
+                "nParts": 35
+              },
+              {
+                "name": "Bharat Forge",
+                "priceChangePct": -1.2036,
+                "nParts": 36
+              },
+              {
+                "name": "Sona BLW",
+                "priceChangePct": -1.2494,
+                "nParts": 27
+              },
+              {
+                "name": "Brose India",
+                "priceChangePct": -1.3667,
+                "nParts": 4
+              },
+              {
+                "name": "Denso India",
+                "priceChangePct": -1.4344,
+                "nParts": 30
+              },
+              {
+                "name": "Sandhar Technologies",
+                "priceChangePct": -1.477,
+                "nParts": 29
+              },
+              {
+                "name": "Endurance Technologies",
+                "priceChangePct": -1.5297,
+                "nParts": 36
+              },
+              {
+                "name": "JBM Auto",
+                "priceChangePct": -1.5347,
+                "nParts": 27
+              },
+              {
+                "name": "Gabriel India",
+                "priceChangePct": -1.6132,
+                "nParts": 13
+              },
+              {
+                "name": "ZF India",
+                "priceChangePct": -1.6147,
+                "nParts": 27
+              },
+              {
+                "name": "Aptiv India",
+                "priceChangePct": -1.9066,
+                "nParts": 17
+              },
+              {
+                "name": "Sundram Fasteners",
+                "priceChangePct": -1.9118,
+                "nParts": 15
+              },
+              {
+                "name": "Continental India",
+                "priceChangePct": -2.0424,
+                "nParts": 22
+              },
+              {
+                "name": "Bosch India",
+                "priceChangePct": -2.062,
+                "nParts": 35
+              }
+            ],
+            "category": [
+              {
+                "name": "HVAC",
+                "priceChangePct": -0.6613,
+                "nParts": 48
+              },
+              {
+                "name": "Lighting",
+                "priceChangePct": -0.7497,
+                "nParts": 48
+              },
+              {
+                "name": "Powertrain",
+                "priceChangePct": -0.9849,
+                "nParts": 48
+              },
+              {
+                "name": "Electrical",
+                "priceChangePct": -1.1903,
+                "nParts": 48
+              },
+              {
+                "name": "Interior Trim",
+                "priceChangePct": -1.5591,
+                "nParts": 48
+              },
+              {
+                "name": "Chassis",
+                "priceChangePct": -1.5605,
+                "nParts": 47
+              },
+              {
+                "name": "Fasteners",
+                "priceChangePct": -1.636,
+                "nParts": 49
+              },
+              {
+                "name": "Body Stampings",
+                "priceChangePct": -1.638,
+                "nParts": 48
+              },
+              {
+                "name": "Braking",
+                "priceChangePct": -1.7514,
+                "nParts": 48
+              },
+              {
+                "name": "Sensors",
+                "priceChangePct": -2.2202,
+                "nParts": 48
+              }
+            ]
+          },
+          "byCategory": [
+            {
+              "name": "HVAC",
+              "priceChangePct": -0.6613,
+              "nParts": 48
+            },
+            {
+              "name": "Lighting",
+              "priceChangePct": -0.7497,
+              "nParts": 48
+            },
+            {
+              "name": "Powertrain",
+              "priceChangePct": -0.9849,
+              "nParts": 48
+            },
+            {
+              "name": "Electrical",
+              "priceChangePct": -1.1903,
+              "nParts": 48
+            },
+            {
+              "name": "Interior Trim",
+              "priceChangePct": -1.5591,
+              "nParts": 48
+            },
+            {
+              "name": "Chassis",
+              "priceChangePct": -1.5605,
+              "nParts": 47
+            },
+            {
+              "name": "Fasteners",
+              "priceChangePct": -1.636,
+              "nParts": 49
+            },
+            {
+              "name": "Body Stampings",
+              "priceChangePct": -1.638,
+              "nParts": 48
+            },
+            {
+              "name": "Braking",
+              "priceChangePct": -1.7514,
+              "nParts": 48
+            },
+            {
+              "name": "Sensors",
+              "priceChangePct": -2.2202,
+              "nParts": 48
+            }
+          ],
+          "explanation": "If chokepoint severity 4/5 materialises through freight, insurance, the model estimates a portfolio-wide -1.40% price move at horizon 6 month(s). Largest upward pressure: HVAC (-0.66%). Largest downward pressure: Sensors (-2.22%).",
+          "causalityNote": "Counterfactual shock on model features \u2014 association, not proof of causation. Treat as directional until confirmed on real PO history."
+        }
+      },
+      {
+        "alertId": "israel_hamas_2023_5",
+        "headline": "Middle East conflict raises oil risk premium",
+        "reportedAt": "2023-10-09T08:00:00+00:00",
+        "eventId": "israel_hamas_2023",
+        "category": "conflict",
+        "severity": 4,
+        "regionScope": "ME-GLOBAL",
+        "narrative": "Middle East escalation after 7 Oct 2023: energy risk premium and shipping caution.",
+        "channelsAffected": [
+          "fx",
+          "commodity:energy",
+          "freight",
+          "insurance"
+        ],
+        "confidence": 0.95,
+        "source": "manual_calendar",
+        "nlpSeverity": 5.0,
+        "sourceVerifications": [
+          {
+            "channel": "fx",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 95%."
+          },
+          {
+            "channel": "commodity:energy",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 95%."
+          },
+          {
+            "channel": "freight",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "insurance",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 95%."
+          },
+          {
+            "channel": "gpr",
+            "source": "gpr-cache",
+            "isVerified": true,
+            "note": "GPR index moved +67.3% over the observation window."
+          }
+        ],
+        "allSourcesVerified": false,
+        "prompt": "This signal was reported recently. Do you want to see the estimated impact on auto part prices?",
+        "impact": {
+          "available": true,
+          "eventId": "israel_hamas_2023",
+          "shockPct": 20.0,
+          "horizonMonths": 6,
+          "overallPriceChangePct": -0.3353,
+          "direction": "down",
+          "channelsUsed": [
+            "fx",
+            "commodity:energy",
+            "freight",
+            "insurance"
+          ],
+          "prefixesShocked": [
+            "fx_",
+            "cmd_",
+            "freight_",
+            "chokepoint_",
+            "geo_event_",
+            "gpr",
+            "geo_event_conflict"
+          ],
+          "byLevel": {
+            "project": [
+              {
+                "name": "SKODA Kodiaq",
+                "priceChangePct": -0.213,
+                "nParts": 80
+              },
+              {
+                "name": "VW Taigun",
+                "priceChangePct": -0.2992,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kylaq",
+                "priceChangePct": -0.3147,
+                "nParts": 80
+              },
+              {
+                "name": "VW Virtus",
+                "priceChangePct": -0.3463,
+                "nParts": 79
+              },
+              {
+                "name": "SKODA Slavia",
+                "priceChangePct": -0.4004,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kushaq",
+                "priceChangePct": -0.4369,
+                "nParts": 81
+              }
+            ],
+            "vendor": [
+              {
+                "name": "Subros",
+                "priceChangePct": 0.4826,
+                "nParts": 13
+              },
+              {
+                "name": "Sona BLW",
+                "priceChangePct": 0.3599,
+                "nParts": 27
+              },
+              {
+                "name": "Mahle India",
+                "priceChangePct": 0.3394,
+                "nParts": 21
+              },
+              {
+                "name": "Rane Group",
+                "priceChangePct": 0.3318,
+                "nParts": 10
+              },
+              {
+                "name": "Varroc Engineering",
+                "priceChangePct": 0.331,
+                "nParts": 26
+              },
+              {
+                "name": "Valeo India",
+                "priceChangePct": 0.126,
+                "nParts": 30
+              },
+              {
+                "name": "Minda Industries",
+                "priceChangePct": 0.0037,
+                "nParts": 35
+              },
+              {
+                "name": "Lumax Industries",
+                "priceChangePct": -0.1152,
+                "nParts": 27
+              },
+              {
+                "name": "Denso India",
+                "priceChangePct": -0.1786,
+                "nParts": 30
+              },
+              {
+                "name": "Bharat Forge",
+                "priceChangePct": -0.2791,
+                "nParts": 36
+              },
+              {
+                "name": "Gabriel India",
+                "priceChangePct": -0.3051,
+                "nParts": 13
+              },
+              {
+                "name": "Endurance Technologies",
+                "priceChangePct": -0.3216,
+                "nParts": 36
+              },
+              {
+                "name": "ZF India",
+                "priceChangePct": -0.5145,
+                "nParts": 27
+              },
+              {
+                "name": "Aptiv India",
+                "priceChangePct": -0.5395,
+                "nParts": 17
+              },
+              {
+                "name": "Bosch India",
+                "priceChangePct": -0.9638,
+                "nParts": 35
+              },
+              {
+                "name": "Sandhar Technologies",
+                "priceChangePct": -1.017,
+                "nParts": 29
+              },
+              {
+                "name": "Sundram Fasteners",
+                "priceChangePct": -1.0914,
+                "nParts": 15
+              },
+              {
+                "name": "JBM Auto",
+                "priceChangePct": -1.1633,
+                "nParts": 27
+              },
+              {
+                "name": "Continental India",
+                "priceChangePct": -1.2001,
+                "nParts": 22
+              },
+              {
+                "name": "Brose India",
+                "priceChangePct": -1.3358,
+                "nParts": 4
+              }
+            ],
+            "category": [
+              {
+                "name": "Electrical",
+                "priceChangePct": 0.8719,
+                "nParts": 48
+              },
+              {
+                "name": "Lighting",
+                "priceChangePct": 0.5656,
+                "nParts": 48
+              },
+              {
+                "name": "HVAC",
+                "priceChangePct": 0.5557,
+                "nParts": 48
+              },
+              {
+                "name": "Powertrain",
+                "priceChangePct": 0.5099,
+                "nParts": 48
+              },
+              {
+                "name": "Chassis",
+                "priceChangePct": -0.2415,
+                "nParts": 47
+              },
+              {
+                "name": "Braking",
+                "priceChangePct": -0.6444,
+                "nParts": 48
+              },
+              {
+                "name": "Fasteners",
+                "priceChangePct": -0.8224,
+                "nParts": 49
+              },
+              {
+                "name": "Interior Trim",
+                "priceChangePct": -1.2734,
+                "nParts": 48
+              },
+              {
+                "name": "Body Stampings",
+                "priceChangePct": -1.2739,
+                "nParts": 48
+              },
+              {
+                "name": "Sensors",
+                "priceChangePct": -1.5879,
+                "nParts": 48
+              }
+            ]
+          },
+          "byCategory": [
+            {
+              "name": "Electrical",
+              "priceChangePct": 0.8719,
+              "nParts": 48
+            },
+            {
+              "name": "Lighting",
+              "priceChangePct": 0.5656,
+              "nParts": 48
+            },
+            {
+              "name": "HVAC",
+              "priceChangePct": 0.5557,
+              "nParts": 48
+            },
+            {
+              "name": "Powertrain",
+              "priceChangePct": 0.5099,
+              "nParts": 48
+            },
+            {
+              "name": "Chassis",
+              "priceChangePct": -0.2415,
+              "nParts": 47
+            },
+            {
+              "name": "Braking",
+              "priceChangePct": -0.6444,
+              "nParts": 48
+            },
+            {
+              "name": "Fasteners",
+              "priceChangePct": -0.8224,
+              "nParts": 49
+            },
+            {
+              "name": "Interior Trim",
+              "priceChangePct": -1.2734,
+              "nParts": 48
+            },
+            {
+              "name": "Body Stampings",
+              "priceChangePct": -1.2739,
+              "nParts": 48
+            },
+            {
+              "name": "Sensors",
+              "priceChangePct": -1.5879,
+              "nParts": 48
+            }
+          ],
+          "explanation": "If conflict severity 4/5 materialises through fx, commodity:energy, freight, insurance, the model estimates a portfolio-wide -0.34% price move at horizon 6 month(s). Largest upward pressure: Electrical (+0.87%). Largest downward pressure: Sensors (-1.59%).",
+          "causalityNote": "Counterfactual shock on model features \u2014 association, not proof of causation. Treat as directional until confirmed on real PO history."
+        }
+      },
+      {
+        "alertId": "india_budget_duty_2023_4",
+        "headline": "India Budget adjusts customs duties on auto components",
+        "reportedAt": "2023-02-01T12:30:00+00:00",
+        "eventId": "india_budget_duty_2023",
+        "category": "tariff",
+        "severity": 3,
+        "regionScope": "IN-DOMESTIC",
+        "narrative": "Union Budget customs adjustments on selected auto components / CKD-related lines.",
+        "channelsAffected": [
+          "duty"
+        ],
+        "confidence": 0.9,
+        "source": "manual_calendar",
+        "nlpSeverity": 5.0,
+        "sourceVerifications": [
+          {
+            "channel": "duty",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Duty step comes from the curated event calendar (confidence 90%)."
+          }
+        ],
+        "allSourcesVerified": true,
+        "prompt": "This signal was reported recently. Do you want to see the estimated impact on auto part prices?",
+        "impact": {
+          "available": true,
+          "eventId": "india_budget_duty_2023",
+          "shockPct": 15.0,
+          "horizonMonths": 6,
+          "overallPriceChangePct": -0.1846,
+          "direction": "down",
+          "channelsUsed": [
+            "duty"
+          ],
+          "prefixesShocked": [
+            "geo_event_tariff"
+          ],
+          "byLevel": {
+            "project": [
+              {
+                "name": "VW Virtus",
+                "priceChangePct": -0.1627,
+                "nParts": 79
+              },
+              {
+                "name": "SKODA Kodiaq",
+                "priceChangePct": -0.1696,
+                "nParts": 80
+              },
+              {
+                "name": "VW Taigun",
+                "priceChangePct": -0.1801,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kylaq",
+                "priceChangePct": -0.1898,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kushaq",
+                "priceChangePct": -0.1907,
+                "nParts": 81
+              },
+              {
+                "name": "SKODA Slavia",
+                "priceChangePct": -0.2143,
+                "nParts": 80
+              }
+            ],
+            "vendor": [
+              {
+                "name": "JBM Auto",
+                "priceChangePct": -0.0784,
+                "nParts": 27
+              },
+              {
+                "name": "Valeo India",
+                "priceChangePct": -0.091,
+                "nParts": 30
+              },
+              {
+                "name": "Varroc Engineering",
+                "priceChangePct": -0.0968,
+                "nParts": 26
+              },
+              {
+                "name": "Sandhar Technologies",
+                "priceChangePct": -0.1083,
+                "nParts": 29
+              },
+              {
+                "name": "Minda Industries",
+                "priceChangePct": -0.111,
+                "nParts": 35
+              },
+              {
+                "name": "Bharat Forge",
+                "priceChangePct": -0.1232,
+                "nParts": 36
+              },
+              {
+                "name": "Lumax Industries",
+                "priceChangePct": -0.1286,
+                "nParts": 27
+              },
+              {
+                "name": "Endurance Technologies",
+                "priceChangePct": -0.1369,
+                "nParts": 36
+              },
+              {
+                "name": "Sundram Fasteners",
+                "priceChangePct": -0.1388,
+                "nParts": 15
+              },
+              {
+                "name": "Sona BLW",
+                "priceChangePct": -0.1546,
+                "nParts": 27
+              },
+              {
+                "name": "Rane Group",
+                "priceChangePct": -0.1593,
+                "nParts": 10
+              },
+              {
+                "name": "Gabriel India",
+                "priceChangePct": -0.2148,
+                "nParts": 13
+              },
+              {
+                "name": "Mahle India",
+                "priceChangePct": -0.2246,
+                "nParts": 21
+              },
+              {
+                "name": "Subros",
+                "priceChangePct": -0.231,
+                "nParts": 13
+              },
+              {
+                "name": "Aptiv India",
+                "priceChangePct": -0.2426,
+                "nParts": 17
+              },
+              {
+                "name": "Denso India",
+                "priceChangePct": -0.2461,
+                "nParts": 30
+              },
+              {
+                "name": "Continental India",
+                "priceChangePct": -0.3134,
+                "nParts": 22
+              },
+              {
+                "name": "Brose India",
+                "priceChangePct": -0.3145,
+                "nParts": 4
+              },
+              {
+                "name": "ZF India",
+                "priceChangePct": -0.3356,
+                "nParts": 27
+              },
+              {
+                "name": "Bosch India",
+                "priceChangePct": -0.4086,
+                "nParts": 35
+              }
+            ],
+            "category": [
+              {
+                "name": "Lighting",
+                "priceChangePct": -0.0229,
+                "nParts": 48
+              },
+              {
+                "name": "Body Stampings",
+                "priceChangePct": -0.096,
+                "nParts": 48
+              },
+              {
+                "name": "Fasteners",
+                "priceChangePct": -0.109,
+                "nParts": 49
+              },
+              {
+                "name": "Electrical",
+                "priceChangePct": -0.1785,
+                "nParts": 48
+              },
+              {
+                "name": "Powertrain",
+                "priceChangePct": -0.189,
+                "nParts": 48
+              },
+              {
+                "name": "HVAC",
+                "priceChangePct": -0.2045,
+                "nParts": 48
+              },
+              {
+                "name": "Interior Trim",
+                "priceChangePct": -0.2095,
+                "nParts": 48
+              },
+              {
+                "name": "Chassis",
+                "priceChangePct": -0.2359,
+                "nParts": 47
+              },
+              {
+                "name": "Braking",
+                "priceChangePct": -0.2721,
+                "nParts": 48
+              },
+              {
+                "name": "Sensors",
+                "priceChangePct": -0.3312,
+                "nParts": 48
+              }
+            ]
+          },
+          "byCategory": [
+            {
+              "name": "Lighting",
+              "priceChangePct": -0.0229,
+              "nParts": 48
+            },
+            {
+              "name": "Body Stampings",
+              "priceChangePct": -0.096,
+              "nParts": 48
+            },
+            {
+              "name": "Fasteners",
+              "priceChangePct": -0.109,
+              "nParts": 49
+            },
+            {
+              "name": "Electrical",
+              "priceChangePct": -0.1785,
+              "nParts": 48
+            },
+            {
+              "name": "Powertrain",
+              "priceChangePct": -0.189,
+              "nParts": 48
+            },
+            {
+              "name": "HVAC",
+              "priceChangePct": -0.2045,
+              "nParts": 48
+            },
+            {
+              "name": "Interior Trim",
+              "priceChangePct": -0.2095,
+              "nParts": 48
+            },
+            {
+              "name": "Chassis",
+              "priceChangePct": -0.2359,
+              "nParts": 47
+            },
+            {
+              "name": "Braking",
+              "priceChangePct": -0.2721,
+              "nParts": 48
+            },
+            {
+              "name": "Sensors",
+              "priceChangePct": -0.3312,
+              "nParts": 48
+            }
+          ],
+          "explanation": "If tariff severity 3/5 materialises through duty, the model estimates a portfolio-wide -0.18% price move at horizon 6 month(s). Largest upward pressure: Lighting (-0.02%). Largest downward pressure: Sensors (-0.33%).",
+          "causalityNote": "Counterfactual shock on model features \u2014 association, not proof of causation. Treat as directional until confirmed on real PO history."
+        }
+      },
+      {
+        "alertId": "ukraine_invasion_2022_1",
+        "headline": "Energy and metals markets spike on war risk",
+        "reportedAt": "2022-02-24T14:15:00+00:00",
+        "eventId": "ukraine_invasion_2022",
+        "category": "conflict",
+        "severity": 5,
+        "regionScope": "UA-EU",
+        "narrative": "Russia's invasion of Ukraine: multi-channel shock (energy, metals, freight, FX).",
+        "channelsAffected": [
+          "fx",
+          "commodity:energy",
+          "commodity:steel",
+          "freight",
+          "insurance"
+        ],
+        "confidence": 1.0,
+        "source": "manual_calendar",
+        "nlpSeverity": 5.0,
+        "sourceVerifications": [
+          {
+            "channel": "fx",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "commodity:energy",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "commodity:steel",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "freight",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "insurance",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "gpr",
+            "source": "gpr-cache",
+            "isVerified": true,
+            "note": "GPR index moved +67.3% over the observation window."
+          }
+        ],
+        "allSourcesVerified": false,
+        "prompt": "This signal was reported recently. Do you want to see the estimated impact on auto part prices?",
+        "impact": {
+          "available": true,
+          "eventId": "ukraine_invasion_2022",
+          "shockPct": 25.0,
+          "horizonMonths": 6,
+          "overallPriceChangePct": -0.5233,
+          "direction": "down",
+          "channelsUsed": [
+            "fx",
+            "commodity:energy",
+            "commodity:steel",
+            "freight",
+            "insurance"
+          ],
+          "prefixesShocked": [
+            "fx_",
+            "cmd_",
+            "cmd_steel_",
+            "cmd_matched_",
+            "freight_",
+            "chokepoint_",
+            "geo_event_",
+            "gpr",
+            "geo_event_conflict"
+          ],
+          "byLevel": {
+            "project": [
+              {
+                "name": "SKODA Kodiaq",
+                "priceChangePct": -0.4025,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kylaq",
+                "priceChangePct": -0.4964,
+                "nParts": 80
+              },
+              {
+                "name": "VW Taigun",
+                "priceChangePct": -0.5063,
+                "nParts": 80
+              },
+              {
+                "name": "VW Virtus",
+                "priceChangePct": -0.5239,
+                "nParts": 79
+              },
+              {
+                "name": "SKODA Slavia",
+                "priceChangePct": -0.6019,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kushaq",
+                "priceChangePct": -0.6074,
+                "nParts": 81
+              }
+            ],
+            "vendor": [
+              {
+                "name": "Subros",
+                "priceChangePct": 0.4332,
+                "nParts": 13
+              },
+              {
+                "name": "Mahle India",
+                "priceChangePct": 0.2198,
+                "nParts": 21
+              },
+              {
+                "name": "Sona BLW",
+                "priceChangePct": 0.1626,
+                "nParts": 27
+              },
+              {
+                "name": "Rane Group",
+                "priceChangePct": 0.0985,
+                "nParts": 10
+              },
+              {
+                "name": "Varroc Engineering",
+                "priceChangePct": 0.0573,
+                "nParts": 26
+              },
+              {
+                "name": "Valeo India",
+                "priceChangePct": -0.0681,
+                "nParts": 30
+              },
+              {
+                "name": "Denso India",
+                "priceChangePct": -0.1483,
+                "nParts": 30
+              },
+              {
+                "name": "Minda Industries",
+                "priceChangePct": -0.2645,
+                "nParts": 35
+              },
+              {
+                "name": "Bharat Forge",
+                "priceChangePct": -0.4654,
+                "nParts": 36
+              },
+              {
+                "name": "Lumax Industries",
+                "priceChangePct": -0.4982,
+                "nParts": 27
+              },
+              {
+                "name": "Endurance Technologies",
+                "priceChangePct": -0.5545,
+                "nParts": 36
+              },
+              {
+                "name": "Aptiv India",
+                "priceChangePct": -0.6076,
+                "nParts": 17
+              },
+              {
+                "name": "Gabriel India",
+                "priceChangePct": -0.6404,
+                "nParts": 13
+              },
+              {
+                "name": "ZF India",
+                "priceChangePct": -0.6872,
+                "nParts": 27
+              },
+              {
+                "name": "Bosch India",
+                "priceChangePct": -1.0794,
+                "nParts": 35
+              },
+              {
+                "name": "Sundram Fasteners",
+                "priceChangePct": -1.2234,
+                "nParts": 15
+              },
+              {
+                "name": "Continental India",
+                "priceChangePct": -1.3059,
+                "nParts": 22
+              },
+              {
+                "name": "JBM Auto",
+                "priceChangePct": -1.3128,
+                "nParts": 27
+              },
+              {
+                "name": "Sandhar Technologies",
+                "priceChangePct": -1.3258,
+                "nParts": 29
+              },
+              {
+                "name": "Brose India",
+                "priceChangePct": -1.598,
+                "nParts": 4
+              }
+            ],
+            "category": [
+              {
+                "name": "Electrical",
+                "priceChangePct": 0.759,
+                "nParts": 48
+              },
+              {
+                "name": "HVAC",
+                "priceChangePct": 0.4834,
+                "nParts": 48
+              },
+              {
+                "name": "Powertrain",
+                "priceChangePct": 0.2892,
+                "nParts": 48
+              },
+              {
+                "name": "Lighting",
+                "priceChangePct": 0.1795,
+                "nParts": 48
+              },
+              {
+                "name": "Chassis",
+                "priceChangePct": -0.449,
+                "nParts": 47
+              },
+              {
+                "name": "Braking",
+                "priceChangePct": -0.8831,
+                "nParts": 48
+              },
+              {
+                "name": "Fasteners",
+                "priceChangePct": -0.9603,
+                "nParts": 49
+              },
+              {
+                "name": "Body Stampings",
+                "priceChangePct": -1.513,
+                "nParts": 48
+              },
+              {
+                "name": "Sensors",
+                "priceChangePct": -1.5409,
+                "nParts": 48
+              },
+              {
+                "name": "Interior Trim",
+                "priceChangePct": -1.5867,
+                "nParts": 48
+              }
+            ]
+          },
+          "byCategory": [
+            {
+              "name": "Electrical",
+              "priceChangePct": 0.759,
+              "nParts": 48
+            },
+            {
+              "name": "HVAC",
+              "priceChangePct": 0.4834,
+              "nParts": 48
+            },
+            {
+              "name": "Powertrain",
+              "priceChangePct": 0.2892,
+              "nParts": 48
+            },
+            {
+              "name": "Lighting",
+              "priceChangePct": 0.1795,
+              "nParts": 48
+            },
+            {
+              "name": "Chassis",
+              "priceChangePct": -0.449,
+              "nParts": 47
+            },
+            {
+              "name": "Braking",
+              "priceChangePct": -0.8831,
+              "nParts": 48
+            },
+            {
+              "name": "Fasteners",
+              "priceChangePct": -0.9603,
+              "nParts": 49
+            },
+            {
+              "name": "Body Stampings",
+              "priceChangePct": -1.513,
+              "nParts": 48
+            },
+            {
+              "name": "Sensors",
+              "priceChangePct": -1.5409,
+              "nParts": 48
+            },
+            {
+              "name": "Interior Trim",
+              "priceChangePct": -1.5867,
+              "nParts": 48
+            }
+          ],
+          "explanation": "If conflict severity 5/5 materialises through fx, commodity:energy, commodity:steel, freight, insurance, the model estimates a portfolio-wide -0.52% price move at horizon 6 month(s). Largest upward pressure: Electrical (+0.76%). Largest downward pressure: Interior Trim (-1.59%).",
+          "causalityNote": "Counterfactual shock on model features \u2014 association, not proof of causation. Treat as directional until confirmed on real PO history."
+        }
+      },
+      {
+        "alertId": "ukraine_invasion_2022_0",
+        "headline": "Russia launches full-scale invasion of Ukraine",
+        "reportedAt": "2022-02-24T06:30:00+00:00",
+        "eventId": "ukraine_invasion_2022",
+        "category": "conflict",
+        "severity": 5,
+        "regionScope": "UA-EU",
+        "narrative": "Russia's invasion of Ukraine: multi-channel shock (energy, metals, freight, FX).",
+        "channelsAffected": [
+          "fx",
+          "commodity:energy",
+          "commodity:steel",
+          "freight",
+          "insurance"
+        ],
+        "confidence": 1.0,
+        "source": "manual_calendar",
+        "nlpSeverity": 5.0,
+        "sourceVerifications": [
+          {
+            "channel": "fx",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "commodity:energy",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "commodity:steel",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "freight",
+            "source": "offline-fallback",
+            "isVerified": false,
+            "note": "Using offline fallback \u2014 verify against a live feed before acting."
+          },
+          {
+            "channel": "insurance",
+            "source": "manual_calendar",
+            "isVerified": true,
+            "note": "Event-sourced channel; curator confidence 100%."
+          },
+          {
+            "channel": "gpr",
+            "source": "gpr-cache",
+            "isVerified": true,
+            "note": "GPR index moved +67.3% over the observation window."
+          }
+        ],
+        "allSourcesVerified": false,
+        "prompt": "This signal was reported recently. Do you want to see the estimated impact on auto part prices?",
+        "impact": {
+          "available": true,
+          "eventId": "ukraine_invasion_2022",
+          "shockPct": 25.0,
+          "horizonMonths": 6,
+          "overallPriceChangePct": -0.5233,
+          "direction": "down",
+          "channelsUsed": [
+            "fx",
+            "commodity:energy",
+            "commodity:steel",
+            "freight",
+            "insurance"
+          ],
+          "prefixesShocked": [
+            "fx_",
+            "cmd_",
+            "cmd_steel_",
+            "cmd_matched_",
+            "freight_",
+            "chokepoint_",
+            "geo_event_",
+            "gpr",
+            "geo_event_conflict"
+          ],
+          "byLevel": {
+            "project": [
+              {
+                "name": "SKODA Kodiaq",
+                "priceChangePct": -0.4025,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kylaq",
+                "priceChangePct": -0.4964,
+                "nParts": 80
+              },
+              {
+                "name": "VW Taigun",
+                "priceChangePct": -0.5063,
+                "nParts": 80
+              },
+              {
+                "name": "VW Virtus",
+                "priceChangePct": -0.5239,
+                "nParts": 79
+              },
+              {
+                "name": "SKODA Slavia",
+                "priceChangePct": -0.6019,
+                "nParts": 80
+              },
+              {
+                "name": "SKODA Kushaq",
+                "priceChangePct": -0.6074,
+                "nParts": 81
+              }
+            ],
+            "vendor": [
+              {
+                "name": "Subros",
+                "priceChangePct": 0.4332,
+                "nParts": 13
+              },
+              {
+                "name": "Mahle India",
+                "priceChangePct": 0.2198,
+                "nParts": 21
+              },
+              {
+                "name": "Sona BLW",
+                "priceChangePct": 0.1626,
+                "nParts": 27
+              },
+              {
+                "name": "Rane Group",
+                "priceChangePct": 0.0985,
+                "nParts": 10
+              },
+              {
+                "name": "Varroc Engineering",
+                "priceChangePct": 0.0573,
+                "nParts": 26
+              },
+              {
+                "name": "Valeo India",
+                "priceChangePct": -0.0681,
+                "nParts": 30
+              },
+              {
+                "name": "Denso India",
+                "priceChangePct": -0.1483,
+                "nParts": 30
+              },
+              {
+                "name": "Minda Industries",
+                "priceChangePct": -0.2645,
+                "nParts": 35
+              },
+              {
+                "name": "Bharat Forge",
+                "priceChangePct": -0.4654,
+                "nParts": 36
+              },
+              {
+                "name": "Lumax Industries",
+                "priceChangePct": -0.4982,
+                "nParts": 27
+              },
+              {
+                "name": "Endurance Technologies",
+                "priceChangePct": -0.5545,
+                "nParts": 36
+              },
+              {
+                "name": "Aptiv India",
+                "priceChangePct": -0.6076,
+                "nParts": 17
+              },
+              {
+                "name": "Gabriel India",
+                "priceChangePct": -0.6404,
+                "nParts": 13
+              },
+              {
+                "name": "ZF India",
+                "priceChangePct": -0.6872,
+                "nParts": 27
+              },
+              {
+                "name": "Bosch India",
+                "priceChangePct": -1.0794,
+                "nParts": 35
+              },
+              {
+                "name": "Sundram Fasteners",
+                "priceChangePct": -1.2234,
+                "nParts": 15
+              },
+              {
+                "name": "Continental India",
+                "priceChangePct": -1.3059,
+                "nParts": 22
+              },
+              {
+                "name": "JBM Auto",
+                "priceChangePct": -1.3128,
+                "nParts": 27
+              },
+              {
+                "name": "Sandhar Technologies",
+                "priceChangePct": -1.3258,
+                "nParts": 29
+              },
+              {
+                "name": "Brose India",
+                "priceChangePct": -1.598,
+                "nParts": 4
+              }
+            ],
+            "category": [
+              {
+                "name": "Electrical",
+                "priceChangePct": 0.759,
+                "nParts": 48
+              },
+              {
+                "name": "HVAC",
+                "priceChangePct": 0.4834,
+                "nParts": 48
+              },
+              {
+                "name": "Powertrain",
+                "priceChangePct": 0.2892,
+                "nParts": 48
+              },
+              {
+                "name": "Lighting",
+                "priceChangePct": 0.1795,
+                "nParts": 48
+              },
+              {
+                "name": "Chassis",
+                "priceChangePct": -0.449,
+                "nParts": 47
+              },
+              {
+                "name": "Braking",
+                "priceChangePct": -0.8831,
+                "nParts": 48
+              },
+              {
+                "name": "Fasteners",
+                "priceChangePct": -0.9603,
+                "nParts": 49
+              },
+              {
+                "name": "Body Stampings",
+                "priceChangePct": -1.513,
+                "nParts": 48
+              },
+              {
+                "name": "Sensors",
+                "priceChangePct": -1.5409,
+                "nParts": 48
+              },
+              {
+                "name": "Interior Trim",
+                "priceChangePct": -1.5867,
+                "nParts": 48
+              }
+            ]
+          },
+          "byCategory": [
+            {
+              "name": "Electrical",
+              "priceChangePct": 0.759,
+              "nParts": 48
+            },
+            {
+              "name": "HVAC",
+              "priceChangePct": 0.4834,
+              "nParts": 48
+            },
+            {
+              "name": "Powertrain",
+              "priceChangePct": 0.2892,
+              "nParts": 48
+            },
+            {
+              "name": "Lighting",
+              "priceChangePct": 0.1795,
+              "nParts": 48
+            },
+            {
+              "name": "Chassis",
+              "priceChangePct": -0.449,
+              "nParts": 47
+            },
+            {
+              "name": "Braking",
+              "priceChangePct": -0.8831,
+              "nParts": 48
+            },
+            {
+              "name": "Fasteners",
+              "priceChangePct": -0.9603,
+              "nParts": 49
+            },
+            {
+              "name": "Body Stampings",
+              "priceChangePct": -1.513,
+              "nParts": 48
+            },
+            {
+              "name": "Sensors",
+              "priceChangePct": -1.5409,
+              "nParts": 48
+            },
+            {
+              "name": "Interior Trim",
+              "priceChangePct": -1.5867,
+              "nParts": 48
+            }
+          ],
+          "explanation": "If conflict severity 5/5 materialises through fx, commodity:energy, commodity:steel, freight, insurance, the model estimates a portfolio-wide -0.52% price move at horizon 6 month(s). Largest upward pressure: Electrical (+0.76%). Largest downward pressure: Interior Trim (-1.59%).",
+          "causalityNote": "Counterfactual shock on model features \u2014 association, not proof of causation. Treat as directional until confirmed on real PO history."
+        }
+      }
+    ],
+    "forecastDrivers": {
+      "available": true,
+      "periodLabel": "May 2026 \u2192 Jun 2026",
+      "portfolioMomPct": 0.8375,
+      "summary": "From May 2026 to Jun 2026, average part prices moved +0.84%. The largest mediator move was Geopolitical risk index (z-score) (down). Sources are listed per driver \u2014 verify offline fallbacks before external use.",
+      "drivers": [
+        {
+          "id": "gpr_z_lag0",
+          "label": "Geopolitical risk index (z-score)",
+          "direction": "down",
+          "magnitude": 0.51476,
+          "currentValue": 0.63196,
+          "priorValue": 1.14672,
+          "source": "gpr-cache",
+          "isReal": true,
+          "explanation": "Geopolitical risk index (z-score) moved -0.5148 from May 2026 to Jun 2026, implying downward price pressure through the verified gpr-cache series."
+        },
+        {
+          "id": "cmd_aluminium_ret_lag2_x_mat",
+          "label": "Aluminium \u00d7 material intensity",
+          "direction": "up",
+          "magnitude": 0.10258,
+          "currentValue": 0.06456,
+          "priorValue": -0.03802,
+          "source": "offline-fallback",
+          "isReal": false,
+          "explanation": "Aluminium \u00d7 material intensity moved +0.1026 from May 2026 to Jun 2026, implying upward price pressure through the offline-fallback offline-fallback series."
+        },
+        {
+          "id": "fx_eurinr_ret_1m",
+          "label": "EUR/INR (1m return)",
+          "direction": "down",
+          "magnitude": 0.03843,
+          "currentValue": -0.01985,
+          "priorValue": 0.01859,
+          "source": "ecb-cache",
+          "isReal": true,
+          "explanation": "EUR/INR (1m return) moved -0.0384 from May 2026 to Jun 2026, implying downward price pressure through the verified ecb-cache series."
+        },
+        {
+          "id": "freight_ret_1m",
+          "label": "Container freight (1m return)",
+          "direction": "up",
+          "magnitude": 0.03267,
+          "currentValue": -0.01318,
+          "priorValue": -0.04585,
+          "source": "offline-fallback",
+          "isReal": false,
+          "explanation": "Container freight (1m return) moved +0.0327 from May 2026 to Jun 2026, implying upward price pressure through the offline-fallback offline-fallback series."
+        },
+        {
+          "id": "fx_usdinr_ret_1m",
+          "label": "USD/INR (1m return)",
+          "direction": "down",
+          "magnitude": 0.02799,
+          "currentValue": -0.00653,
+          "priorValue": 0.02146,
+          "source": "ecb-cache",
+          "isReal": true,
+          "explanation": "USD/INR (1m return) moved -0.0280 from May 2026 to Jun 2026, implying downward price pressure through the verified ecb-cache series."
+        },
+        {
+          "id": "cmd_steel_ret_1m",
+          "label": "Steel benchmark (1m return)",
+          "direction": "up",
+          "magnitude": 0.01795,
+          "currentValue": 0.04051,
+          "priorValue": 0.02256,
+          "source": "offline-fallback",
+          "isReal": false,
+          "explanation": "Steel benchmark (1m return) moved +0.0180 from May 2026 to Jun 2026, implying upward price pressure through the offline-fallback offline-fallback series."
+        },
+        {
+          "id": "cmd_copper_ret_lag2_x_mat",
+          "label": "Copper \u00d7 material intensity",
+          "direction": "down",
+          "magnitude": 0.01769,
+          "currentValue": -0.01986,
+          "priorValue": -0.00217,
+          "source": "offline-fallback",
+          "isReal": false,
+          "explanation": "Copper \u00d7 material intensity moved -0.0177 from May 2026 to Jun 2026, implying downward price pressure through the offline-fallback offline-fallback series."
+        }
+      ],
+      "note": "Drivers are month-over-month feature changes, not a formal SHAP decomposition. They show which verified inputs moved, not a guaranteed attribution of the forecast delta."
+    }
+  },
+  "available": true
+}

@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import pickle
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -40,13 +42,27 @@ from .fx_scenario import (
     run_fx_scenarios,
     validate_fx_learning,
 )
+from .geo_nlp import maybe_enrich_from_disk
+from .geo_hitl import build_hitl_payload
+from .geo_scenario import event_study, mediation_diagnostics, run_geo_scenarios
+from .geopolitical import GeoBundle, geo_provenance, load_geo_bundle
 from .hierarchy import exposure_summary
+from .drift import compute_drift, load_ops_metrics, save_ops_metrics
+from .feature_selection import (
+    apply_selection,
+    load_selection,
+    save_selection,
+    select_features,
+)
+from .model_registry import load_model_version, model_version_id, save_model_version
 from .modeling import train_global_xgboost
 from .logging_utils import configure_logging, get_logger, log_run_banner
+from .po_ingest import build_panel_from_purchase_orders, resolve_sku_mode
 from .preprocessing import (
     PreprocessingReport,
     build_features,
     clean_panel,
+    get_feature_columns,
     save_features,
 )
 from .report import render_report
@@ -59,13 +75,17 @@ STAGES = (
     "source",
     "generate",
     "preprocess",
+    "select",
     "evaluate",
     "forecast",
     "fxscenario",
+    "geoscenario",
     "futuretest",
     "validate",
     "report",
     "export",
+    "retrain",
+    "score",
     "all",
 )
 
@@ -77,9 +97,11 @@ class PipelineState:
         self.config = config
         self.macro: Optional[MacroSeries] = None
         self.fx: Optional[Dict[str, FxSeries]] = None
+        self.geo: Optional[GeoBundle] = None
         self.fx_scenarios: Optional[List[Dict[str, object]]] = None
         self.fx_analysis: Optional[Dict[str, object]] = None
         self.fx_learning: Optional[Dict[str, object]] = None
+        self.geo_analysis: Optional[Dict[str, object]] = None
         self.rollups: Optional[Dict[str, List[Dict[str, object]]]] = None
         self.panel: Optional[pd.DataFrame] = None
         self.clean: Optional[pd.DataFrame] = None
@@ -90,6 +112,11 @@ class PipelineState:
         self.forecasts: Optional[pd.DataFrame] = None
         self.validation: Optional[Dict[str, object]] = None
         self.future_test: Optional[Dict[str, object]] = None
+        self.po_ingest_report: Optional[Dict[str, object]] = None
+        self.selection_report: Optional[Dict[str, object]] = None
+        self.selected_features: Optional[List[str]] = None
+        self.drift_report: Optional[Dict[str, object]] = None
+        self.ops_meta: Optional[Dict[str, object]] = None
         self.versions: Dict[str, str] = {}
 
     def require_future_test(self) -> Optional[Dict[str, object]]:
@@ -106,6 +133,35 @@ class PipelineState:
             if path.is_file():
                 self.fx_analysis = json.loads(path.read_text(encoding="utf-8"))
         return self.fx_analysis
+
+    def require_geo_analysis(self) -> Optional[Dict[str, object]]:
+        if self.geo_analysis is None:
+            path = self.config.paths.data_processed / "geo_analysis.json"
+            if path.is_file():
+                self.geo_analysis = json.loads(path.read_text(encoding="utf-8"))
+        return self.geo_analysis
+
+    def require_po_ingest_report(self) -> Optional[Dict[str, object]]:
+        """PO → panel provenance from this run or a prior generate stage."""
+        if self.po_ingest_report is None:
+            path = self.config.paths.data_processed / "po_ingest_report.json"
+            if path.is_file():
+                self.po_ingest_report = json.loads(path.read_text(encoding="utf-8"))
+        return self.po_ingest_report
+
+    def require_selection(self) -> Optional[Dict[str, object]]:
+        if self.selection_report is None:
+            self.selection_report = load_selection(self.config)
+        if self.selected_features is None and self.features is not None:
+            self.selected_features = apply_selection(self.features, self.selection_report)
+        return self.selection_report
+
+    def resolve_feature_columns(self) -> List[str]:
+        features = self.require_features()
+        self.require_selection()
+        if self.selected_features:
+            return list(self.selected_features)
+        return get_feature_columns(features)
 
     def load_cached_predictions(self) -> None:
         """Populate holdout/backtest/forecasts from disk if not already in memory.
@@ -148,6 +204,13 @@ class PipelineState:
             self.fx = load_fx_series(self.config, self.require_macro().values.index)
         return self.fx
 
+    def require_geo(self) -> GeoBundle:
+        """Geopolitical mediators and event calendar covering the macro window."""
+        if self.geo is None:
+            maybe_enrich_from_disk(self.config)
+            self.geo = load_geo_bundle(self.config, self.require_macro().values.index)
+        return self.geo
+
     def require_panel(self) -> pd.DataFrame:
         if self.panel is None:
             self.panel = load_panel(self.config)
@@ -166,7 +229,7 @@ class PipelineState:
 
 
 def stage_source(state: PipelineState) -> None:
-    """Fetch both real anchors - the BLS price index and ECB FX rates."""
+    """Fetch real anchors: BLS price index, ECB FX, and geo mediators."""
     logger.info("=== STAGE: source ===")
     macro = state.require_macro()
     write_dataset_audit(state.config, macro)
@@ -184,29 +247,74 @@ def stage_source(state: PipelineState) -> None:
             "results in this run are not grounded in real rates"
         )
 
+    geo = state.require_geo()
+    geo_prov = geo_provenance(geo)
+    if not geo_prov.get("allReal"):
+        logger.warning(
+            "one or more geo mediators used an offline fallback; see geo provenance"
+        )
+
 
 def stage_generate(state: PipelineState) -> None:
-    """Generate and persist the hierarchical price panel."""
+    """Build the hierarchical price panel from POs or the synthetic generator."""
     logger.info("=== STAGE: generate ===")
-    macro = state.require_macro()
-    fx = state.require_fx()
-    state.panel = generate_price_panel(state.config, macro, fx)
-    save_panel(state.config, state.panel)
+    config = state.config
+    mode = resolve_sku_mode(config)
+    report_path = config.paths.data_processed / "po_ingest_report.json"
+    config.paths.data_processed.mkdir(parents=True, exist_ok=True)
+
+    if mode == "purchase_orders":
+        logger.info("SKU source: purchase orders → monthly panel")
+        state.panel, ingest = build_panel_from_purchase_orders(config)
+        state.po_ingest_report = ingest.as_dict()
+    else:
+        logger.info("SKU source: synthetic panel (anchored on macro + FX + geo)")
+        macro = state.require_macro()
+        fx = state.require_fx()
+        geo = state.require_geo()
+        state.panel = generate_price_panel(config, macro, fx, geo=geo)
+        state.po_ingest_report = {
+            "skuLayer": "synthetic",
+            "isReal": False,
+            "sourcePath": None,
+            "nParts": int(state.panel["part_id"].nunique()),
+            "nMonths": int(state.panel["month"].nunique()),
+            "nPanelRows": int(len(state.panel)),
+            "warnings": [],
+        }
+
+    report_path.write_text(
+        json.dumps(state.po_ingest_report, indent=2, default=str),
+        encoding="utf-8",
+    )
+    save_panel(config, state.panel)
 
 
 def stage_preprocess(state: PipelineState) -> None:
-    """Clean the panel and engineer leak-free hierarchy and FX features."""
+    """Clean the panel and engineer leak-free hierarchy, FX and geo features."""
     logger.info("=== STAGE: preprocess ===")
     macro = state.require_macro()
     fx = state.require_fx()
+    geo = state.require_geo()
     panel = state.require_panel()
 
     state.prep_report = PreprocessingReport()
     state.clean = clean_panel(panel, state.config, state.prep_report)
     state.features = build_features(
-        state.clean, state.config, macro, state.prep_report, fx=fx
+        state.clean, state.config, macro, state.prep_report, fx=fx, geo=geo
     )
     save_features(state.config, state.features)
+
+
+def stage_select(state: PipelineState) -> None:
+    """Classify which parameters affect next-month predictions (monthly gate)."""
+    logger.info("=== STAGE: select ===")
+    features = state.require_features()
+    report = select_features(features, state.config)
+    save_selection(state.config, report)
+    state.selection_report = report.as_dict()
+    state.selected_features = list(report.selected)
+    state.prep_report.feature_columns = list(report.selected)
 
 
 def stage_evaluate(state: PipelineState) -> None:
@@ -214,9 +322,14 @@ def stage_evaluate(state: PipelineState) -> None:
     logger.info("=== STAGE: evaluate ===")
     features = state.require_features()
     assert state.clean is not None
+    feature_columns = state.resolve_feature_columns()
 
-    state.holdout = evaluate_holdout(features, state.clean, state.config)
-    state.backtest = rolling_origin_backtest(features, state.clean, state.config)
+    state.holdout = evaluate_holdout(
+        features, state.clean, state.config, feature_columns=feature_columns
+    )
+    state.backtest = rolling_origin_backtest(
+        features, state.clean, state.config, feature_columns=feature_columns
+    )
 
     out_dir = state.config.paths.data_processed
     state.holdout.to_csv(out_dir / "holdout_predictions.csv", index=False)
@@ -229,6 +342,7 @@ def stage_forecast(state: PipelineState) -> None:
     logger.info("=== STAGE: forecast ===")
     features = state.require_features()
     assert state.clean is not None
+    feature_columns = state.resolve_feature_columns()
 
     if state.backtest is None:
         backtest_path = state.config.paths.data_processed / "backtest_predictions.csv"
@@ -248,9 +362,50 @@ def stage_forecast(state: PipelineState) -> None:
         else {}
     )
     state.forecasts = generate_forward_forecasts(
-        features, state.clean, state.config, intervals
+        features,
+        state.clean,
+        state.config,
+        intervals,
+        feature_columns=feature_columns,
     )
     save_forecasts(state.config, state.forecasts)
+
+    # Register a version whenever a relevance gate has been applied (all / retrain).
+    if state.selection_report:
+        origin = features["month"].max()
+        horizons = list(range(1, state.config.modeling.forecast_horizon + 1))
+        model = train_global_xgboost(
+            features, state.config, origin, horizons, feature_columns=feature_columns
+        )
+        holdout_mape = _holdout_xgb_mape(state.holdout)
+        version = model_version_id(origin)
+        save_model_version(
+            state.config,
+            model,
+            selection=state.selection_report,
+            metrics={
+                "holdoutMape": holdout_mape,
+                "nSelectedFeatures": len(feature_columns),
+                "forecastHorizon": state.config.modeling.forecast_horizon,
+            },
+            version_id=version,
+        )
+        drift = compute_drift(
+            features, feature_columns, state.config, current_mape=holdout_mape
+        )
+        state.drift_report = drift
+        ops_meta = {
+            "lastRetrainAt": drift["asOf"],
+            "lastScoreAt": drift["asOf"],
+            "modelVersion": version,
+            "holdoutMape": holdout_mape,
+            "nSelectedFeatures": len(feature_columns),
+            "retrainCadence": state.config.ops.retrain_cadence,
+            "scoreCadence": state.config.ops.score_cadence,
+            "forecastHorizonMonths": state.config.modeling.forecast_horizon,
+        }
+        save_ops_metrics(state.config, ops_meta)
+        state.ops_meta = ops_meta
 
 
 def stage_fxscenario(state: PipelineState) -> None:
@@ -267,7 +422,10 @@ def stage_fxscenario(state: PipelineState) -> None:
 
     origin = features["month"].max()
     horizons = list(range(1, config.modeling.forecast_horizon + 1))
-    model = train_global_xgboost(features, config, origin, horizons)
+    feature_columns = state.resolve_feature_columns()
+    model = train_global_xgboost(
+        features, config, origin, horizons, feature_columns=feature_columns
+    )
 
     state.fx_scenarios = run_fx_scenarios(
         config, model, features, horizon=config.modeling.forecast_horizon
@@ -301,6 +459,52 @@ def stage_fxscenario(state: PipelineState) -> None:
     logger.info("wrote FX scenario analysis to %s", out_path)
 
 
+def stage_geoscenario(state: PipelineState) -> None:
+    """Shock freight / GPR / duty, event studies, and mediation diagnostics."""
+    logger.info("=== STAGE: geoscenario ===")
+    config = state.config
+    features = state.require_features()
+    assert state.clean is not None
+    geo = state.require_geo()
+
+    origin = features["month"].max()
+    horizons = list(range(1, config.modeling.forecast_horizon + 1))
+    feature_columns = state.resolve_feature_columns()
+    model = train_global_xgboost(
+        features, config, origin, horizons, feature_columns=feature_columns
+    )
+
+    scenarios = run_geo_scenarios(
+        config, model, features, horizon=config.modeling.forecast_horizon
+    )
+    mediation = mediation_diagnostics(features, state.clean)
+    studies = event_study(state.clean, geo.events, window=6)
+    provenance = geo_provenance(geo)
+    hitl = build_hitl_payload(
+        geo.events,
+        provenance.get("mediators", []),
+        model,
+        features,
+        state.clean,
+        config,
+        config.modeling.forecast_horizon,
+    )
+
+    payload = {
+        "scenarios": scenarios,
+        "mediation": mediation,
+        "eventStudies": studies,
+        "provenance": provenance,
+        "hitl": hitl,
+        "available": bool(scenarios) or bool(studies) or hitl.get("available"),
+    }
+    state.geo_analysis = payload
+
+    out_path = config.paths.data_processed / "geo_analysis.json"
+    out_path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    logger.info("wrote geo scenario analysis to %s", out_path)
+
+
 def stage_futuretest(state: PipelineState) -> None:
     """Forecast N months blind, then reveal them and score per horizon.
 
@@ -312,8 +516,11 @@ def stage_futuretest(state: PipelineState) -> None:
     macro = state.require_macro()
 
     fx = state.require_fx()
-    payload = run_future_test(state.config, macro, fx=fx)
-    payload["targetModeComparison"] = compare_target_modes(state.config, macro, fx=fx)
+    geo = state.require_geo()
+    payload = run_future_test(state.config, macro, fx=fx, geo=geo)
+    payload["targetModeComparison"] = compare_target_modes(
+        state.config, macro, fx=fx, geo=geo
+    )
     state.future_test = payload
 
     out_path = state.config.paths.data_processed / "future_test.json"
@@ -371,6 +578,14 @@ def stage_export(state: PipelineState) -> None:
             "--stage evaluate and --stage forecast first"
         )
 
+    if state.drift_report is None:
+        drift_path = config.paths.data_processed / "drift_report.json"
+        if drift_path.is_file():
+            state.drift_report = json.loads(drift_path.read_text(encoding="utf-8"))
+    if state.ops_meta is None:
+        state.ops_meta = load_ops_metrics(config)
+    state.require_selection()
+
     payload = build_dashboard_payload(
         config=config,
         macro=macro,
@@ -382,9 +597,178 @@ def stage_export(state: PipelineState) -> None:
         versions=state.versions or {},
         future_test=state.require_future_test(),
         fx_analysis=state.require_fx_analysis(),
-        feature_columns=state.prep_report.feature_columns,
+        geo_analysis=state.require_geo_analysis(),
+        feature_columns=state.selected_features or state.prep_report.feature_columns,
+        po_ingest=state.require_po_ingest_report(),
+        feature_selection=state.selection_report,
+        drift=state.drift_report,
+        ops=state.ops_meta,
     )
     export_dashboard(config, payload)
+
+
+def _holdout_xgb_mape(holdout: Optional[pd.DataFrame]) -> Optional[float]:
+    if holdout is None or holdout.empty:
+        return None
+    comparison = compare_on_common_parts(holdout)
+    if comparison.empty:
+        return None
+    xgb = comparison[comparison["model"] == "xgboost"]
+    if xgb.empty:
+        return float(comparison.sort_values("mape")["mape"].iloc[0])
+    return float(xgb["mape"].iloc[0])
+
+
+def stage_retrain(state: PipelineState) -> None:
+    """Monthly ops loop: source → select → evaluate → forecast → register model."""
+    logger.info("=== STAGE: retrain (monthly) ===")
+    stage_source(state)
+    # Keep existing panel unless missing
+    try:
+        state.require_panel()
+    except FileNotFoundError:
+        stage_generate(state)
+    stage_preprocess(state)
+    stage_select(state)
+    stage_evaluate(state)
+    stage_forecast(state)
+
+    features = state.require_features()
+    feature_columns = state.resolve_feature_columns()
+    origin = features["month"].max()
+    horizons = list(range(1, state.config.modeling.forecast_horizon + 1))
+    model = train_global_xgboost(
+        features, state.config, origin, horizons, feature_columns=feature_columns
+    )
+
+    holdout_mape = _holdout_xgb_mape(state.holdout)
+    drift = compute_drift(
+        features, feature_columns, state.config, current_mape=holdout_mape
+    )
+    state.drift_report = drift
+
+    version = model_version_id(origin)
+    metrics = {
+        "holdoutMape": holdout_mape,
+        "nSelectedFeatures": len(feature_columns),
+        "forecastHorizon": state.config.modeling.forecast_horizon,
+    }
+    save_model_version(
+        state.config,
+        model,
+        selection=state.selection_report,
+        metrics=metrics,
+        version_id=version,
+    )
+
+    ops_meta = {
+        "lastRetrainAt": drift["asOf"],
+        "lastScoreAt": drift["asOf"],
+        "modelVersion": version,
+        "holdoutMape": holdout_mape,
+        "nSelectedFeatures": len(feature_columns),
+        "retrainCadence": state.config.ops.retrain_cadence,
+        "scoreCadence": state.config.ops.score_cadence,
+        "forecastHorizonMonths": state.config.modeling.forecast_horizon,
+    }
+    save_ops_metrics(state.config, ops_meta)
+    state.ops_meta = ops_meta
+
+    stage_export(state)
+
+
+def stage_score(state: PipelineState) -> None:
+    """Weekly ops loop: refresh mediators, reuse frozen selection + model, forecast."""
+    logger.info("=== STAGE: score (weekly) ===")
+    stage_source(state)
+    stage_preprocess(state)
+
+    selection = load_selection(state.config)
+    if selection is None:
+        logger.warning("no frozen selection found; running select before score")
+        stage_select(state)
+        selection = state.selection_report
+    else:
+        state.selection_report = selection
+        state.selected_features = apply_selection(state.require_features(), selection)
+
+    feature_columns = state.resolve_feature_columns()
+    features = state.require_features()
+    assert state.clean is not None
+
+    # Prefer registered model; fall back to a light refit on selected columns.
+    try:
+        model, meta = load_model_version(state.config)
+        logger.info("scoring with registered model %s", meta.get("versionId"))
+        origin = features["month"].max()
+        origin_rows = features[features["month"] == origin]
+        horizon = state.config.modeling.forecast_horizon
+        if horizon not in model.models:
+            raise KeyError(f"registered model missing horizon {horizon}")
+        point = model.predict(origin_rows, horizon)
+        band = {"lower_ratio": 0.95, "upper_ratio": 1.05}
+        if state.backtest is None:
+            bt_path = state.config.paths.data_processed / "backtest_predictions.csv"
+            if bt_path.is_file():
+                state.backtest = pd.read_csv(
+                    bt_path, parse_dates=["target_month", "origin_month"]
+                )
+        if state.backtest is not None:
+            intervals = empirical_prediction_intervals(state.backtest, state.config)
+            if horizon in intervals:
+                band = intervals[horizon]
+        state.forecasts = pd.DataFrame(
+            {
+                "model": "xgboost",
+                "part_id": origin_rows["part_id"].to_numpy(),
+                "horizon": horizon,
+                "target_month": origin + pd.DateOffset(months=horizon),
+                "prediction": point,
+                "lower": point * band["lower_ratio"],
+                "upper": point * band["upper_ratio"],
+                "origin_month": origin,
+            }
+        )
+        # Keep naive comparator for the dashboard
+        from .modeling import seasonal_naive_forecast
+
+        naive = seasonal_naive_forecast(
+            state.clean, origin, list(range(1, horizon + 1))
+        )
+        naive["model"] = "seasonal_naive"
+        naive["origin_month"] = origin
+        naive["lower"] = naive["prediction"]
+        naive["upper"] = naive["prediction"]
+        state.forecasts = pd.concat([state.forecasts, naive], ignore_index=True)
+        save_forecasts(state.config, state.forecasts)
+        version = str(meta.get("versionId") or "unknown")
+    except (FileNotFoundError, KeyError, pickle.UnpicklingError) as exc:
+        logger.warning("could not score from registry (%s); refitting", exc)
+        if state.holdout is None:
+            stage_evaluate(state)
+        stage_forecast(state)
+        version = model_version_id(features["month"].max())
+
+    prior = load_ops_metrics(state.config) or {}
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    ops_meta = {
+        **prior,
+        "lastScoreAt": now,
+        "modelVersion": version,
+        "nSelectedFeatures": len(feature_columns),
+        "scoreCadence": state.config.ops.score_cadence,
+        "forecastHorizonMonths": state.config.modeling.forecast_horizon,
+    }
+    save_ops_metrics(state.config, ops_meta)
+    state.ops_meta = ops_meta
+
+    if state.holdout is None:
+        holdout_path = state.config.paths.data_processed / "holdout_predictions.csv"
+        if holdout_path.is_file():
+            state.holdout = pd.read_csv(
+                holdout_path, parse_dates=["target_month", "origin_month"]
+            )
+    stage_export(state)
 
 
 def stage_report(state: PipelineState) -> None:
@@ -489,13 +873,17 @@ STAGE_FUNCTIONS = {
     "source": stage_source,
     "generate": stage_generate,
     "preprocess": stage_preprocess,
+    "select": stage_select,
     "evaluate": stage_evaluate,
     "forecast": stage_forecast,
     "fxscenario": stage_fxscenario,
+    "geoscenario": stage_geoscenario,
     "futuretest": stage_futuretest,
     "validate": stage_validate,
     "report": stage_report,
     "export": stage_export,
+    "retrain": stage_retrain,
+    "score": stage_score,
 }
 
 
@@ -507,9 +895,27 @@ def run_pipeline(config: Config, stage: str) -> None:
 
     np.random.seed(config.project.random_seed)
 
-    stages: List[str] = (
-        list(STAGE_FUNCTIONS) if stage == "all" else [stage]
-    )
+    if stage == "all":
+        stages = [
+            "source",
+            "generate",
+            "preprocess",
+            "select",
+            "evaluate",
+            "forecast",
+            "fxscenario",
+            "geoscenario",
+            "futuretest",
+            "validate",
+            "report",
+            "export",
+        ]
+    elif stage == "retrain":
+        stages = ["retrain"]
+    elif stage == "score":
+        stages = ["score"]
+    else:
+        stages = [stage]
 
     started = time.time()
     for name in stages:

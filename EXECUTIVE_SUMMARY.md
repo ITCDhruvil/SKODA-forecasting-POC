@@ -96,37 +96,41 @@ credibility than the limitation itself.
 3. **Prediction intervals are measurably optimistic** — 67% empirical coverage against an 80% nominal target.
 4. **Tree models cannot extrapolate.** Mitigated by predicting returns rather than levels, but it still shows as saturation in FX shock scenarios.
 5. **No changepoint detection.** Structural breaks are survived with degraded accuracy, not detected.
-6. **Only two exogenous drivers.** Commodity spot prices, freight rates and vehicle volumes are catalogued but not built.
+6. **Exogenous drivers beyond FX/BLS are now live for geo mediators** (commodities, freight, GPR, events). Vehicle volumes and sanctions/FTA engines remain roadmap. Part-level prices are still synthetic.
 
 ---
 
 ## 6. The parameter roadmap
 
-**39 drivers catalogued across 10 groups. 7 are implemented.**
-
-| Group | Drivers | Live |
-|---|---|---|
-| Currency & financial | 4 | 1 |
-| Commodities & raw materials | 5 | 0 |
-| Geopolitical & trade | 5 | 0 |
-| Logistics & supply chain | 4 | 0 |
-| Macro-economic | 4 | 1 |
-| Demand & programme | 4 | 2 |
-| Supplier | 4 | 1 |
-| Regulatory & compliance | 3 | 0 |
-| Part & engineering | 3 | 1 |
-| Commercial | 3 | 1 |
+**39 drivers catalogued across 10 groups. Status is verified against live features
+at export time** (commodities, freight, GPR, tariffs, chokepoints flip to
+implemented when their feature prefixes are present).
 
 Each entry carries its impact channel, named data providers, update frequency,
 publication latency, and an integration effort grade. **48 of the referenced
 sources are free.**
 
-Highest-value additions, in order:
+Highest-value additions, in order (now wired into the POC):
 
-1. **Commodity spot prices** (steel, aluminium, copper) — decouples the commodity channel from FX and resolves most of the identification problem
-2. **Container freight rates** — direct landed-cost component, free daily source available
-3. **Customs duty notifications** — discrete, dated, knowable in advance
-4. **Geopolitical risk index** — upstream driver that moves currency, energy and freight together
+1. **Commodity spot prices** (steel, aluminium, copper) — Pink Sheet when reachable; offline fallback otherwise
+2. **Container freight rates** — deterministic path with Red Sea spike (swap for FBX when licensed)
+3. **Customs duty / event calendar** — curated `data/raw/geo_events.csv` with decay features
+4. **Geopolitical risk index** — Caldara–Iacoviello GPR (GPT/GPA) + chokepoint intensity
+
+**Framework claim:** geopolitics moves mediators; mediator × exposure produces
+the part-level effect. See dashboard **Geo Risk** view (`--stage geoscenario`)
+for event studies, mediation diagnostics, and counterfactuals. NLP severity is
+an optional enrichment of the same event schema, not a parallel model.
+
+**What the evidence currently supports.** The mediation direction holds: the
+GPR–price correlation shrinks from 0.212 to 0.169 once mediators are controlled.
+The exposure half does not yet. A three-arm ablation (0 / 30 / 107 geo features)
+shows the model's response to a freight shock does not rank categories by their
+true freight exposure at any feature count, and geo features cost roughly 6%
+relative holdout MAPE. This is not a detectability limit — the freight signal
+runs at SNR 7.0 and correlates only −0.49 with the time trend — so treat
+channel-level scenarios as directional and do not present part-level
+geopolitical attribution as validated.
 
 ---
 

@@ -31,6 +31,42 @@ sourcing:
   # still runs offline. Annualised drift, applied monthly in log space.
   offline_annual_inflation: 0.035
 
+# --- Geopolitical mediators & event calendar --------------------------------
+# Geopolitics is modelled as an upstream layer: events and GPR move FX,
+# freight, commodities and duty; those mediators x exposure reach part price.
+# See src/price_forecasting/geo_schema.py for the shared vocabulary.
+geo:
+  enabled: true
+  cache_ttl_days: 7
+  events_filename: geo_events.csv
+  gpr_url: https://www.matteoiacoviello.com/gpr_files/data_gpr_export.xls
+  # World Bank rotates the Pink Sheet doc hash monthly; discover from the
+  # commodity-markets page when this URL 404s.
+  pink_sheet_url: https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx
+  pink_sheet_discover_url: https://www.worldbank.org/en/research/commodity-markets
+  # Freight: drop a CSV (month,value) or set freight_url to a CSV endpoint.
+  # Empty URL tries FRED Transportation Services Index: Freight (TSIFRGHT), then offline.
+  freight_filename: freight_monthly.csv
+  freight_url: ""
+  # Sparse feature mode: keep mediators + exposure interactions that identify
+  # cross-sectionally and drop the near-duplicate lag ladder. Evaluation shows
+  # this costs nothing in holdout MAPE against the 107-feature 'full' set while
+  # leaving 30 individually interpretable columns.
+  feature_mode: sparse   # sparse | full
+  # Lags for mediator pass-through (contract cadence), months
+  mediator_lags: [2, 3]
+  mediator_return_periods: [1, 3]
+  gpr_lags: [0, 1]
+  event_decay_half_life_months: 3.0
+  # DGP: how strongly real mediator moves enter synthetic part prices
+  commodity_pass_through: 0.35
+  freight_pass_through: 0.12
+  gpr_direct_pass_through: 0.02   # residual direct geo effect after mediators
+  # Scenario shocks for the geoscenario stage
+  scenario_freight_shocks: [-20, -10, 10, 20, 40]
+  scenario_gpr_shocks: [25, 50, 100]
+  scenario_duty_shocks: [5, 10]
+
 # --- Foreign exchange -------------------------------------------------------
 # Parts are invoiced in the assembly plant's currency (INR), but a large share
 # of input cost is not. Two channels, two rates:
@@ -61,7 +97,16 @@ fx:
   # modulation. Suppliers absorb some of it in margin.
   base_pass_through: 0.55
 
-# --- Synthetic SKU panel ----------------------------------------------------
+# --- SKU / part-price source ------------------------------------------------
+# Production path: drop monthly PO / invoice lines at data/raw/purchase_orders.csv
+# (see src/price_forecasting/po_ingest.py for columns). mode=auto uses that file
+# when present; otherwise the synthetic generator runs (demo default).
+sku:
+  mode: auto   # auto | synthetic | purchase_orders
+  purchase_orders_filename: purchase_orders.csv
+  panel_filename: parts_prices.csv
+
+# --- Synthetic SKU panel (used when sku.mode is synthetic / auto without PO) -
 generation:
   # 6 projects x 10 categories = 60 combinations; ~8 parts each. Enough that a
   # vendor supplying several categories on one programme actually appears in the
@@ -97,12 +142,14 @@ preprocessing:
   # ladder of lags and let the model find the delay per category.
   fx_lags: [1, 2, 3, 4, 6]
   fx_return_periods: [1, 3, 6, 12]
+  # Geo / mediator lags mirror config.geo but can be overridden here if needed.
+  # When absent, preprocessing falls back to config.geo.*
 
 # --- Models -----------------------------------------------------------------
 modeling:
-  forecast_horizon: 6         # months forecast beyond end of history
-  validation_months: 2        # final months held out entirely
-  test_months: 6              # evaluation window before validation
+  forecast_horizon: 1         # next-month price (ops loop); not a 6-month path
+  validation_months: 1        # final month held out entirely
+  test_months: 3              # evaluation window before validation
   # 'log_return' or 'level'. Trees cannot extrapolate: with 'level' every
   # prediction is capped by the largest price seen in training, so on an
   # upward-trending series the model systematically undershoots and the bias
@@ -124,14 +171,36 @@ modeling:
     reg_lambda: 1.0
     n_jobs: 4
 
+# --- Ops loop (monthly retrain / weekly score) ------------------------------
+# Catalogue all drivers → classify which affect prices → monthly retrain on the
+# selected set → weekly score that publishes a 1-month-ahead forecast.
+ops:
+  retrain_cadence: monthly
+  score_cadence: weekly
+  mape_drift_alert_pp: 0.5          # alert if holdout MAPE worsens by this many pp
+  psi_alert_threshold: 0.25         # population-stability index on selected features
+  feature_selection:
+    top_k: 25
+    min_ablation_lift_pct: 0.05     # keep group if dropping it hurts MAPE by ≥ this
+    run_ablation: true
+    always_keep_prefixes:
+      - price_lag_
+      - fx_
+      - cmd_matched
+      - freight_ret
+
 # --- Evaluation -------------------------------------------------------------
 evaluation:
   backtest_folds: 3
-  backtest_horizon: 3         # months predicted per fold
+  backtest_horizon: 1         # months predicted per fold (matches ops horizon)
   prediction_interval: 0.80   # empirical PI coverage for the ML model
+  # Widen empirical residual quantiles until in-sample residual coverage meets
+  # the nominal rate (conformal-style inflate). 1.0 = raw quantiles.
+  interval_coverage_target: 0.80
+  interval_max_inflate: 3.0
   # Simulated-future test: generate this many extra months, hide them, forecast
-  # them blind, then reveal and score. Gives a per-horizon error rate.
-  future_test_months: 6
+  # them blind, then reveal and score. Kept short to match 1-month ops horizon.
+  future_test_months: 3
 
 # --- Visualisation ----------------------------------------------------------
 visualization:

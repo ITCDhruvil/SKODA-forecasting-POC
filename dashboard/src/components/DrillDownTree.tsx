@@ -114,7 +114,7 @@ export function DrillDownTree({
           <span className="w-24 text-right font-semibold">Current</span>
           <span className="w-24 text-right font-semibold">Forecast</span>
           <span className="w-20 text-right font-semibold">Change</span>
-          <span className="w-24 text-right font-semibold">Confidence</span>
+          <span className="w-40 text-right font-semibold">Confidence / Why</span>
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -284,7 +284,7 @@ function Row({
       >
         {formatSigned(changePct, 2)}
       </span>
-      <span className="w-24" />
+      <span className="w-40" />
     </button>
   );
 }
@@ -301,52 +301,138 @@ function PartRow({ part }: { part: TreePart }) {
       ? `${formatCurrency(part.lower, false)} – ${formatCurrency(part.upper, false)}`
       : null;
 
+  const [reasonOpen, setReasonOpen] = useState(false);
+
   return (
-    <div
-      className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-4 border-l-2 border-slate-200 bg-white py-2 pr-5 text-[12px]"
-      style={{ paddingLeft: 88 }}
-    >
-      <span className="flex min-w-0 flex-col">
-        <span className="flex items-center gap-2">
-          <span className="font-mono text-[11px] text-slate-500">{part.partId}</span>
-          {part.isAnomaly && (
-            <span
-              className="pill bg-red-50 text-red-700"
-              title={`Structural break: ${part.anomalyType.replace(/_/g, ' ')}`}
-            >
-              <IconAlert className="h-2.5 w-2.5" />
-              break
+    <>
+      <div
+        className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-4 border-l-2 border-slate-200 bg-white py-2 pr-5 text-[12px]"
+        style={{ paddingLeft: 88 }}
+      >
+        <span className="flex min-w-0 flex-col">
+          <span className="flex items-center gap-2">
+            <span className="font-mono text-[11px] text-slate-500">
+              {part.partId}
             </span>
+            {part.isAnomaly && (
+              <span
+                className="pill bg-red-50 text-red-700"
+                title={`Structural break: ${part.anomalyType.replace(/_/g, ' ')}`}
+              >
+                <IconAlert className="h-2.5 w-2.5" />
+                break
+              </span>
+            )}
+          </span>
+          <span className="truncate text-slate-600">{part.partName}</span>
+          {band && (
+            <span className="text-[10px] text-slate-400">80% interval: {band}</span>
           )}
         </span>
-        <span className="truncate text-slate-600">{part.partName}</span>
-        {band && (
-          <span className="text-[10px] text-slate-400">80% interval: {band}</span>
-        )}
-      </span>
-      <span className="w-24 text-right tabular-nums text-slate-600">
-        {formatCurrency(part.currentPrice, false)}
-      </span>
-      <span className="w-24 text-right font-medium tabular-nums text-slate-900">
-        {formatCurrency(part.forecastPrice, false)}
-      </span>
-      <span
-        className={clsx(
-          'w-20 text-right font-semibold tabular-nums',
-          part.changePct >= 0 ? 'text-red-600' : 'text-emerald-600',
-        )}
-      >
-        {formatSigned(part.changePct, 2)}
-      </span>
-      <span className="flex w-24 justify-end">
-        <span
-          className={clsx('pill', CONFIDENCE_STYLE[part.confidence.level])}
-          title={`Predicted move is ${part.confidence.signalToErrorRatio}x the model's typical ${part.confidence.expectedErrorPct}% error at this horizon`}
-        >
-          {part.confidence.level}
+        <span className="w-24 text-right tabular-nums text-slate-600">
+          {formatCurrency(part.currentPrice, false)}
         </span>
-      </span>
-    </div>
+        <span className="w-24 text-right font-medium tabular-nums text-slate-900">
+          {formatCurrency(part.forecastPrice, false)}
+        </span>
+        <span
+          className={clsx(
+            'w-20 text-right font-semibold tabular-nums',
+            part.changePct >= 0 ? 'text-red-600' : 'text-emerald-600',
+          )}
+        >
+          {formatSigned(part.changePct, 2)}
+        </span>
+        <span className="flex w-40 justify-end items-center gap-2">
+          <span
+            className={clsx('pill', CONFIDENCE_STYLE[part.confidence.level])}
+            title={`Predicted move is ${part.confidence.signalToErrorRatio}x the model's typical ${part.confidence.expectedErrorPct}% error at this horizon`}
+          >
+            {part.confidence.level}
+          </span>
+          <button
+            type="button"
+            onClick={() => setReasonOpen((o) => !o)}
+            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!part.reason?.available}
+            title={part.reason?.available ? 'Explain in simple language' : 'No reason available'}
+          >
+            {reasonOpen ? 'Hide' : 'Why?'}
+          </button>
+        </span>
+      </div>
+
+      {reasonOpen && part.reason?.available && (
+        <div
+          className="ml-0 mr-5 mt-1 rounded-lg border border-slate-200 bg-slate-50 px-5 py-3 text-[12px] text-slate-700"
+          style={{ paddingLeft: 20 + 2 * 44 }}
+        >
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            AI explanation — simple language
+          </div>
+          <p className="mt-1 text-[14px] font-medium leading-snug text-slate-900">
+            {part.reason.summary}
+          </p>
+          {part.reason.story && (
+            <p className="mt-2 text-[13px] leading-relaxed text-slate-700">{part.reason.story}</p>
+          )}
+          {part.reason.tip && (
+            <p className="mt-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-600">
+              <span className="font-semibold text-slate-800">What to do: </span>
+              {part.reason.tip}
+            </p>
+          )}
+
+          {part.reason.drivers.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Main reasons
+              </div>
+              {part.reason.drivers.slice(0, 4).map((d) => (
+                <div key={d.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-medium text-slate-800">{d.label}</div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={clsx(
+                          'pill text-[10px]',
+                          d.direction === 'up'
+                            ? 'bg-red-100 text-red-800'
+                            : d.direction === 'down'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-slate-100 text-slate-600',
+                        )}
+                      >
+                        {d.direction === 'up'
+                          ? 'pushes price up'
+                          : d.direction === 'down'
+                            ? 'pulls price down'
+                            : 'little effect'}
+                      </span>
+                      <span
+                        className={clsx(
+                          'pill text-[10px]',
+                          d.isReal ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700',
+                        )}
+                      >
+                        {d.isReal ? 'source checked' : 'backup data'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-1 text-[12px] leading-relaxed text-slate-600">
+                    {d.evidence}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {part.reason.causalityNote && (
+            <p className="mt-3 text-[11px] text-slate-500">{part.reason.causalityNote}</p>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 

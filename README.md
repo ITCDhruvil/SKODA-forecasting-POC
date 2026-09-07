@@ -29,19 +29,60 @@ Outputs land in:
 | `reports/report.md` | Full summary report with metrics and figures |
 | `reports/dataset_audit.md` | The dataset search and why it concluded as it did |
 | `reports/figures/` | Six PNG figures |
-| `data/raw/parts_prices.csv` | Generated price panel |
+| `data/raw/parts_prices.csv` | Generated (or PO-aggregated) price panel |
+| `data/raw/purchase_orders.csv` | Optional: real PO / invoice lines (`sku.mode=auto`) |
 | `data/processed/forecasts.csv` | Forward forecasts with intervals |
 
 Individual stages can be run alone — each caches its output:
 
 ```bash
 python -m price_forecasting.pipeline --stage source      # fetch BLS anchor
-python -m price_forecasting.pipeline --stage generate    # build the panel
+python -m price_forecasting.pipeline --stage generate    # panel (synthetic or PO)
 python -m price_forecasting.pipeline --stage preprocess  # clean + features
+python -m price_forecasting.pipeline --stage select      # relevance gate (monthly)
 python -m price_forecasting.pipeline --stage evaluate    # holdout + backtest
-python -m price_forecasting.pipeline --stage forecast    # forward forecasts
+python -m price_forecasting.pipeline --stage forecast    # next-month forecasts
+python -m price_forecasting.pipeline --stage fxscenario  # FX counterfactuals
+python -m price_forecasting.pipeline --stage geoscenario # geo mechanism + scenarios
 python -m price_forecasting.pipeline --stage report      # figures + report
+python -m price_forecasting.pipeline --stage retrain     # monthly ops: select→train→register
+python -m price_forecasting.pipeline --stage score       # weekly ops: refresh→predict
 ```
+
+## Ops loop (monthly retrain / weekly score)
+
+The product operating model is:
+
+1. **Catalogue** every price driver (`parameters.py`).
+2. **Classify** which engineered features affect next-month predictions (`--stage select`).
+3. **Retrain monthly** on the selected set (`--stage retrain`).
+4. **Score weekly** with frozen selection + registered model (`--stage score`), publishing a **1-month-ahead** forecast (`modeling.forecast_horizon: 1`).
+
+```bash
+python -m price_forecasting.pipeline --stage retrain   # monthly
+python -m price_forecasting.pipeline --stage score     # weekly
+```
+
+Artifacts: `data/processed/selected_features.json`, `drift_report.json`, `ops_metrics.json`, and `models/YYYY-MM/`.
+
+### Real purchase orders (near-product path)
+
+Drop monthly PO / invoice lines at `data/raw/purchase_orders.csv`. With
+`sku.mode: auto` (default), the generate stage aggregates them into the same
+panel schema the rest of the pipeline already uses. Required columns after
+alias normalisation: `part_id`, `unit_price`, and either `month` or
+`invoice_date`. See `src/price_forecasting/po_ingest.py` for accepted aliases.
+
+```bash
+# Build a small demo file from the current synthetic panel (does not activate PO mode)
+python scripts/make_sample_purchase_orders.py
+# Or install it as purchase_orders.csv (sku.mode=auto will pick it up):
+python scripts/make_sample_purchase_orders.py --install
+python -m price_forecasting.pipeline --stage generate
+```
+
+Set `sku.mode: purchase_orders` to fail loudly if the file is missing, or
+`synthetic` to always use the generator.
 
 ```bash
 python -m pytest tests/ -q
@@ -79,8 +120,9 @@ characteristics, the FX rates prevailing at purchase time, and the price:
 | **Category** | `category_code`, `category`, `material` |
 | **Part** | `part_id`, `complexity_tier`, `weight_kg`, `annual_part_volume` |
 | **FX** | `fx_eurinr`, `fx_usdinr` (rate at purchase) |
+| **Geo mediators** | commodity / freight / GPR / chokepoint features (see below) |
 | **Target** | `price` (INR) |
-| **Ground truth** | `true_eur_beta`, `true_usd_beta`, `true_fx_lag` — *excluded from features* |
+| **Ground truth** | `true_eur_beta`, `true_usd_beta`, `true_fx_lag`, `true_steel_beta`, `true_freight_beta`, `true_gpr_beta` — *excluded from features* |
 
 6 vehicle programmes (SKODA Kushaq/Slavia/Kylaq, VW Taigun/Virtus, plus the CKD
 SKODA Kodiaq as a deliberate high-FX-exposure outlier) × 20 tier-1 vendors ×
@@ -93,8 +135,47 @@ the vendor dimension carries real signal rather than noise.
 price[p,t] = base[p] × project_factor × vendor_factor
            × macro[t]              # REAL BLS index
            × fx_multiplier[p,t]    # REAL ECB rates, lagged & elasticity-weighted
+           × geo_multiplier[p,t]   # commodity + freight + residual GPR
            × seasonal × trend × noise × break
 ```
+
+### Geopolitical risk framework (hybrid)
+
+Geopolitics is modelled as an **upstream** layer, not a lone regressor:
+
+```
+events / GPR  →  FX · freight · commodities · duty  →  exposure  →  part price
+```
+
+Shared vocabulary lives in `src/price_forecasting/geo_schema.py`. The curated
+calendar is `data/raw/geo_events.csv`. Pipeline stages:
+
+| Stage | What it does |
+|---|---|
+| `source` | Fetch/cache commodities, freight proxy, GPR; load event calendar |
+| `preprocess` | Stationary mediator returns, lags, exposure interactions, event decays |
+| `geoscenario` | Counterfactuals + event studies + mediation diagnostic |
+| `export` | Writes `geoAnalysis` into `dashboard.json` (Geo Risk view) |
+
+**Live mediator sources (default path when network works):**
+
+| Mediator | Source |
+|---|---|
+| Steel / Al / Cu / Energy | World Bank Pink Sheet (`CMO-Historical-Data-Monthly.xlsx`); steel channel uses iron ore |
+| Freight | FRED Transportation Services Index — Freight (`TSIFRGHT`), or drop-in `freight_monthly.csv` |
+| GPR | Caldara–Iacoviello export |
+
+Offline fallbacks remain if a fetch fails; provenance flags each series. Force a
+freight refresh with `python scripts/fetch_freight_bdi.py`.
+
+Optional NLP enrichment (Phase 5): drop `data/raw/geo_headlines.csv` with
+`event_id,headline,tone` — severity is written onto the same `geo_events`
+schema via `nlp_severity`. Lexicon scoring of narratives runs automatically
+when `nlp_severity` is blank.
+
+**Causality honesty:** observational monthly data supports association and
+channel-consistent identification, not RCT-grade causality. Prefer dated
+events (tariff, Red Sea) for mechanism demos; continuous GPR for risk state.
 
 **Direct (EUR/INR — import invoicing).** The part or a sub-assembly is bought in
 euros. Scaled by vendor import dependency, damped by project localisation.

@@ -4,13 +4,14 @@ import { IconDatabase } from './Icons';
 /**
  * Always-visible statement of what is real and what is simulated.
  *
- * The macro trend comes from live BLS data; the per-part panel is synthetic.
- * Presenting simulated per-part accuracy without saying so would be the single
- * most misleading thing this dashboard could do, so the disclaimer is part of
- * the layout rather than buried in a docs page.
+ * The macro trend comes from live BLS data; the per-part panel is synthetic
+ * unless purchase-order ingest was used. Presenting simulated per-part accuracy
+ * without saying so would be the single most misleading thing this dashboard
+ * could do, so the disclaimer is part of the layout rather than buried in docs.
  */
 export function ProvenanceBanner({ data }: { data: DashboardData }) {
   const { provenance, meta } = data;
+  const fromPo = provenance.skuLayer === 'purchase_orders' || provenance.skuIsReal;
 
   return (
     <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3">
@@ -23,9 +24,19 @@ export function ProvenanceBanner({ data }: { data: DashboardData }) {
         </span>{' '}
         fetched via <span className="font-mono text-[11px]">{provenance.macroSource}</span>. The
         per-part price panel ({meta.nParts} SKUs across {meta.nCategories} categories) is{' '}
-        <span className="font-semibold text-amber-700">synthetic</span> &mdash; no public source
-        provides monthly prices per automotive SKU. Model rankings transfer; absolute error
-        figures on the synthetic panel do not.
+        {fromPo ? (
+          <>
+            <span className="font-semibold text-emerald-700">from purchase orders</span>{' '}
+            &mdash; monthly volume-weighted unit prices from invoice / PO lines.
+            Absolute error figures on this panel are meaningful for the covered SKUs.
+          </>
+        ) : (
+          <>
+            <span className="font-semibold text-amber-700">synthetic</span> &mdash; no public
+            source provides monthly prices per automotive SKU. Model rankings transfer;
+            absolute error figures on the synthetic panel do not.
+          </>
+        )}
         {provenance.extrapolatedMonths > 0 && (
           <>
             {' '}

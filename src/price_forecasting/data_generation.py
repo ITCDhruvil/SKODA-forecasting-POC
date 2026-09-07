@@ -37,6 +37,8 @@ import pandas as pd
 from .config import Config
 from .data_sourcing import MacroSeries
 from .fx import FxSeries
+from .geopolitical import GeoBundle, _CATEGORY_TO_CMD
+from .geo_schema import CATEGORY_MATERIAL_INTENSITY
 from .hierarchy import (
     CATEGORIES,
     CATEGORIES_BY_CODE,
@@ -209,6 +211,32 @@ def build_part_catalogue(config: Config, rng: np.random.Generator) -> pd.DataFra
                 "true_eur_beta": exposure.eur_beta,
                 "true_usd_beta": exposure.usd_beta,
                 "true_fx_lag": exposure.lag_months,
+                "true_steel_beta": round(
+                    float(
+                        config.geo.commodity_pass_through
+                        * CATEGORY_MATERIAL_INTENSITY.get(category.code, 0.5)
+                        * (1.0 - vendor.margin_absorption)
+                    ),
+                    6,
+                ),
+                "true_freight_beta": round(
+                    float(
+                        config.geo.freight_pass_through
+                        * vendor.import_dependency
+                        * (1.0 - 0.7 * project.localisation)
+                        * (1.0 - vendor.margin_absorption)
+                    ),
+                    6,
+                ),
+                "true_gpr_beta": round(
+                    float(
+                        config.geo.gpr_direct_pass_through
+                        * vendor.import_dependency
+                        * (1.0 - vendor.margin_absorption)
+                    ),
+                    6,
+                ),
+                "commodity_channel": _CATEGORY_TO_CMD.get(category.code, "steel"),
                 "drift": float(rng.normal(gen.drift_mu, gen.drift_sigma)),
             }
         )
@@ -232,11 +260,53 @@ def build_part_catalogue(config: Config, rng: np.random.Generator) -> pd.DataFra
 # --------------------------------------------------------------------------- #
 
 
+def _lagged_cumulative(path: np.ndarray, lag: int) -> np.ndarray:
+    """Shift a cumulative log path forward by ``lag`` months (pre-lag = 0)."""
+    n = len(path)
+    shifted = np.zeros(n, dtype=float)
+    if lag < n:
+        shifted[lag:] = path[: n - lag]
+    return shifted
+
+
+def _mediator_multiplier(
+    record: Dict[str, object],
+    geo: Optional[GeoBundle],
+    months: pd.DatetimeIndex,
+) -> np.ndarray:
+    """Commodity + freight + residual GPR effect for one part."""
+    n = len(months)
+    if geo is None:
+        return np.ones(n, dtype=float)
+
+    channel = str(record.get("commodity_channel") or "steel")
+    if channel == "energy" and "energy" not in (geo.commodities or {}):
+        # Soft fallback when Pink Sheet energy/crude is missing.
+        channel = "aluminium" if "aluminium" in geo.commodities else "steel"
+    commodity = geo.commodities.get(channel) or next(iter(geo.commodities.values()))
+    cmd_path = np.log(commodity.values.to_numpy() / float(commodity.values.iloc[0]))
+    freight_path = np.log(
+        geo.freight.values.to_numpy() / float(geo.freight.values.iloc[0])
+    )
+    gpr_path = np.log(
+        geo.gpr["overall"].values.to_numpy() / float(geo.gpr["overall"].values.iloc[0])
+    )
+
+    lag = int(record["true_fx_lag"])
+    effect = float(record["true_steel_beta"]) * _lagged_cumulative(cmd_path, lag)
+    effect = effect + float(record["true_freight_beta"]) * _lagged_cumulative(
+        freight_path, max(lag - 1, 0)
+    )
+    effect = effect + float(record["true_gpr_beta"]) * _lagged_cumulative(gpr_path, 1)
+    return np.exp(effect)
+
+
 def generate_price_panel(
     config: Config,
     macro: MacroSeries,
     fx: Dict[str, FxSeries],
     rng: Optional[np.random.Generator] = None,
+    geo: Optional[GeoBundle] = None,
 ) -> pd.DataFrame:
     """Generate the long-format monthly price panel.
 
@@ -245,6 +315,8 @@ def generate_price_panel(
         macro: Real BLS index covering the history window.
         fx: Real FX series keyed by pair, covering the same window.
         rng: Optional generator; defaults to one seeded from config.
+        geo: Optional geopolitical mediator bundle; when provided, commodity,
+            freight and residual GPR paths enter the multiplicative DGP.
 
     Returns:
         Long DataFrame, one row per (part, month), with hierarchy columns, part
@@ -281,7 +353,8 @@ def generate_price_panel(
             lag_months=int(record["true_fx_lag"]),
         )
         fx_effect = fx_multiplier(exposure, fx_log_paths, eur_pair, usd_pair)
-        fx_impacts.append(float(fx_effect[-1] - 1.0))
+        geo_effect = _mediator_multiplier(record, geo, months)
+        fx_impacts.append(float(fx_effect[-1] * geo_effect[-1] - 1.0))
 
         seasonal = _seasonal_factor(months, category.seasonal_peak_month, category.seasonal_amplitude)
         noise = _ar1_noise(n_months, gen.noise_phi, gen.noise_sigma, rng)
@@ -295,6 +368,7 @@ def generate_price_panel(
             record["base_price_inr"]
             * macro_factor
             * fx_effect
+            * geo_effect
             * seasonal
             * trend
             * np.exp(noise)
@@ -308,7 +382,7 @@ def generate_price_panel(
             "vendor_origin", "vendor_import_dependency", "vendor_reprice_months",
             "category_code", "category", "material", "complexity_tier",
             "annual_part_volume", "weight_kg", "true_eur_beta", "true_usd_beta",
-            "true_fx_lag",
+            "true_fx_lag", "true_steel_beta", "true_freight_beta", "true_gpr_beta",
         ):
             frame[column] = record[column]
 
@@ -435,9 +509,9 @@ def _inject_missing_values(
 
 
 def save_panel(config: Config, panel: pd.DataFrame) -> Path:
-    """Write the panel to ``data/raw/parts_prices.csv``."""
+    """Write the panel to the configured SKU panel filename under ``data/raw``."""
     config.paths.data_raw.mkdir(parents=True, exist_ok=True)
-    out_path = config.paths.data_raw / "parts_prices.csv"
+    out_path = config.paths.data_raw / config.sku.panel_filename
     panel.to_csv(out_path, index=False, date_format="%Y-%m-%d")
     logger.info("wrote price panel to %s (%.1f KB)", out_path, out_path.stat().st_size / 1024)
     return out_path
@@ -445,7 +519,7 @@ def save_panel(config: Config, panel: pd.DataFrame) -> Path:
 
 def load_panel(config: Config) -> pd.DataFrame:
     """Read the panel back, restoring dtypes."""
-    path = config.paths.data_raw / "parts_prices.csv"
+    path = config.paths.data_raw / config.sku.panel_filename
     if not path.is_file():
         raise FileNotFoundError(f"{path} not found. Run the 'generate' stage first.")
     panel = pd.read_csv(path, parse_dates=["month"])

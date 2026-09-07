@@ -1,0 +1,7 @@
+event_id,date_start,date_end,category,severity,region_scope,channels_affected,source,confidence,narrative,nlp_severity
+ukraine_invasion_2022,2022-02-01,2022-12-01,conflict,5,UA-EU,fx|commodity:energy|commodity:steel|freight|insurance,manual_calendar,1.0,"Russia's invasion of Ukraine: multi-channel shock (energy, metals, freight, FX).",5.0
+red_sea_houthi_2023,2023-12-01,2024-06-01,chokepoint,4,RED-SEA,freight|insurance,manual_calendar,1.0,Red Sea / Bab el-Mandeb diversions: Asia-Europe transit +10-14 days and freight spike.,5.0
+india_budget_duty_2023,2023-02-01,2023-02-01,tariff,3,IN-DOMESTIC,duty,manual_calendar,0.9,Union Budget customs adjustments on selected auto components / CKD-related lines.,5.0
+israel_hamas_2023,2023-10-01,2024-03-01,conflict,4,ME-GLOBAL,fx|commodity:energy|freight|insurance,manual_calendar,0.95,Middle East escalation after 7 Oct 2023: energy risk premium and shipping caution.,5.0
+eu_cbam_phasein_2023,2023-10-01,,trade_agreement,2,EU-IN,duty|commodity:steel,manual_calendar,0.8,EU CBAM transitional phase begins; steel-intensive supply chains face reporting/cost pressure.,1.4
+india_auto_duty_review_2024,2024-07-01,2024-07-01,tariff,3,IN-DOMESTIC,duty,manual_calendar,0.85,Illustrative mid-2024 customs review on selected imported auto components (in-sample demo event).,2.0

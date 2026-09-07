@@ -14,7 +14,7 @@ bands widen with distance rather than staying flat.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Dict, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -38,6 +38,7 @@ def generate_forward_forecasts(
     panel: pd.DataFrame,
     config: Config,
     interval_ratios: Dict[int, Dict[str, float]],
+    feature_columns: Optional[Sequence[str]] = None,
 ) -> pd.DataFrame:
     """Produce ``forecast_horizon`` months of forward forecasts for every part.
 
@@ -47,6 +48,7 @@ def generate_forward_forecasts(
         config: Pipeline configuration.
         interval_ratios: Per-horizon empirical interval ratios from the
             backtest, used to band the XGBoost point forecasts.
+        feature_columns: Optional relevance-gated columns for XGBoost.
 
     Returns:
         Long frame: ``model, part_id, horizon, target_month, prediction,
@@ -66,9 +68,11 @@ def generate_forward_forecasts(
     frames = []
 
     # --- Global XGBoost, refit on everything --------------------------------
-    xgb_model = train_global_xgboost(features, config, origin, horizons)
+    cols = list(feature_columns) if feature_columns is not None else get_feature_columns(features)
+    xgb_model = train_global_xgboost(
+        features, config, origin, horizons, feature_columns=cols
+    )
     origin_rows = features[features["month"] == origin]
-    feature_columns = get_feature_columns(features)
     ratios = extrapolate_intervals(interval_ratios, horizons)
 
     for h in horizons:

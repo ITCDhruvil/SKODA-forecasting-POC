@@ -193,6 +193,7 @@ COMMODITIES: List[Driver] = [
             Source("World Bank Pink Sheet", "free", "Monthly", "~1 week"),
             Source("LME steel scrap", "paid", "Daily", "Live"),
         ),
+        feature_prefixes=("cmd_steel",),
     ),
     Driver(
         id="aluminium_copper",
@@ -212,6 +213,7 @@ COMMODITIES: List[Driver] = [
             Source("World Bank Pink Sheet", "free", "Monthly", "~1 week"),
             Source("MCX India", "free", "Daily", "Same day"),
         ),
+        feature_prefixes=("cmd_aluminium", "cmd_copper", "cmd_matched"),
     ),
     Driver(
         id="crude_polymer",
@@ -307,6 +309,7 @@ GEOPOLITICAL: List[Driver] = [
             Source("ACLED conflict data", "free", "Weekly", "~1 week"),
             Source("World Bank political stability indicator", "free", "Annual", "Months"),
         ),
+        feature_prefixes=("gpr_", "gpr_z_", "geo_event_conflict"),
     ),
     Driver(
         id="tariffs_duty",
@@ -329,6 +332,7 @@ GEOPOLITICAL: List[Driver] = [
             Source("WTO Tariff Download Facility", "free", "Annual", "Months"),
             Source("UN Comtrade", "free", "Monthly", "~2 months"),
         ),
+        feature_prefixes=("geo_event_tariff",),
     ),
     Driver(
         id="export_controls",
@@ -387,6 +391,7 @@ GEOPOLITICAL: List[Driver] = [
             Source("IMF PortWatch", "free", "Daily", "~2 days", "https://portwatch.imf.org"),
             Source("Suez Canal Authority statistics", "free", "Monthly", "~1 month"),
         ),
+        feature_prefixes=("chokepoint_", "geo_event_chokepoint"),
     ),
 ]
 
@@ -416,6 +421,7 @@ LOGISTICS: List[Driver] = [
             Source("Freightos Baltic Index", "free", "Daily", "Same day"),
             Source("Baltic Dry Index", "free", "Daily", "Same day"),
         ),
+        feature_prefixes=("freight_",),
     ),
     Driver(
         id="port_congestion",

@@ -344,6 +344,173 @@ export interface FxAnalysis {
   provenance?: { pairs: FxPairProvenance[]; allReal: boolean };
 }
 
+export interface GeoMediatorProvenance {
+  name: string;
+  source: string;
+  isReal: boolean;
+  unit: string;
+  first: number;
+  last: number;
+  totalMovePct: number;
+}
+
+export interface GeoEventRow {
+  event_id: string;
+  date_start: string;
+  date_end: string | null;
+  category: string;
+  severity: number;
+  region_scope: string;
+  channels_affected: string[];
+  source: string;
+  confidence: number;
+  narrative: string;
+  nlp_severity: number | null;
+}
+
+export interface GeoScenarioLevelRow {
+  name: string;
+  priceChangePct: number;
+  nParts: number;
+}
+
+export interface GeoScenario {
+  name: string;
+  family: string;
+  shockPct: number;
+  pairs: string[];
+  overallPriceChangePct: number;
+  impliedElasticity: number;
+  byLevel: Record<string, GeoScenarioLevelRow[]>;
+}
+
+export interface GeoMediation {
+  available: boolean;
+  reason?: string;
+  nMonths?: number;
+  totalCorrGprPrice?: number;
+  partialCorrGprPriceGivenMediators?: number;
+  mediators?: string[];
+  interpretation?: string;
+}
+
+export interface EventStudyPoint {
+  offset: number;
+  logDelta: number | null;
+  pctDelta: number | null;
+}
+
+export interface EventStudy {
+  eventId: string;
+  category: string;
+  severity: number;
+  regionScope: string;
+  narrative: string;
+  anchorMonth: string;
+  path: EventStudyPoint[];
+}
+
+export interface GeoFrameworkLayer {
+  id: string;
+  name: string;
+  items: string[];
+}
+
+export interface GeoAnalysis {
+  available: boolean;
+  scenarios?: GeoScenario[];
+  mediation?: GeoMediation;
+  eventStudies?: EventStudy[];
+  provenance?: {
+    mediators: GeoMediatorProvenance[];
+    nEvents: number;
+    events: GeoEventRow[];
+    framework: {
+      layers: GeoFrameworkLayer[];
+      claim: string;
+      causalityNote: string;
+    };
+    allReal: boolean;
+    commoditiesReal?: boolean;
+    freightReal?: boolean;
+    gprReal?: boolean;
+  };
+  hitl?: GeoHitlBlock;
+}
+
+/** Source check for one transmission channel on an alert. */
+export interface SourceVerification {
+  channel: string;
+  source: string;
+  isVerified: boolean;
+  note: string;
+}
+
+/** Pre-computed impact — only rendered after the user confirms. */
+export interface GeoAlertImpact {
+  available: boolean;
+  reason?: string;
+  eventId?: string;
+  shockPct?: number;
+  horizonMonths?: number;
+  overallPriceChangePct?: number;
+  direction?: 'up' | 'down' | 'flat';
+  channelsUsed?: string[];
+  byCategory?: GeoScenarioLevelRow[];
+  explanation?: string;
+  causalityNote?: string;
+}
+
+/** One geopolitical news signal awaiting analyst review. */
+export interface GeoAlert {
+  alertId: string;
+  headline: string;
+  reportedAt: string;
+  eventId: string;
+  category: string;
+  severity: number;
+  regionScope: string;
+  narrative: string;
+  channelsAffected: string[];
+  confidence: number;
+  source: string;
+  nlpSeverity?: number | null;
+  sourceVerifications: SourceVerification[];
+  allSourcesVerified: boolean;
+  prompt: string;
+  impact: GeoAlertImpact;
+}
+
+/** One driver explaining recent forecast movement. */
+export interface ForecastDriver {
+  id: string;
+  label: string;
+  direction: 'up' | 'down' | 'flat';
+  magnitude: number;
+  currentValue: number;
+  priorValue: number;
+  source: string;
+  isReal: boolean;
+  explanation: string;
+}
+
+export interface ForecastDriverReport {
+  available: boolean;
+  reason?: string;
+  periodLabel?: string;
+  portfolioMomPct?: number | null;
+  summary?: string;
+  drivers?: ForecastDriver[];
+  note?: string;
+}
+
+export interface GeoHitlBlock {
+  available: boolean;
+  policy?: string;
+  alerts?: GeoAlert[];
+  forecastDrivers?: ForecastDriverReport;
+}
+
 /**
  * Not a probability — a signal-to-error ratio.
  *
@@ -355,6 +522,25 @@ export interface Confidence {
   level: 'high' | 'medium' | 'low';
   signalToErrorRatio: number;
   expectedErrorPct: number;
+}
+
+export interface ForecastReasonDriver {
+  id: string;
+  label: string;
+  direction: 'up' | 'down' | 'flat';
+  magnitude: number;
+  source: string;
+  isReal: boolean;
+  evidence: string;
+}
+
+export interface ForecastReason {
+  available: boolean;
+  summary: string;
+  story?: string;
+  tip?: string;
+  drivers: ForecastReasonDriver[];
+  causalityNote?: string;
 }
 
 export interface TreePart {
@@ -369,6 +555,7 @@ export interface TreePart {
   isAnomaly: boolean;
   anomalyType: string;
   confidence: Confidence;
+  reason?: ForecastReason;
 }
 
 export interface TreeCategory {
@@ -443,6 +630,8 @@ export interface Driver {
   status: DriverStatus;
   matchedFeatures?: string[];
   matchedFeatureCount?: number;
+  affectsPrediction?: boolean;
+  selectionNote?: string;
 }
 
 export interface ParameterCatalogue {
@@ -451,6 +640,48 @@ export interface ParameterCatalogue {
   counts: Record<DriverStatus, number>;
   total: number;
   note: string;
+  selection?: {
+    nSelected: number;
+    nRejected: number;
+    asOf?: string;
+    reason?: string;
+    nScored?: number;
+  };
+}
+
+export interface FeatureSelectionBlock {
+  available?: boolean;
+  asOf?: string;
+  selected?: string[];
+  rejected?: string[];
+  nSelected?: number;
+  nRejected?: number;
+  nCandidates?: number;
+  reason?: string;
+  groups?: Record<string, { kept?: boolean; reason?: string; ablationLiftPct?: number | null }>;
+}
+
+export interface DriftBlock {
+  available?: boolean;
+  alert?: boolean;
+  mapeAlert?: boolean;
+  psiAlert?: boolean;
+  currentMape?: number | null;
+  priorMape?: number | null;
+  mapeDeltaPp?: number | null;
+  maxPsi?: number;
+  summary?: string;
+}
+
+export interface OpsMeta {
+  retrainCadence?: string;
+  scoreCadence?: string;
+  forecastHorizonMonths?: number;
+  lastRetrainAt?: string;
+  lastScoreAt?: string;
+  modelVersion?: string;
+  holdoutMape?: number | null;
+  nSelectedFeatures?: number;
 }
 
 export interface RiskRow {
@@ -492,6 +723,7 @@ export interface DashboardData {
     currencySymbol?: string;
     historyRange: [string, string];
     versions: Record<string, string>;
+    ops?: OpsMeta;
   };
   provenance: {
     macroSeriesId: string;
@@ -499,8 +731,12 @@ export interface DashboardData {
     macroIsReal: boolean;
     extrapolatedMonths: number;
     skuLayer: string;
+    skuIsReal?: boolean;
     disclaimer: string;
+    poIngest?: Record<string, unknown> | null;
   };
+  featureSelection?: FeatureSelectionBlock;
+  drift?: DriftBlock;
   kpis: Kpi[];
   priceSeries: PricePoint[];
   categories: CategoryRow[];
@@ -515,6 +751,8 @@ export interface DashboardData {
   futureTest?: FutureTest;
   /** Optional: absent from payloads written before the fxscenario stage existed. */
   fxAnalysis?: FxAnalysis;
+  /** Optional: absent from payloads written before the geoscenario stage existed. */
+  geoAnalysis?: GeoAnalysis;
   hierarchy?: HierarchyRollup;
   riskConcentration?: RiskConcentration;
   tree?: TreeProject[];

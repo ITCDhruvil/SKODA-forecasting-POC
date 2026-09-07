@@ -46,17 +46,28 @@ Move on quickly. Don't walk the charts.
 Click **Parameters** in the header.
 
 > "This is the full space of things that move component prices — 39 drivers across
-> ten groups. Currency, commodities, geopolitics, logistics, regulation. We've
-> built seven. The rest is catalogued so the extension path is explicit."
+> ten groups. Currency, commodities, geopolitics, logistics, regulation. FX and
+> the geo mediator stack (commodities, freight, GPR, events) are live; the rest
+> is catalogued so the extension path is explicit."
 
-Expand **Geopolitical & trade**, click **Geopolitical risk / armed conflict**.
+Open the **Geo Risk** sidebar view (badge shows how many signals await review).
+
+**Human-in-the-loop (start here):**
+
+1. Read **Why prices moved** — each driver lists its data source (real cache vs offline fallback).
+2. Each **Recent signal** card shows the headline, reported date/time, and per-channel source verification.
+3. Ask the audience: *"Do you want to see the estimated impact on auto part prices?"*
+4. Click **Yes, show price impact** only if they agree — impact stays hidden until then.
+5. Click **No, dismiss** to skip; nothing is applied to the forecast.
+
+Walk the mechanism: event studies (Ukraine / Red Sea / Budget duty) → mediation
+diagnostic (does GPR fade when freight/commodities/FX are held?) → counterfactual
+freight or duty shock rolled up by category.
 
 > "Conflict isn't a direct price driver — it's an upstream one. It moves currency,
 > energy, freight and insurance at the same time. Ukraine moved palladium, neon,
 > energy and harness supply from a single event. That's why it's worth modelling
 > separately."
-
-Close the modal.
 
 ### 3. Hierarchy (3 min) — **this is the money shot**
 
@@ -151,9 +162,10 @@ Scroll to the last question and let them read the title:
 ## Likely questions and short answers
 
 **"Is this real data?"**
-Macro trend and FX are real and live. The part-level panel is synthetic because no
-public source publishes piece prices per SKU per vendor. Replace it with your
-purchase-order history and nothing else in the pipeline changes.
+Macro trend and FX are real and live. The part-level panel is synthetic by default
+because no public source publishes piece prices per SKU. Drop
+`data/raw/purchase_orders.csv` (see README) and `sku.mode: auto` switches generate
+to real PO aggregation — nothing else in the pipeline changes.
 
 **"Why did your model lose to the naive baseline?"**
 On the aggregate index, at this horizon, price indices behave close to random
@@ -167,8 +179,11 @@ guarantees and the model ranking. Anyone quoting you an accuracy number before
 seeing your data is guessing.
 
 **"How long to production?"**
-The pipeline is built. The gap is your data. Give us 24–36 months of purchase-order
-history and we re-point the generator stage at it.
+The pipeline is built. Drop 24–36 months of purchase-order history at
+`data/raw/purchase_orders.csv`, re-run generate → evaluate → export, and the
+dashboard provenance flips to “from purchase orders”. Ops cadence: `--stage retrain`
+monthly (relevance gate + model register) and `--stage score` weekly (1-month-ahead
+refresh).
 
 **"What's the biggest risk?"**
 FX identification. It needs a window containing rate reversals, or commodity spot
@@ -191,7 +206,9 @@ the roadmap.
 ## Do not say
 
 - ~~"The model predicts prices with 97% accuracy"~~ — that's on synthetic data, and it will be the first thing a technical reviewer takes apart.
-- ~~"It accounts for geopolitical risk"~~ — it doesn't. It's catalogued, not built.
+- ~~"It accounts for geopolitical risk with proven causality"~~ — it models
+  channel-consistent association and counterfactuals. Say "mechanism-first geo
+  layer" not "causal proof". Part prices remain synthetic.
 - ~~"73% chance of being right"~~ — there is no calibrated probability anywhere in this system. Say "signal-to-error ratio".
 
 ## Close on this

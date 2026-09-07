@@ -117,11 +117,18 @@ export function ParametersModal({
 
           <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
             <span className="font-medium text-slate-700">{catalogue?.total ?? 0} drivers</span>{' '}
-            that can move component prices. Only{' '}
+            catalogued. Monthly relevance gate keeps{' '}
             <span className="font-medium text-emerald-700">
-              {counts?.implemented ?? 0} are in the model today
-            </span>{' '}
-            — the rest define the extension path, not what is built.
+              {catalogue?.selection?.nSelected ?? counts?.implemented ?? 0} in this month&apos;s
+              model
+            </span>
+            {catalogue?.selection?.nRejected != null && catalogue.selection.nRejected > 0 && (
+              <>
+                {' '}
+                (rejected {catalogue.selection.nRejected} engineered columns)
+              </>
+            )}
+            . The rest define the extension path.
           </p>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -255,6 +262,13 @@ export function ParametersModal({
                             <span className="font-mono text-[11px] text-emerald-700">
                               {driver.matchedFeatureCount} features
                             </span>
+                          </p>
+                        ) : null}
+
+                        {driver.selectionNote ? (
+                          <p className="text-slate-600">
+                            <span className="font-semibold text-slate-700">This month:</span>{' '}
+                            {driver.selectionNote}
                           </p>
                         ) : null}
 

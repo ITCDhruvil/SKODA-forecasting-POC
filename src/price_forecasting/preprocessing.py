@@ -23,6 +23,12 @@ import pandas as pd
 from .config import Config
 from .data_sourcing import MacroSeries
 from .fx import FxSeries
+from .geopolitical import (
+    GeoBundle,
+    commodity_key_for_row,
+    event_monthly_features,
+    material_intensity_series,
+)
 from .logging_utils import get_logger
 
 logger = get_logger(__name__)
@@ -40,6 +46,8 @@ NON_FEATURE_COLUMNS = frozenset(
         "is_anomaly_part", "anomaly_type", "outlier_flag",
         "price_was_imputed", "insufficient_history",
         "true_eur_beta", "true_usd_beta", "true_fx_lag",
+        "true_steel_beta", "true_freight_beta", "true_gpr_beta",
+        "commodity_key",
     }
 )
 
@@ -48,6 +56,95 @@ NON_FEATURE_COLUMNS = frozenset(
 CATEGORICAL_COLUMNS = (
     "project_code", "vendor_code", "category_code",
     "oem", "segment", "vendor_origin", "material", "complexity_tier",
+)
+
+STATIC_NUMERIC_FEATURES = frozenset(
+    {
+        "project_volume",
+        "project_localisation",
+        "vendor_import_dependency",
+        "vendor_reprice_months",
+        "annual_part_volume",
+        "weight_kg",
+        "material_intensity",
+    }
+)
+
+CALENDAR_FEATURES = frozenset(
+    {
+        "month_sin",
+        "month_cos",
+        "macro_mom_pct",
+        "macro_yoy_pct",
+        "price_mom_pct",
+        "price_yoy_pct",
+        "price_vs_expanding_mean",
+    }
+)
+
+SPARSE_GEO_EVENT_COLUMNS = frozenset(
+    {
+        "geo_event_any",
+        "geo_event_tariff",
+        "geo_event_chokepoint",
+        "geo_event_conflict_decay",
+        "geo_event_tariff_decay",
+        "geo_event_chokepoint_decay",
+        "geo_event_conflict_decay_x_import",
+        "geo_event_tariff_x_import",
+        "geo_event_tariff_decay_x_import",
+        "geo_event_chokepoint_x_import",
+        "geo_event_chokepoint_decay_x_import",
+    }
+)
+
+FULL_GEO_EVENT_COLUMNS = frozenset(
+    {
+        "geo_event_conflict",
+        "geo_event_conflict_severity",
+        "geo_event_conflict_decay",
+        "geo_event_tariff",
+        "geo_event_tariff_severity",
+        "geo_event_tariff_decay",
+        "geo_event_chokepoint",
+        "geo_event_chokepoint_severity",
+        "geo_event_chokepoint_decay",
+        "geo_event_sanction",
+        "geo_event_sanction_severity",
+        "geo_event_sanction_decay",
+        "geo_event_trade_agreement",
+        "geo_event_trade_agreement_severity",
+        "geo_event_trade_agreement_decay",
+        "geo_event_any",
+        "geo_event_max_severity",
+        "geo_event_conflict_decay_x_import",
+        "geo_event_tariff_x_import",
+        "geo_event_tariff_decay_x_import",
+        "geo_event_chokepoint_x_import",
+        "geo_event_chokepoint_decay_x_import",
+    }
+)
+
+EXCLUDED_MODEL_FEATURES = frozenset(
+    {
+        "month_of_year",
+        "months_since_start",
+        "macro_index",
+        "price_roll_mean_3",
+        "price_roll_mean_6",
+        "price_expanding_mean",
+        "hier_vendor_category_logprice",
+        "fx_eurinr_ret_6m",
+        "fx_eurinr_ret_12m",
+        "fx_eurinr_ret_lag6",
+        "fx_eurinr_ret_lag6_x_import",
+        "fx_eurinr_ret_lag6_x_content",
+        "fx_usdinr_ret_6m",
+        "fx_usdinr_ret_12m",
+        "fx_usdinr_ret_lag6",
+        "fx_usdinr_ret_lag6_x_import",
+        "fx_usdinr_ret_lag6_x_content",
+    }
 )
 
 # Hierarchy levels for target encoding, coarse to fine. Cross-level keys let the
@@ -61,6 +158,65 @@ HIERARCHY_LEVELS: tuple[tuple[str, ...], ...] = (
     ("vendor_code", "category_code"),
     ("project_code", "vendor_code"),
 )
+
+
+def _causal_expanding_zscore(series: pd.Series, min_periods: int = 3) -> pd.Series:
+    """Normalise each point using only earlier observations.
+
+    For month t, statistics come from months < t via shift(1). This keeps the
+    feature causal and avoids diluting the current move into its own baseline.
+    """
+    series = pd.Series(series, copy=False)
+    history = series.shift(1)
+    mean = history.expanding(min_periods=min_periods).mean()
+    std = history.expanding(min_periods=min_periods).std()
+    denom = std.where(std > 1e-6)
+    return (series - mean) / denom
+
+
+def _allowed_event_columns(feature_mode: str) -> frozenset[str]:
+    return SPARSE_GEO_EVENT_COLUMNS if feature_mode == "sparse" else FULL_GEO_EVENT_COLUMNS
+
+
+def _feature_contract(config: Optional[Config] = None) -> tuple[set[str], tuple[str, ...], frozenset[str]]:
+    exact = set(CATEGORICAL_COLUMNS) | set(STATIC_NUMERIC_FEATURES) | set(CALENDAR_FEATURES)
+    prefixes = (
+        "price_lag_",
+        "price_roll_mean_",
+        "price_roll_std_",
+        "fx_",
+        "cmd_",
+        "freight_",
+        "gpr",
+        "chokepoint_",
+        "hier_",
+    )
+    events = _allowed_event_columns(config.geo.feature_mode) if config is not None else FULL_GEO_EVENT_COLUMNS
+    return exact, prefixes, events
+
+
+def _is_contract_feature(name: str, config: Optional[Config] = None) -> bool:
+    if name in EXCLUDED_MODEL_FEATURES:
+        return False
+    exact, prefixes, event_columns = _feature_contract(config)
+    if name in exact or name in event_columns:
+        return True
+    return any(name.startswith(prefix) for prefix in prefixes)
+
+
+def _resolved_feature_columns(
+    frame: pd.DataFrame, config: Optional[Config] = None
+) -> List[str]:
+    label_columns = {"project", "vendor", "category"}
+    return [
+        col
+        for col in frame.columns
+        if col not in NON_FEATURE_COLUMNS
+        and col not in label_columns
+        and col not in ("macro_index_month",)
+        and not _is_raw_fx_level(col)
+        and _is_contract_feature(col, config)
+    ]
 
 
 @dataclass
@@ -77,6 +233,7 @@ class PreprocessingReport:
     feature_columns: List[str] = field(default_factory=list)
     hierarchy_features: List[str] = field(default_factory=list)
     fx_features: List[str] = field(default_factory=list)
+    geo_features: List[str] = field(default_factory=list)
 
     def as_dict(self) -> Dict[str, object]:
         return {
@@ -90,6 +247,7 @@ class PreprocessingReport:
             "n_features": len(self.feature_columns),
             "n_hierarchy_features": len(self.hierarchy_features),
             "n_fx_features": len(self.fx_features),
+            "n_geo_features": len(self.geo_features),
         }
 
 
@@ -117,6 +275,7 @@ def _ensure_complete_grid(panel: pd.DataFrame) -> pd.DataFrame:
             "category_code", "category", "material", "complexity_tier",
             "annual_part_volume", "weight_kg",
             "true_eur_beta", "true_usd_beta", "true_fx_lag",
+            "true_steel_beta", "true_freight_beta", "true_gpr_beta",
             "is_anomaly_part", "anomaly_type",
         )
         if column in panel.columns
@@ -470,12 +629,190 @@ def _add_fx_features(
     return frame
 
 
+def _add_geo_features(
+    frame: pd.DataFrame,
+    config: Config,
+    geo: GeoBundle,
+    report: PreprocessingReport,
+) -> pd.DataFrame:
+    """Attach commodity, freight, GPR, chokepoint and event features.
+
+    Same identification discipline as FX: expose stationary returns and lags,
+    never raw levels that track time. Cross-sectional interactions with import
+    dependency and material intensity provide within-month contrast.
+
+    ``feature_mode=sparse`` (default) keeps only the identifying interactions
+    and a short lag set. It matches the full lag ladder on holdout MAPE with
+    roughly a quarter of the columns, so the extra lags buy nothing beyond
+    making individual contributions unreadable.
+    """
+    frame = frame.copy()
+    added: List[str] = []
+    geo_cfg = config.geo
+    sparse = geo_cfg.feature_mode == "sparse"
+    lags = geo_cfg.mediator_lags if not sparse else list(geo_cfg.mediator_lags)[:2]
+    ret_periods = (
+        geo_cfg.mediator_return_periods
+        if not sparse
+        else list(geo_cfg.mediator_return_periods)[:1]
+    )
+    gpr_lags = geo_cfg.gpr_lags if not sparse else [0, 1]
+
+    import_dependency = (
+        frame["vendor_import_dependency"]
+        if "vendor_import_dependency" in frame.columns
+        else pd.Series(0.5, index=frame.index)
+    )
+    material_intensity = material_intensity_series(frame)
+    frame["material_intensity"] = material_intensity
+    added.append("material_intensity")
+
+    # --- Commodities: prefer matched channel + material interaction ----------
+    for name, series in geo.commodities.items():
+        log_level = np.log(series.values.clip(lower=1e-9))
+        monthly_return = log_level.diff(1)
+        if not sparse:
+            for periods in ret_periods:
+                mapped = frame["month"].map(log_level.diff(periods))
+                col = f"cmd_{name}_ret_{periods}m"
+                frame[col] = mapped
+                added.append(col)
+            for lag in lags:
+                lagged = frame["month"].map(monthly_return.shift(lag))
+                col = f"cmd_{name}_ret_lag{lag}"
+                frame[col] = lagged
+                added.append(col)
+                inter = f"cmd_{name}_ret_lag{lag}_x_mat"
+                frame[inter] = lagged * material_intensity
+                added.append(inter)
+        else:
+            # One contemporaneous return for mediation diagnostics
+            if name == "steel":
+                col = f"cmd_{name}_ret_1m"
+                frame[col] = frame["month"].map(log_level.diff(1))
+                added.append(col)
+            for lag in lags:
+                lagged = frame["month"].map(monthly_return.shift(lag))
+                inter = f"cmd_{name}_ret_lag{lag}_x_mat"
+                frame[inter] = lagged * material_intensity
+                added.append(inter)
+
+    cmd_key = commodity_key_for_row(frame)
+    frame["commodity_key"] = cmd_key
+    matched = pd.Series(0.0, index=frame.index)
+    for name, series in geo.commodities.items():
+        mask = cmd_key == name
+        if not mask.any():
+            continue
+        ret1 = frame["month"].map(
+            np.log(series.values.clip(lower=1e-9)).diff(1).shift(int(lags[0]))
+        )
+        matched = matched.where(~mask, ret1.fillna(0.0))
+    frame["cmd_matched_ret_lag2"] = matched
+    frame["cmd_matched_ret_lag2_x_mat"] = matched * material_intensity
+    added.extend(["cmd_matched_ret_lag2", "cmd_matched_ret_lag2_x_mat"])
+
+    # --- Freight: returns + import interactions (identification) ------------
+    freight_log = np.log(geo.freight.values.clip(lower=1e-9))
+    freight_ret = freight_log.diff(1)
+    frame["freight_ret_1m"] = frame["month"].map(freight_ret)
+    added.append("freight_ret_1m")
+    for lag in lags:
+        lagged = frame["month"].map(freight_ret.shift(lag))
+        if not sparse:
+            col = f"freight_ret_lag{lag}"
+            frame[col] = lagged
+            added.append(col)
+        inter = f"freight_ret_lag{lag}_x_import"
+        frame[inter] = lagged * import_dependency
+        added.append(inter)
+
+    # --- GPR: overall only in sparse mode (threat/act add collinearity) -----
+    gpr_keys = ("overall",) if sparse else tuple(geo.gpr.keys())
+    for key in gpr_keys:
+        series = geo.gpr[key]
+        prefix = "gpr" if key == "overall" else f"gpr_{key}"
+        z = _causal_expanding_zscore(series.values)
+        for lag in gpr_lags:
+            lagged = frame["month"].map(z.shift(lag) if lag else z)
+            col = f"{prefix}_z_lag{lag}"
+            frame[col] = lagged
+            added.append(col)
+            if not sparse or lag == 0:
+                inter = f"{prefix}_z_lag{lag}_x_import"
+                frame[inter] = lagged * import_dependency
+                added.append(inter)
+
+    # --- Chokepoint: single intensity + import interaction ------------------
+    choke = geo.chokepoint.values
+    choke_lags = (0, 1) if sparse else (0, 1, 2)
+    for lag in choke_lags:
+        lagged = frame["month"].map(choke.shift(lag) if lag else choke)
+        if not sparse or lag == 0:
+            col = f"chokepoint_lag{lag}"
+            frame[col] = lagged
+            added.append(col)
+        inter = f"chokepoint_lag{lag}_x_import"
+        frame[inter] = lagged * import_dependency
+        added.append(inter)
+
+    # --- Event calendar: decays + tariff step (skip redundant severity dummies)
+    event_frame = event_monthly_features(
+        geo.events,
+        pd.DatetimeIndex(sorted(frame["month"].unique())),
+        decay_half_life=geo_cfg.event_decay_half_life_months,
+    )
+    keep_events = {
+        "geo_event_any",
+        "geo_event_tariff",
+        "geo_event_chokepoint",
+        "geo_event_conflict_decay",
+        "geo_event_tariff_decay",
+        "geo_event_chokepoint_decay",
+    }
+    if not sparse:
+        keep_events = {c for c in event_frame.columns if c != "month"}
+
+    frame = frame.merge(event_frame, on="month", how="left")
+    for col in event_frame.columns:
+        if col == "month":
+            continue
+        frame[col] = frame[col].fillna(0.0)
+        if col not in keep_events:
+            continue
+        added.append(col)
+        if col.endswith("_decay") or col in ("geo_event_tariff", "geo_event_chokepoint"):
+            inter = f"{col}_x_import"
+            frame[inter] = frame[col] * import_dependency
+            added.append(inter)
+
+    if sparse:
+        allowed_events = _allowed_event_columns("sparse")
+        drop_cols = [
+            col
+            for col in frame.columns
+            if col.startswith("geo_event_") and col not in allowed_events
+        ]
+        if drop_cols:
+            frame = frame.drop(columns=drop_cols)
+
+    report.geo_features = added
+    logger.info(
+        "added %d geo/mediator feature(s) (mode=%s): commodities, freight, GPR, "
+        "chokepoint, event calendar (+ exposure interactions)",
+        len(added),
+        geo_cfg.feature_mode,
+    )
+    return frame
+
+
 def build_features(
     panel: pd.DataFrame,
     config: Config,
     macro: MacroSeries,
     report: PreprocessingReport,
     fx: Optional[Dict[str, "FxSeries"]] = None,
+    geo: Optional[GeoBundle] = None,
 ) -> pd.DataFrame:
     """Attach model features to the cleaned panel.
 
@@ -545,6 +882,10 @@ def build_features(
     if fx:
         frame = _add_fx_features(frame, config, fx, report)
 
+    # --- Geopolitical mediators & event calendar ----------------------------
+    if geo is not None and config.geo.enabled:
+        frame = _add_geo_features(frame, config, geo, report)
+
     # --- Hierarchy: project / vendor / category encodings -------------------
     frame = _add_hierarchy_features(frame, report)
 
@@ -555,15 +896,7 @@ def build_features(
 
     # Free-text duplicates of the coded dimensions add cardinality without
     # information, so keep the codes and drop the labels from the feature set.
-    label_columns = {"project", "vendor", "category"}
-    feature_columns = [
-        col
-        for col in frame.columns
-        if col not in NON_FEATURE_COLUMNS
-        and col not in label_columns
-        and col not in ("macro_index_month",)
-        and not _is_raw_fx_level(col)
-    ]
+    feature_columns = _resolved_feature_columns(frame, config)
     report.feature_columns = feature_columns
 
     logger.info(
@@ -594,14 +927,7 @@ def get_feature_columns(frame: pd.DataFrame) -> List[str]:
     Excludes identifiers, the target, the generative ``true_*`` FX betas, and
     raw FX levels - see :data:`NON_FEATURE_COLUMNS` and :func:`_is_raw_fx_level`.
     """
-    label_columns = {"project", "vendor", "category"}
-    return [
-        col
-        for col in frame.columns
-        if col not in NON_FEATURE_COLUMNS
-        and col not in label_columns
-        and not _is_raw_fx_level(col)
-    ]
+    return _resolved_feature_columns(frame)
 
 
 def save_features(config: Config, frame: pd.DataFrame) -> Path:

@@ -13,6 +13,7 @@ import {
   IconChevronRight,
   IconLayers,
   IconCurrency,
+  IconGlobe,
   IconHelp,
 } from './Icons';
 import type { Insight } from '../types';
@@ -22,6 +23,7 @@ export type View =
   | 'forecast'
   | 'hierarchy'
   | 'fx'
+  | 'geo'
   | 'parts'
   | 'futuretest'
   | 'validation'
@@ -37,6 +39,7 @@ const NAV: { id: View; label: string; icon: (p: { className?: string }) => React
   { id: 'forecast', label: 'Forecast', icon: IconChart },
   { id: 'hierarchy', label: 'Hierarchy', icon: IconLayers },
   { id: 'fx', label: 'FX Impact', icon: IconCurrency },
+  { id: 'geo', label: 'Geo Risk', icon: IconGlobe },
   { id: 'parts', label: 'Parts', icon: IconPackage },
   { id: 'futuretest', label: 'Future Test', icon: IconTarget },
   { id: 'validation', label: 'Validation', icon: IconBeaker },
@@ -50,6 +53,7 @@ interface Props {
   onChange: (view: View) => void;
   insight: Insight;
   alertCount: number;
+  geoAlertCount?: number;
   onViewInsight: () => void;
   collapsed: boolean;
   onToggle: () => void;
@@ -64,6 +68,7 @@ export function Sidebar({
   onChange,
   insight,
   alertCount,
+  geoAlertCount = 0,
   onViewInsight,
   collapsed,
   onToggle,
@@ -145,10 +150,18 @@ export function Sidebar({
                       {alertCount}
                     </span>
                   )}
+                  {item.id === 'geo' && geoAlertCount > 0 && (
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                      {geoAlertCount}
+                    </span>
+                  )}
                 </>
               )}
               {collapsed && item.id === 'alerts' && alertCount > 0 && (
                 <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-red-500" />
+              )}
+              {collapsed && item.id === 'geo' && geoAlertCount > 0 && (
+                <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
               )}
             </button>
           );

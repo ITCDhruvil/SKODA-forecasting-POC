@@ -1,0 +1,810 @@
+{
+  "meta": {
+    "generatedAt": "2026-08-05T06:43:18.876712+00:00",
+    "elapsedSec": 498.0,
+    "nParts": 180,
+    "nMonths": 36,
+    "historyRange": [
+      "2023-07",
+      "2026-06"
+    ],
+    "nFeatures": 188,
+    "nGeoFeatures": 108,
+    "xgboostTargetMode": "log_return",
+    "dataLayers": {
+      "macro": {
+        "series": "CUUR0000SETC",
+        "source": "bls-cache",
+        "isReal": true
+      },
+      "fx": {
+        "allReal": true,
+        "pairs": [
+          {
+            "pair": "EURINR",
+            "base": "EUR",
+            "quote": "INR",
+            "source": "ecb-cache",
+            "isReal": true,
+            "extrapolatedMonths": 0,
+            "firstRate": 90.8395,
+            "lastRate": 109.3451,
+            "totalMovePct": 20.372,
+            "observedStart": "2023-06"
+          },
+          {
+            "pair": "USDINR",
+            "base": "USD",
+            "quote": "INR",
+            "source": "ecb-cache",
+            "isReal": true,
+            "extrapolatedMonths": 0,
+            "firstRate": 82.149,
+            "lastRate": 94.9309,
+            "totalMovePct": 15.559,
+            "observedStart": "2023-06"
+          }
+        ]
+      },
+      "geo": {
+        "allReal": false,
+        "nEvents": 6,
+        "mediators": [
+          {
+            "name": "steel",
+            "source": "offline-fallback",
+            "isReal": false,
+            "movePct": 12.455
+          },
+          {
+            "name": "aluminium",
+            "source": "offline-fallback",
+            "isReal": false,
+            "movePct": -19.456
+          },
+          {
+            "name": "copper",
+            "source": "offline-fallback",
+            "isReal": false,
+            "movePct": 20.419
+          },
+          {
+            "name": "freight",
+            "source": "offline-fallback",
+            "isReal": false,
+            "movePct": -17.996
+          },
+          {
+            "name": "gpr_overall",
+            "source": "gpr-cache",
+            "isReal": true,
+            "movePct": 67.263
+          },
+          {
+            "name": "gpr_threat",
+            "source": "gpr-cache",
+            "isReal": true,
+            "movePct": 73.597
+          },
+          {
+            "name": "gpr_act",
+            "source": "gpr-cache",
+            "isReal": true,
+            "movePct": 100.948
+          },
+          {
+            "name": "chokepoint",
+            "source": "event+freight-offline",
+            "isReal": true,
+            "movePct": 0.0
+          }
+        ]
+      },
+      "skuLayer": "synthetic"
+    }
+  },
+  "verdicts": [
+    {
+      "axis": "Real-world accuracy (BLS)",
+      "verdict": "fail",
+      "summary": "Best model on real BLS is naive at 0.336% MAPE. No fitted model beats naive \u2014 treat synthetic accuracy as process recovery, not production claim."
+    },
+    {
+      "axis": "Synthetic forecast recovery",
+      "verdict": "pass",
+      "summary": "XGBoost MAPE 3.15% vs seasonal naive 5.67%; mean efficiency vs noise floor ~53%."
+    },
+    {
+      "axis": "FX detectability vs attribution",
+      "verdict": "mixed",
+      "summary": "SNR=22.14 (detectable=1); trend collinearity separable=0; beta recovery=not recovered (Spearman -0.0182)."
+    },
+    {
+      "axis": "Geo mediation (channel story)",
+      "verdict": "pass",
+      "summary": "GPR\u2194price |corr| 0.212 \u2192 partial 0.169 after mediators. Shrinkage supports the channel model."
+    },
+    {
+      "axis": "Geo feature holdout lift",
+      "verdict": "fail",
+      "summary": "With-geo vs without-geo XGB test MAPE lift -7.63% (3.296% \u2192 3.5475%)."
+    },
+    {
+      "axis": "Freight shock ranking vs true exposure",
+      "verdict": "fail",
+      "summary": "Spearman -0.1152 (not recovered) between true freight betas and modelled category response to freight shock."
+    }
+  ],
+  "bls": [
+    {
+      "model": "naive",
+      "mape": 0.3359,
+      "mae": 0.6317
+    },
+    {
+      "model": "drift",
+      "mape": 0.6248,
+      "mae": 1.1716
+    },
+    {
+      "model": "sarima",
+      "mape": 1.3997,
+      "mae": 2.6256
+    }
+  ],
+  "futureScores": [
+    {
+      "model": "xgboost",
+      "mape": 3.1548,
+      "mae": 125.3278,
+      "mean_signed_pct": -0.5706,
+      "worst_month_mape": 3.9054
+    },
+    {
+      "model": "sarima",
+      "mape": 3.9754,
+      "mae": 183.3522,
+      "mean_signed_pct": -0.5654,
+      "worst_month_mape": 5.7021
+    },
+    {
+      "model": "seasonal_naive",
+      "mape": 5.6715,
+      "mae": 176.092,
+      "mean_signed_pct": -5.1796,
+      "worst_month_mape": 6.7987
+    }
+  ],
+  "noiseFloor": [
+    {
+      "horizon": 1,
+      "label": "h1",
+      "achieved": 1.891,
+      "floor": 1.436,
+      "excess": 0.455,
+      "efficiencyPct": 75.9
+    },
+    {
+      "horizon": 2,
+      "label": "h2",
+      "achieved": 2.382,
+      "floor": 1.575,
+      "excess": 0.807,
+      "efficiencyPct": 66.1
+    },
+    {
+      "horizon": 3,
+      "label": "h3",
+      "achieved": 3.129,
+      "floor": 1.602,
+      "excess": 1.527,
+      "efficiencyPct": 51.2
+    },
+    {
+      "horizon": 4,
+      "label": "h4",
+      "achieved": 3.905,
+      "floor": 1.607,
+      "excess": 2.299,
+      "efficiencyPct": 41.1
+    },
+    {
+      "horizon": 5,
+      "label": "h5",
+      "achieved": 3.706,
+      "floor": 1.608,
+      "excess": 2.098,
+      "efficiencyPct": 43.4
+    },
+    {
+      "horizon": 6,
+      "label": "h6",
+      "achieved": 3.895,
+      "floor": 1.608,
+      "excess": 2.287,
+      "efficiencyPct": 41.3
+    }
+  ],
+  "meanFloor": 1.573,
+  "horizonBias": [
+    {
+      "horizon": 1,
+      "mape": 2.2678,
+      "meanSignedPct": 0.8607,
+      "n": 180
+    },
+    {
+      "horizon": 2,
+      "mape": 3.2417,
+      "meanSignedPct": -0.1146,
+      "n": 180
+    },
+    {
+      "horizon": 3,
+      "mape": 3.6148,
+      "meanSignedPct": -0.8242,
+      "n": 180
+    },
+    {
+      "horizon": 4,
+      "mape": 3.4831,
+      "meanSignedPct": -0.8908,
+      "n": 180
+    },
+    {
+      "horizon": 5,
+      "mape": 4.0019,
+      "meanSignedPct": -1.3462,
+      "n": 180
+    },
+    {
+      "horizon": 6,
+      "mape": 4.6756,
+      "meanSignedPct": -2.2356,
+      "n": 180
+    }
+  ],
+  "holdout": [
+    {
+      "model": "seasonal_naive",
+      "mae": 172.1013,
+      "rmse": 429.2204,
+      "mape": 6.6582,
+      "n": 160,
+      "n_parts": 20
+    },
+    {
+      "model": "sarima",
+      "mae": 240.0711,
+      "rmse": 848.1128,
+      "mape": 4.3677,
+      "n": 160,
+      "n_parts": 20
+    },
+    {
+      "model": "xgboost",
+      "mae": 298.747,
+      "rmse": 1061.4918,
+      "mape": 4.8286,
+      "n": 160,
+      "n_parts": 20
+    }
+  ],
+  "calibration": {
+    "nominalCoverage": 0.8,
+    "empiricalCoverage": null,
+    "raw": {
+      "sarima": 53.125
+    }
+  },
+  "fx": {
+    "snr": {
+      "available": 1,
+      "betaSpread": 0.1212,
+      "signalPct": 1.7532,
+      "monthlyNoisePct": 2.0156,
+      "categoryMeanNoisePct": 0.0792,
+      "snr": 22.14,
+      "identifiable": 1,
+      "note": "Signal is the price gap between the most and least FX-exposed category over the observed FX move. Noise is the AR(1) volatility remaining on a category mean after averaging over parts and months. Below an SNR of about 3 the ranking is not recoverable by any model, so a poor correlation is a property of the data rather than a failure of the estimator."
+    },
+    "col": {
+      "available": 1,
+      "byPair": [
+        {
+          "pair": "EURINR",
+          "cumulativeVsTime": 0.9036,
+          "risingMonthsPct": 62.9
+        },
+        {
+          "pair": "USDINR",
+          "cumulativeVsTime": 0.919,
+          "risingMonthsPct": 74.3
+        }
+      ],
+      "crossPairLevelCorr": 0.9273,
+      "crossPairReturnCorr": 0.1213,
+      "maxCumulativeVsTime": 0.919,
+      "separable": 0,
+      "note": "Detectability and attributability are different questions. Over a near-monotonic depreciation the cumulative FX path is collinear with elapsed time, so a model cannot tell an FX effect from a trend effect no matter how large either is. Monthly returns carry the independent variation, which is why only returns are exposed as features. Separating FX properly needs a window containing reversals, or currencies that diverge."
+    },
+    "learn": {
+      "available": 1,
+      "spearman": -0.0182,
+      "pearson": -0.2256,
+      "verdict": "not recovered",
+      "nCategories": 10
+    },
+    "scenarios": [
+      {
+        "name": "-10% FX",
+        "shockPct": -10.0,
+        "change": -1.0731,
+        "elast": 0.1073
+      },
+      {
+        "name": "-5% FX",
+        "shockPct": -5.0,
+        "change": -0.7593,
+        "elast": 0.1519
+      },
+      {
+        "name": "-2% FX",
+        "shockPct": -2.0,
+        "change": -0.6914,
+        "elast": 0.3457
+      },
+      {
+        "name": "+2% FX",
+        "shockPct": 2.0,
+        "change": 0.6288,
+        "elast": 0.3144
+      },
+      {
+        "name": "+5% FX",
+        "shockPct": 5.0,
+        "change": 0.8904,
+        "elast": 0.1781
+      },
+      {
+        "name": "+10% FX",
+        "shockPct": 10.0,
+        "change": 1.0125,
+        "elast": 0.1013
+      }
+    ]
+  },
+  "geo": {
+    "mediation": {
+      "available": 1,
+      "nMonths": 35,
+      "totalCorrGprPrice": 0.2118,
+      "partialCorrGprPriceGivenMediators": 0.169,
+      "mediators": [
+        "freight_ret_1m",
+        "cmd_steel_ret_1m",
+        "fx_eurinr_ret_1m"
+      ],
+      "interpretation": "If the partial correlation shrinks toward zero relative to the total correlation, GPR's link to prices is largely mediated by freight / commodities / FX \u2014 consistent with the channel model."
+    },
+    "freight": {
+      "available": 1,
+      "shockFamily": "freight",
+      "shockPct": 10.0,
+      "spearman": -0.1152,
+      "verdict": "not recovered",
+      "rows": [
+        {
+          "category": "Body Stampings",
+          "trueFreightBeta": 0.0062,
+          "modelledPct": 0.0043
+        },
+        {
+          "category": "Braking",
+          "trueFreightBeta": 0.0158,
+          "modelledPct": 0.0626
+        },
+        {
+          "category": "Chassis",
+          "trueFreightBeta": 0.0123,
+          "modelledPct": -0.255
+        },
+        {
+          "category": "Electrical",
+          "trueFreightBeta": 0.0176,
+          "modelledPct": -0.6503
+        },
+        {
+          "category": "Fasteners",
+          "trueFreightBeta": 0.005,
+          "modelledPct": -0.2796
+        },
+        {
+          "category": "HVAC",
+          "trueFreightBeta": 0.0183,
+          "modelledPct": 0.2682
+        },
+        {
+          "category": "Interior Trim",
+          "trueFreightBeta": 0.0101,
+          "modelledPct": 0.8421
+        },
+        {
+          "category": "Lighting",
+          "trueFreightBeta": 0.0126,
+          "modelledPct": 0.1202
+        },
+        {
+          "category": "Powertrain",
+          "trueFreightBeta": 0.0134,
+          "modelledPct": 0.1702
+        },
+        {
+          "category": "Sensors",
+          "trueFreightBeta": 0.0224,
+          "modelledPct": -0.461
+        }
+      ]
+    },
+    "studies": [
+      {
+        "id": "red_sea_houthi_2023",
+        "cat": "chokepoint",
+        "anchor": "2023-12",
+        "path": [
+          {
+            "offset": -6,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -5,
+            "logDelta": -0.0142,
+            "pctDelta": -1.412
+          },
+          {
+            "offset": -4,
+            "logDelta": -0.0092,
+            "pctDelta": -0.91
+          },
+          {
+            "offset": -3,
+            "logDelta": -0.0114,
+            "pctDelta": -1.137
+          },
+          {
+            "offset": -2,
+            "logDelta": -0.0084,
+            "pctDelta": -0.834
+          },
+          {
+            "offset": -1,
+            "logDelta": -0.002,
+            "pctDelta": -0.203
+          },
+          {
+            "offset": 0,
+            "logDelta": 0.0,
+            "pctDelta": 0.0
+          },
+          {
+            "offset": 1,
+            "logDelta": 0.0006,
+            "pctDelta": 0.057
+          },
+          {
+            "offset": 2,
+            "logDelta": -0.005,
+            "pctDelta": -0.503
+          },
+          {
+            "offset": 3,
+            "logDelta": -0.0085,
+            "pctDelta": -0.845
+          },
+          {
+            "offset": 4,
+            "logDelta": -0.0068,
+            "pctDelta": -0.676
+          },
+          {
+            "offset": 5,
+            "logDelta": 0.0088,
+            "pctDelta": 0.878
+          },
+          {
+            "offset": 6,
+            "logDelta": 0.0092,
+            "pctDelta": 0.92
+          }
+        ]
+      },
+      {
+        "id": "israel_hamas_2023",
+        "cat": "conflict",
+        "anchor": "2023-10",
+        "path": [
+          {
+            "offset": -6,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -5,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -4,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -3,
+            "logDelta": -0.0059,
+            "pctDelta": -0.584
+          },
+          {
+            "offset": -2,
+            "logDelta": -0.0008,
+            "pctDelta": -0.078
+          },
+          {
+            "offset": -1,
+            "logDelta": -0.0031,
+            "pctDelta": -0.306
+          },
+          {
+            "offset": 0,
+            "logDelta": 0.0,
+            "pctDelta": 0.0
+          },
+          {
+            "offset": 1,
+            "logDelta": 0.0063,
+            "pctDelta": 0.636
+          },
+          {
+            "offset": 2,
+            "logDelta": 0.0084,
+            "pctDelta": 0.841
+          },
+          {
+            "offset": 3,
+            "logDelta": 0.0089,
+            "pctDelta": 0.898
+          },
+          {
+            "offset": 4,
+            "logDelta": 0.0033,
+            "pctDelta": 0.334
+          },
+          {
+            "offset": 5,
+            "logDelta": -0.0001,
+            "pctDelta": -0.012
+          },
+          {
+            "offset": 6,
+            "logDelta": 0.0016,
+            "pctDelta": 0.159
+          }
+        ]
+      },
+      {
+        "id": "eu_cbam_phasein_2023",
+        "cat": "trade_agreement",
+        "anchor": "2023-10",
+        "path": [
+          {
+            "offset": -6,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -5,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -4,
+            "logDelta": null,
+            "pctDelta": null
+          },
+          {
+            "offset": -3,
+            "logDelta": -0.0059,
+            "pctDelta": -0.584
+          },
+          {
+            "offset": -2,
+            "logDelta": -0.0008,
+            "pctDelta": -0.078
+          },
+          {
+            "offset": -1,
+            "logDelta": -0.0031,
+            "pctDelta": -0.306
+          },
+          {
+            "offset": 0,
+            "logDelta": 0.0,
+            "pctDelta": 0.0
+          },
+          {
+            "offset": 1,
+            "logDelta": 0.0063,
+            "pctDelta": 0.636
+          },
+          {
+            "offset": 2,
+            "logDelta": 0.0084,
+            "pctDelta": 0.841
+          },
+          {
+            "offset": 3,
+            "logDelta": 0.0089,
+            "pctDelta": 0.898
+          },
+          {
+            "offset": 4,
+            "logDelta": 0.0033,
+            "pctDelta": 0.334
+          },
+          {
+            "offset": 5,
+            "logDelta": -0.0001,
+            "pctDelta": -0.012
+          },
+          {
+            "offset": 6,
+            "logDelta": 0.0016,
+            "pctDelta": 0.159
+          }
+        ]
+      },
+      {
+        "id": "india_auto_duty_review_2024",
+        "cat": "tariff",
+        "anchor": "2024-07",
+        "path": [
+          {
+            "offset": -6,
+            "logDelta": -0.0169,
+            "pctDelta": -1.672
+          },
+          {
+            "offset": -5,
+            "logDelta": -0.0225,
+            "pctDelta": -2.222
+          },
+          {
+            "offset": -4,
+            "logDelta": -0.0259,
+            "pctDelta": -2.559
+          },
+          {
+            "offset": -3,
+            "logDelta": -0.0242,
+            "pctDelta": -2.393
+          },
+          {
+            "offset": -2,
+            "logDelta": -0.0087,
+            "pctDelta": -0.865
+          },
+          {
+            "offset": -1,
+            "logDelta": -0.0083,
+            "pctDelta": -0.825
+          },
+          {
+            "offset": 0,
+            "logDelta": 0.0,
+            "pctDelta": 0.0
+          },
+          {
+            "offset": 1,
+            "logDelta": 0.0022,
+            "pctDelta": 0.223
+          },
+          {
+            "offset": 2,
+            "logDelta": 0.0168,
+            "pctDelta": 1.695
+          },
+          {
+            "offset": 3,
+            "logDelta": 0.0152,
+            "pctDelta": 1.527
+          },
+          {
+            "offset": 4,
+            "logDelta": 0.0075,
+            "pctDelta": 0.756
+          },
+          {
+            "offset": 5,
+            "logDelta": 0.0089,
+            "pctDelta": 0.891
+          },
+          {
+            "offset": 6,
+            "logDelta": 0.0159,
+            "pctDelta": 1.605
+          }
+        ]
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "freight -20%",
+        "family": "freight",
+        "shock": -20.0,
+        "change": 0.2529
+      },
+      {
+        "name": "freight -10%",
+        "family": "freight",
+        "shock": -10.0,
+        "change": 0.2529
+      },
+      {
+        "name": "freight +10%",
+        "family": "freight",
+        "shock": 10.0,
+        "change": -0.0178
+      },
+      {
+        "name": "freight +20%",
+        "family": "freight",
+        "shock": 20.0,
+        "change": -0.0878
+      },
+      {
+        "name": "freight +40%",
+        "family": "freight",
+        "shock": 40.0,
+        "change": -0.232
+      },
+      {
+        "name": "gpr +25%",
+        "family": "gpr",
+        "shock": 25.0,
+        "change": 0.0657
+      },
+      {
+        "name": "gpr +50%",
+        "family": "gpr",
+        "shock": 50.0,
+        "change": 0.0898
+      },
+      {
+        "name": "gpr +100%",
+        "family": "gpr",
+        "shock": 100.0,
+        "change": 0.1033
+      },
+      {
+        "name": "duty +5%",
+        "family": "duty",
+        "shock": 5.0,
+        "change": -0.113
+      },
+      {
+        "name": "duty +10%",
+        "family": "duty",
+        "shock": 10.0,
+        "change": -0.2879
+      }
+    ]
+  },
+  "ablation": {
+    "xgboostTestMapeWithGeo": 3.5475,
+    "xgboostTestMapeWithoutGeo": 3.296,
+    "relativeLiftPct": -7.6295,
+    "nGeoFeatures": 108,
+    "nFxFeatures": 38,
+    "interpretation": "Positive lift means geo features improved holdout MAPE on the synthetic panel. Small/negative lift is expected when mediators are collinear with FX/time \u2014 mechanism diagnostics matter more than this number."
+  }
+}
