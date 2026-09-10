@@ -27,3 +27,6 @@ venv/
 # version-controlled.
 # data/
 # reports/
+
+# git worktrees
+.worktrees/
