@@ -4,27 +4,37 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node scripts/dev-all.mjs",
+    "build": "npm run sync-data && tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync-data": "node scripts/sync-part-data.mjs",
+    "predev": "npm run sync-data",
+    "test": "vitest run"
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "openai": "^4.77.0",
+    "papaparse": "^5.4.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",
+    "@types/papaparse": "^5.3.15",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vercel/node": "^3.2.24",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.4",
+    "dotenv": "^16.4.7",
     "oxlint": "^1.71.0",
     "postcss": "^8.5.23",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.19.2",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^2.1.8"
   }
 }
