@@ -1298,7 +1298,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 // dashboard/scripts/dev-api-server.mjs
 import 'dotenv/config';
 import http from 'node:http';
-import { pathToFileURL } from 'node:url';
 
 const PORT = process.env.API_PORT || 3001;
 
@@ -1351,7 +1350,7 @@ const server = http.createServer(async (req, res) => {
   }
   withHelpers(res);
   try {
-    const mod = await import(pathToFileURL(new URL('../api/chat.ts', import.meta.url)).href);
+    const mod = await import(new URL('../api/chat.ts', import.meta.url).href);
     await mod.default(req, res);
   } catch (err) {
     console.error('[dev-api] handler error', err);
