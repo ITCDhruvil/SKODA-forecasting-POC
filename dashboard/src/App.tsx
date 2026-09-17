@@ -26,6 +26,7 @@ import { ModelComparison } from './components/ModelComparison';
 import { MacroChart } from './components/MacroChart';
 import { ProvenanceBanner } from './components/ProvenanceBanner';
 import { OpsStrip } from './components/OpsStrip';
+import { ChatWidget } from './components/ChatWidget';
 import { IconCalendar, IconExport } from './components/Icons';
 import { monthLabel, setCurrencySymbol } from './lib/format';
 
@@ -287,6 +288,8 @@ export default function App() {
           onClose={() => setParametersOpen(false)}
         />
       )}
+
+      <ChatWidget />
     </div>
   );
 }
