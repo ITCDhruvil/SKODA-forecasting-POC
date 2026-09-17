@@ -47,14 +47,14 @@ One function per data slice, each reading only the file(s) it needs from `data/p
 | Tool | Source file(s) | Purpose |
 |---|---|---|
 | `getKpis()` | `dashboard.json` | Headline KPIs shown on the main dashboard |
-| `searchParts(query?, category?, vendor?, project?)` | `dashboard.json` | Find parts by name/id/filters, returns matching `PartRow[]` (capped, e.g. top 25) |
-| `getPartForecast(partId)` | `dashboard.json` | Full detail for one part: current/forecast price, sparkline, anomaly flag |
-| `getTopMovers(direction, n)` | `dashboard.json` | Biggest forecast increases/decreases |
+| `searchParts(query?, category?, vendor?, project?)` | `data/processed/forecasts.csv` (model=`xgboost`, horizon=1) + `data/raw/parts_prices.csv` (latest month, for current price) | Find parts by name/id/filters across all 480 parts, returns matching rows (capped, e.g. top 25) |
+| `getPartForecast(partId)` | same as above, all 6 horizons for that part | Full detail for one part: current price + 6-month forecast curve (xgboost), anomaly flag |
+| `getTopMovers(direction, n)` | same as above | Biggest forecast increases/decreases across all 480 parts (not just the 12 in `dashboard.json.topParts`, which is display-only) |
 | `getCategoryBreakdown()` | `dashboard.json` | Category donut data |
 | `getModelComparison()` | `dashboard.json` or `evaluation_compact.json` | Model comparison table |
 | `getValidationSummary()` | `validation.json` | Real-data validation scores |
 | `getFutureTestResults()` | `future_test.json` | Simulated-future test results |
-| `getFxScenarios(family?)` | `fx_analysis.json` | FX scenario impacts, optionally filtered |
+| `getFxScenarios()` | `fx_analysis.json` | FX scenario impacts (no `family` field exists on FX scenarios, unlike geo — returns all) |
 | `getGeoScenarios(family?)` | `geo_analysis.json` | Geo scenario impacts, optionally filtered |
 | `getGeoEventStudies()` | `geo_analysis.json` | Curated event studies |
 | `getHierarchy(level)` | `dashboard.json` | Project/vendor/category/part rollups |
@@ -62,7 +62,9 @@ One function per data slice, each reading only the file(s) it needs from `data/p
 | `getDataProvenance()` | `dashboard.json` | Source/provenance info for the "Data Source" panel |
 
 Each tool:
-- Reads its JSON file with Node `fs` (files bundled into the function at build time — confirm with a `vercel.json` `includeFiles` glob if Vercel's default tracing doesn't pick up `data/processed/**`).
+- Reads its source file(s) with Node `fs` (JSON via `JSON.parse`; the two CSVs via the `papaparse` library rather than hand-rolled splitting, since field values can't be assumed comma-free).
+- **Deployment note:** Vercel's deployment root for this project is `dashboard/` (where `.vercel/project.json` lives) — `data/processed/` and `data/raw/` at the repo root are *not* included in a deployment. `dashboard/public/dashboard.json` already solves this for the main payload (the Python export stage writes it there directly). `forecasts.csv` and `parts_prices.csv` have no such copy today, so Phase 1 adds a `dashboard/scripts/sync-part-data.mjs` that copies them into `dashboard/api/_data/` (committed to git, like `public/dashboard.json`, and re-run whenever the Python pipeline regenerates data — wired into `predev`/`prebuild`). `dashboard/vercel.json` declares `includeFiles` for `api/_data/**` so the serverless bundle carries them.
+- Parses `forecasts.csv` and `parts_prices.csv` once per warm function instance (module-level cache — parse on first call, reuse for subsequent calls in the same instance) rather than on every request, since they're 1-1.2MB each.
 - Returns a small, typed JSON object/array — never the raw file.
 - On file-read/parse failure, returns `{ error: "data unavailable: <what>" }` instead of throwing, so the model can tell the user rather than the request 500ing.
 
