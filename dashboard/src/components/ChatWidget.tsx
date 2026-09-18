@@ -1,10 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconChat, IconClose, IconCopy, IconSend } from './Icons';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { IconChat, IconClear, IconClose, IconCopy, IconSend } from './Icons';
 
 interface ChatEntry {
   role: 'user' | 'assistant';
   content: string;
 }
+
+const markdownComponents = {
+  p: ({ ...props }) => <p className="text-sm leading-relaxed text-slate-800" {...props} />,
+  strong: ({ ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
+  a: ({ ...props }) => (
+    <a className="text-brand-600 underline hover:text-brand-700" target="_blank" rel="noreferrer" {...props} />
+  ),
+  ul: ({ ...props }) => <ul className="list-disc space-y-1 pl-5 text-sm text-slate-800" {...props} />,
+  ol: ({ ...props }) => <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-800" {...props} />,
+  li: ({ ...props }) => <li className="leading-relaxed" {...props} />,
+  h1: ({ ...props }) => <h1 className="mb-1 mt-2 text-[15px] font-semibold text-slate-900" {...props} />,
+  h2: ({ ...props }) => <h2 className="mb-1 mt-2 text-sm font-semibold text-slate-900" {...props} />,
+  h3: ({ ...props }) => <h3 className="mb-1 mt-2 text-sm font-semibold text-slate-900" {...props} />,
+  code: ({ ...props }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-800" {...props} />,
+  table: ({ ...props }) => (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-xs" {...props} />
+    </div>
+  ),
+  thead: ({ ...props }) => <thead className="border-b border-slate-200" {...props} />,
+  th: ({ ...props }) => <th className="px-2 py-1 text-left font-semibold text-slate-600" {...props} />,
+  td: ({ ...props }) => <td className="border-t border-slate-100 px-2 py-1 text-slate-700" {...props} />,
+};
 
 function TypingIndicator() {
   return (
@@ -41,7 +66,15 @@ function MessageRow({
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="text-xs font-semibold text-slate-500">{isUser ? 'You' : 'Assistant'}</span>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{message.content}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{message.content}</p>
+        ) : (
+          <div className="space-y-2">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
         {!isUser && (
           <button
             type="button"
@@ -143,13 +176,13 @@ export function ChatWidget() {
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-6 backdrop-blur-sm md:p-10"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
-        >
-          <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-y-6 right-6 z-50 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <p className="text-sm font-semibold text-slate-900">Ask about this dashboard</p>
               <div className="flex items-center gap-1">
@@ -157,15 +190,18 @@ export function ChatWidget() {
                   <button
                     type="button"
                     onClick={clearChat}
-                    className="rounded-md px-2 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Clear chat"
+                    title="Clear chat"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                   >
-                    Clear chat
+                    <IconClear className="h-4 w-4" />
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Close chat"
+                  title="Close chat"
                   className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                 >
                   <IconClose className="h-4 w-4" />
@@ -173,7 +209,11 @@ export function ChatWidget() {
               </div>
             </div>
 
-            <div role="log" aria-live="polite" className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
+            <div
+              role="log"
+              aria-live="polite"
+              className="scrollbar-hidden flex-1 space-y-5 overflow-y-auto px-5 py-4"
+            >
               {messages.length === 0 && (
                 <p className="text-sm text-slate-400">
                   Ask about forecasts, alerts, validation, scenarios, or how to use this tool.
@@ -215,7 +255,7 @@ export function ChatWidget() {
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );
