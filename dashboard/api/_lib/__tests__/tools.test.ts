@@ -42,12 +42,18 @@ describe('getPartForecast', () => {
   it('returns full detail for a known part', () => {
     const known = getPartsIndex()[0];
     const result = getPartForecast({ partId: known.partId });
+    if ('error' in result) {
+      throw new Error(`expected a PartRecord, got error: ${result.error}`);
+    }
     expect(result.partId).toBe(known.partId);
     expect(result.forecast).toHaveLength(6);
   });
 
   it('returns a structured error for an unknown part', () => {
     const result = getPartForecast({ partId: 'DOES-NOT-EXIST' });
+    if (!('error' in result)) {
+      throw new Error('expected an error, got a PartRecord');
+    }
     expect(result.error).toBeDefined();
   });
 });

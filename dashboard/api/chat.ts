@@ -26,10 +26,13 @@ function toOpenAIMessage(m: ChatMessage): OpenAI.Chat.ChatCompletionMessageParam
 }
 
 class OpenAIChatClient implements ChatClient {
-  constructor(
-    private openai: OpenAI,
-    private model: string,
-  ) {}
+  private openai: OpenAI;
+  private model: string;
+
+  constructor(openai: OpenAI, model: string) {
+    this.openai = openai;
+    this.model = model;
+  }
 
   async createCompletion(messages: ChatMessage[]) {
     const completion = await this.openai.chat.completions.create({
