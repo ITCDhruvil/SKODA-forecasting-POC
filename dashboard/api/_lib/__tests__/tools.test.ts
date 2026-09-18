@@ -16,7 +16,23 @@ import {
   getHierarchy,
   getAlerts,
   getDataProvenance,
+  getGeoHitlAlerts,
+  confirmGeoAlert,
+  dismissGeoAlert,
 } from '../tools';
+import type { KvHashClient } from '../hitlStatus';
+
+function fakeKvClient(initial: Record<string, string> = {}): KvHashClient {
+  const store: Record<string, string> = { ...initial };
+  return {
+    hgetall: async (key: string) => (key === 'hitl-status' ? { ...store } : null),
+    hset: async (key: string, fields: Record<string, string>) => {
+      if (key !== 'hitl-status') throw new Error(`unexpected key: ${key}`);
+      Object.assign(store, fields);
+      return Object.keys(fields).length;
+    },
+  };
+}
 
 describe('searchParts', () => {
   it('finds parts by partId substring, case-insensitively', () => {
@@ -148,5 +164,53 @@ describe('dashboard.json passthrough tools', () => {
     const result = getDataProvenance();
     expect(Array.isArray(result.dataSources)).toBe(true);
     expect(result.provenance).toBeDefined();
+  });
+});
+
+describe('getGeoHitlAlerts / confirmGeoAlert / dismissGeoAlert', () => {
+  it('lists all alerts as pending when the store is empty', async () => {
+    const client = fakeKvClient();
+    const result = await getGeoHitlAlerts(client);
+    if ('error' in result) throw new Error('expected success');
+    expect(result.alerts.length).toBeGreaterThan(0);
+    for (const a of result.alerts) expect(a.status).toBe('pending');
+  });
+
+  it('confirmGeoAlert persists the status and returns the impact block', async () => {
+    const client = fakeKvClient();
+    const listBefore = await getGeoHitlAlerts(client);
+    if ('error' in listBefore) throw new Error('expected success');
+    const alertId = listBefore.alerts[0].alertId;
+
+    const result = await confirmGeoAlert(client, { alertId });
+    if ('error' in result) throw new Error('expected success');
+    expect(result.ok).toBe(true);
+    expect(result.impact).toBeDefined();
+
+    const listAfter = await getGeoHitlAlerts(client);
+    if ('error' in listAfter) throw new Error('expected success');
+    const updated = listAfter.alerts.find((a) => a.alertId === alertId);
+    expect(updated?.status).toBe('confirmed');
+  });
+
+  it('dismissGeoAlert persists the status with no impact returned', async () => {
+    const client = fakeKvClient();
+    const listBefore = await getGeoHitlAlerts(client);
+    if ('error' in listBefore) throw new Error('expected success');
+    const alertId = listBefore.alerts[0].alertId;
+
+    const result = await dismissGeoAlert(client, { alertId });
+    expect(result).toEqual({ ok: true });
+
+    const listAfter = await getGeoHitlAlerts(client);
+    if ('error' in listAfter) throw new Error('expected success');
+    const updated = listAfter.alerts.find((a) => a.alertId === alertId);
+    expect(updated?.status).toBe('dismissed');
+  });
+
+  it('confirmGeoAlert returns a structured error for an unknown alertId', async () => {
+    const client = fakeKvClient();
+    const result = await confirmGeoAlert(client, { alertId: 'DOES-NOT-EXIST' });
+    expect(result).toEqual({ error: 'unknown alertId' });
   });
 });

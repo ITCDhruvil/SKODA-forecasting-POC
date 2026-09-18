@@ -1,6 +1,8 @@
 // dashboard/api/lib/tools.ts
 import type OpenAI from 'openai';
 import { getDashboardJson, getPartsIndex, type PartRecord } from './data';
+import { getAllStatuses, setStatus, type KvHashClient } from './hitlStatus';
+import { kv } from './kvClient';
 
 function changePct(current: number | null, forecast: number | null): number | null {
   if (current === null || forecast === null || current === 0) return null;
@@ -122,6 +124,53 @@ export function getDataProvenance() {
   return { dataSources: d.dataSources, provenance: d.provenance };
 }
 
+export async function getGeoHitlAlerts(client: KvHashClient): Promise<
+  | {
+      alerts: {
+        alertId: string;
+        headline: string;
+        category: string;
+        severity: number;
+        regionScope: string;
+        status: string;
+      }[];
+    }
+  | { error: string }
+> {
+  const alerts = getDashboardJson().geoAnalysis?.hitl?.alerts ?? [];
+  const statuses = await getAllStatuses(client);
+  // Note: `HitlStatusMap`'s string index signature means TypeScript can't narrow
+  // `statuses` down to `{ error: string }` inside `if ('error' in statuses)` — it
+  // keeps the full union there. Checking the negation narrows the success case
+  // (`HitlStatusMap`) correctly, so we branch on that instead and cast the
+  // (structurally guaranteed) error case on the way out.
+  if (!('error' in statuses)) {
+    return {
+      alerts: alerts.map((a) => ({
+        alertId: a.alertId,
+        headline: a.headline,
+        category: a.category,
+        severity: a.severity,
+        regionScope: a.regionScope,
+        status: statuses[a.alertId] ?? 'pending',
+      })),
+    };
+  }
+  return statuses as { error: string };
+}
+
+export async function confirmGeoAlert(client: KvHashClient, args: { alertId: string }) {
+  const result = await setStatus(client, args.alertId, 'confirmed');
+  if ('error' in result) return result;
+  const alerts = getDashboardJson().geoAnalysis?.hitl?.alerts ?? [];
+  const alert = alerts.find((a) => a.alertId === args.alertId);
+  return { ok: true as const, impact: alert?.impact ?? null };
+}
+
+export async function dismissGeoAlert(client: KvHashClient, args: { alertId: string }) {
+  return setStatus(client, args.alertId, 'dismissed');
+}
+
 export const TOOL_HANDLERS: Record<string, (args: any) => unknown> = {
   searchParts,
   getPartForecast,
@@ -137,6 +186,9 @@ export const TOOL_HANDLERS: Record<string, (args: any) => unknown> = {
   getHierarchy,
   getAlerts,
   getDataProvenance,
+  getGeoHitlAlerts: () => getGeoHitlAlerts(kv),
+  confirmGeoAlert: (args) => confirmGeoAlert(kv, args),
+  dismissGeoAlert: (args) => dismissGeoAlert(kv, args),
 };
 
 export const TOOL_DEFINITIONS: OpenAI.Chat.ChatCompletionTool[] = [
@@ -276,6 +328,38 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.ChatCompletionTool[] = [
       name: 'getDataProvenance',
       description: 'Get the provenance of every data source feeding the dashboard (macro anchor, FX, freight, etc.).',
       parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'getGeoHitlAlerts',
+      description: 'List geopolitical HITL alerts awaiting analyst review, with their current status (pending/confirmed/dismissed).',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'confirmGeoAlert',
+      description: 'Confirm a geopolitical alert, revealing its precomputed price impact. Use getGeoHitlAlerts first to find the right alertId.',
+      parameters: {
+        type: 'object',
+        properties: { alertId: { type: 'string' } },
+        required: ['alertId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'dismissGeoAlert',
+      description: 'Dismiss a geopolitical alert (no impact shown). Use getGeoHitlAlerts first to find the right alertId.',
+      parameters: {
+        type: 'object',
+        properties: { alertId: { type: 'string' } },
+        required: ['alertId'],
+      },
     },
   },
 ];
