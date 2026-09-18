@@ -1,30 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import type { GeoHitlBlock, GeoAlert } from '../types';
 import { formatSigned } from '../lib/format';
 
-const STORAGE_KEY = 'geo-hitl-state-v1';
-
 type AlertStatus = 'pending' | 'confirmed' | 'dismissed';
 
 type StoredState = Record<string, AlertStatus>;
-
-function loadStored(): StoredState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as StoredState) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveStored(state: StoredState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    /* quota / private mode */
-  }
-}
 
 function formatReportedAt(iso: string): string {
   try {
@@ -205,15 +186,37 @@ function AlertCard({
  * only reveal price impact after explicit analyst confirmation.
  */
 export function GeoHitlPanel({ hitl }: { hitl?: GeoHitlBlock }) {
-  const [stored, setStored] = useState<StoredState>(loadStored);
+  const [stored, setStored] = useState<StoredState>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/hitl-status')
+      .then((r) => r.json())
+      .then((payload: { statuses?: StoredState }) => {
+        if (payload.statuses) setStored(payload.statuses);
+      })
+      .catch(() => {
+        /* leave everything pending if the initial load fails */
+      });
+  }, []);
 
   const setStatus = useCallback((alertId: string, status: AlertStatus) => {
-    setStored((prev) => {
-      const next = { ...prev, [alertId]: status };
-      saveStored(next);
-      return next;
-    });
-  }, []);
+    const previous = stored;
+    setStored((prev) => ({ ...prev, [alertId]: status }));
+    setSaveError(null);
+    fetch('/api/hitl-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alertId, status }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('save failed');
+      })
+      .catch(() => {
+        setStored(previous);
+        setSaveError("Couldn't save your decision — try again.");
+      });
+  }, [stored]);
 
   const alerts = hitl?.alerts ?? [];
   const drivers = hitl?.forecastDrivers;
@@ -242,6 +245,12 @@ export function GeoHitlPanel({ hitl }: { hitl?: GeoHitlBlock }) {
         </div>
         <p className="mt-2 text-sm text-slate-600">{hitl.policy}</p>
       </div>
+
+      {saveError && (
+        <div className="card border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700">
+          {saveError}
+        </div>
+      )}
 
       {/* Why the forecast moved */}
       {drivers?.available && drivers.drivers && drivers.drivers.length > 0 && (
