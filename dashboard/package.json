@@ -14,6 +14,7 @@
     "typecheck:api": "tsc -b tsconfig.api.json"
   },
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "clsx": "^2.1.1",
     "openai": "^4.77.0",
     "papaparse": "^5.4.1",
