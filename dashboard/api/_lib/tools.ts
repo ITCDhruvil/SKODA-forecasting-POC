@@ -171,6 +171,11 @@ export async function dismissGeoAlert(client: KvHashClient, args: { alertId: str
   return setStatus(client, args.alertId, 'dismissed');
 }
 
+// Handlers may be synchronous or async (returning a plain value or a Promise<value>);
+// runChatLoop always `await`s the result, so either style works. Because the return
+// type here is `unknown` rather than `unknown | Promise<unknown>`, TypeScript won't
+// flag a caller that forgets to await — that's exactly how an un-awaited async handler
+// (serializing to "{}") shipped once before, so don't rely on the type system to catch it again.
 export const TOOL_HANDLERS: Record<string, (args: any) => unknown> = {
   searchParts,
   getPartForecast,
