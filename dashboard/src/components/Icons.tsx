@@ -172,6 +172,27 @@ export const IconChat = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const IconClose = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M18 6 6 18" />
+    <path d="M6 6l12 12" />
+  </svg>
+);
+
+export const IconSend = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 19V5" />
+    <path d="M5 12l7-7 7 7" />
+  </svg>
+);
+
+export const IconCopy = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+  </svg>
+);
+
 export const ICON_MAP: Record<string, (p: IconProps) => ReactElement> = {
   trending: IconTrending,
   package: IconPackage,
