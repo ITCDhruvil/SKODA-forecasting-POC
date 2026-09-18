@@ -8,6 +8,14 @@ interface ChatEntry {
   content: string;
 }
 
+const SUGGESTED_PROMPTS = [
+  'Which parts are seeing the biggest price increases?',
+  "What's our spend at risk this quarter?",
+  'Are there any geopolitical risks I need to review?',
+  'How accurate is the forecasting model?',
+  'How do I see the FX impact scenarios?',
+];
+
 const markdownComponents = {
   p: ({ ...props }) => <p className="text-sm leading-relaxed text-slate-800" {...props} />,
   strong: ({ ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
@@ -117,8 +125,8 @@ export function ChatWidget() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  async function send() {
-    const text = input.trim();
+  async function send(override?: string) {
+    const text = (override ?? input).trim();
     if (!text || loading) return;
 
     const next = [...messages, { role: 'user' as const, content: text }];
@@ -215,9 +223,24 @@ export function ChatWidget() {
               className="scrollbar-hidden flex-1 space-y-5 overflow-y-auto px-5 py-4"
             >
               {messages.length === 0 && (
-                <p className="text-sm text-slate-400">
-                  Ask about forecasts, alerts, validation, scenarios, or how to use this tool.
-                </p>
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-slate-400">
+                    Ask about forecasts, alerts, validation, scenarios, or how to use this tool.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SUGGESTED_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => send(prompt)}
+                        disabled={loading}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-left text-xs text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
               {messages.map((m, i) => (
                 <MessageRow
@@ -245,7 +268,7 @@ export function ChatWidget() {
                   className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-60"
                 />
                 <button
-                  onClick={send}
+                  onClick={() => send()}
                   disabled={loading || !input.trim()}
                   aria-label="Send message"
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
