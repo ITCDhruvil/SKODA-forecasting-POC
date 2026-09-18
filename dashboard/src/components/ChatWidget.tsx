@@ -44,7 +44,7 @@ function TypingIndicator() {
     <div className="flex items-start gap-3">
       <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-brand-600" />
       <div className="flex flex-col gap-1 pt-1.5">
-        <span className="text-xs font-semibold text-slate-500">Assistant</span>
+        <span className="text-xs font-semibold text-slate-500">Radar</span>
         <div className="flex items-center gap-1 py-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.3s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.15s]" />
@@ -73,7 +73,7 @@ function MessageRow({
         }
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-xs font-semibold text-slate-500">{isUser ? 'You' : 'Assistant'}</span>
+        <span className="text-xs font-semibold text-slate-500">{isUser ? 'You' : 'Radar'}</span>
         {isUser ? (
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{message.content}</p>
         ) : (
@@ -178,7 +178,7 @@ export function ChatWidget() {
       <button
         onClick={() => setOpen((o) => !o)}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700"
-        aria-label={open ? 'Close chat' : 'Open chat'}
+        aria-label={open ? 'Close Radar' : 'Open Radar'}
       >
         <IconChat className="h-6 w-6" />
       </button>
@@ -192,7 +192,7 @@ export function ChatWidget() {
           />
           <div className="fixed inset-y-3 right-3 z-50 flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <p className="text-sm font-semibold text-slate-900">Ask about this dashboard</p>
+              <p className="text-sm font-semibold text-slate-900">Radar</p>
               <div className="flex items-center gap-1">
                 {messages.length > 0 && (
                   <button
@@ -208,8 +208,8 @@ export function ChatWidget() {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Close chat"
-                  title="Close chat"
+                  aria-label="Close Radar"
+                  title="Close Radar"
                   className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                 >
                   <IconClose className="h-4 w-4" />
@@ -264,7 +264,7 @@ export function ChatWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={loading}
-                  placeholder="Send a message about this dashboard"
+                  placeholder="Ask Radar about this dashboard"
                   className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-60"
                 />
                 <button
