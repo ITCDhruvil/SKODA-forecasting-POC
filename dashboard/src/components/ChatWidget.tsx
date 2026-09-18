@@ -182,7 +182,7 @@ export function ChatWidget() {
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-6 right-6 z-50 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div className="fixed inset-y-3 right-3 z-50 flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <p className="text-sm font-semibold text-slate-900">Ask about this dashboard</p>
               <div className="flex items-center gap-1">
