@@ -2,6 +2,10 @@
   "functions": {
     "api/**/*.ts": {
       "includeFiles": "api/_data/**"
+    },
+    "api/chat.ts": {
+      "includeFiles": "api/_data/**",
+      "maxDuration": 30
     }
   }
 }

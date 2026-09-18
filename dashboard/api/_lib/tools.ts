@@ -53,6 +53,9 @@ export function getPartForecast(args: { partId: string }) {
 }
 
 export function getTopMovers(args: { direction: 'up' | 'down'; n?: number }) {
+  if (args.direction !== 'up' && args.direction !== 'down') {
+    return { error: "direction must be 'up' or 'down'" };
+  }
   const n = args.n ?? 10;
   const withChange = getPartsIndex()
     .map((rec) => ({

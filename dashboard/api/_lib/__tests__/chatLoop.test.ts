@@ -52,6 +52,25 @@ describe('runChatLoop', () => {
     expect(toolMessage?.content).toContain('unknown tool');
   });
 
+  it('sanitizes a handler-throw into a generic error instead of leaking the raw message', async () => {
+    const handler = vi.fn().mockImplementation(() => {
+      throw new Error("ENOENT: no such file or directory, open '/var/task/api/_data/dashboard.json'");
+    });
+    const client = fakeClient([
+      { content: null, toolCalls: [{ id: 'call_1', name: 'getKpis', arguments: '{}' }] },
+      { content: 'ok', toolCalls: [] },
+    ]);
+
+    const result = await runChatLoop(client, { getKpis: handler }, baseMessages);
+
+    expect(result).toBe('ok');
+    const secondCallMessages = (client.createCompletion as any).mock.calls[1][0] as ChatMessage[];
+    const toolMessage = secondCallMessages.find((m) => m.role === 'tool');
+    expect(toolMessage?.content).toBe(JSON.stringify({ error: 'data unavailable: getKpis' }));
+    expect(toolMessage?.content).not.toContain('ENOENT');
+    expect(toolMessage?.content).not.toContain('/var/task');
+  });
+
   it('stops after MAX_ITERATIONS and returns a fallback message', async () => {
     const client: ChatClient = {
       createCompletion: vi

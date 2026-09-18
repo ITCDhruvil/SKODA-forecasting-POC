@@ -6,6 +6,9 @@ import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
 import { SYSTEM_PROMPT } from './_lib/systemPrompt';
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const MAX_MESSAGES = 30;
+const MAX_MESSAGE_LENGTH = 4000;
+const OPENAI_TIMEOUT_MS = 25_000;
 
 function toOpenAIMessage(m: ChatMessage): OpenAI.Chat.ChatCompletionMessageParam {
   if (m.role === 'tool') {
@@ -79,6 +82,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  if (body.messages.length > MAX_MESSAGES) {
+    res.status(400).json({ error: 'too many messages' });
+    return;
+  }
+  if (body.messages.some((m) => m.content.length > MAX_MESSAGE_LENGTH)) {
+    res.status(400).json({ error: 'message too long' });
+    return;
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     res.status(502).json({ error: 'chat temporarily unavailable' });
     return;
@@ -90,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ];
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS });
     const client = new OpenAIChatClient(openai, MODEL);
     const reply = await runChatLoop(client, TOOL_HANDLERS, messages);
     res.status(200).json({ reply });

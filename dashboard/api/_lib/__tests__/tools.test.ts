@@ -61,6 +61,9 @@ describe('getPartForecast', () => {
 describe('getTopMovers', () => {
   it('sorts descending for direction "up"', () => {
     const result = getTopMovers({ direction: 'up', n: 5 });
+    if ('error' in result) {
+      throw new Error(`expected a list of movers, got error: ${result.error}`);
+    }
     expect(result).toHaveLength(5);
     for (let i = 1; i < result.length; i++) {
       expect(result[i - 1].changePct).toBeGreaterThanOrEqual(result[i].changePct as number);
@@ -69,9 +72,20 @@ describe('getTopMovers', () => {
 
   it('sorts ascending for direction "down"', () => {
     const result = getTopMovers({ direction: 'down', n: 5 });
+    if ('error' in result) {
+      throw new Error(`expected a list of movers, got error: ${result.error}`);
+    }
     for (let i = 1; i < result.length; i++) {
       expect(result[i - 1].changePct).toBeLessThanOrEqual(result[i].changePct as number);
     }
+  });
+
+  it('returns a structured error for an invalid or missing direction', () => {
+    const missing = getTopMovers({} as { direction: 'up' | 'down' });
+    expect('error' in missing).toBe(true);
+
+    const bogus = getTopMovers({ direction: 'sideways' as 'up' | 'down' });
+    expect('error' in bogus).toBe(true);
   });
 });
 
