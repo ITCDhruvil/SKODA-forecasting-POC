@@ -176,6 +176,22 @@ describe('getGeoHitlAlerts / confirmGeoAlert / dismissGeoAlert', () => {
     for (const a of result.alerts) expect(a.status).toBe('pending');
   });
 
+  it('returns totalCount/pendingCount matching the actual alerts array', async () => {
+    const client = fakeKvClient();
+    const listAllPending = await getGeoHitlAlerts(client);
+    if ('error' in listAllPending) throw new Error('expected success');
+    expect(listAllPending.totalCount).toBe(listAllPending.alerts.length);
+    expect(listAllPending.pendingCount).toBe(listAllPending.alerts.length);
+
+    const alertId = listAllPending.alerts[0].alertId;
+    await confirmGeoAlert(client, { alertId });
+
+    const listAfterOneConfirmed = await getGeoHitlAlerts(client);
+    if ('error' in listAfterOneConfirmed) throw new Error('expected success');
+    expect(listAfterOneConfirmed.totalCount).toBe(listAllPending.totalCount);
+    expect(listAfterOneConfirmed.pendingCount).toBe(listAllPending.totalCount - 1);
+  });
+
   it('confirmGeoAlert persists the status and returns the impact block', async () => {
     const client = fakeKvClient();
     const listBefore = await getGeoHitlAlerts(client);

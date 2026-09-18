@@ -126,6 +126,8 @@ export function getDataProvenance() {
 
 export async function getGeoHitlAlerts(client: KvHashClient): Promise<
   | {
+      totalCount: number;
+      pendingCount: number;
       alerts: {
         alertId: string;
         headline: string;
@@ -145,15 +147,19 @@ export async function getGeoHitlAlerts(client: KvHashClient): Promise<
   // (`HitlStatusMap`) correctly, so we branch on that instead and cast the
   // (structurally guaranteed) error case on the way out.
   if (!('error' in statuses)) {
+    const mapped = alerts.map((a) => ({
+      alertId: a.alertId,
+      headline: a.headline,
+      category: a.category,
+      severity: a.severity,
+      regionScope: a.regionScope,
+      status: statuses[a.alertId] ?? 'pending',
+    }));
+    const pendingCount = alerts.filter((a) => !(a.alertId in statuses)).length;
     return {
-      alerts: alerts.map((a) => ({
-        alertId: a.alertId,
-        headline: a.headline,
-        category: a.category,
-        severity: a.severity,
-        regionScope: a.regionScope,
-        status: statuses[a.alertId] ?? 'pending',
-      })),
+      totalCount: mapped.length,
+      pendingCount,
+      alerts: mapped,
     };
   }
   return statuses as { error: string };
@@ -339,7 +345,7 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'getGeoHitlAlerts',
-      description: 'List geopolitical HITL alerts awaiting analyst review, with their current status (pending/confirmed/dismissed).',
+      description: 'List geopolitical HITL alerts awaiting analyst review, with their current status (pending/confirmed/dismissed). The response includes totalCount and pendingCount fields — when answering, the number of alerts you list must exactly match the relevant count field, never fewer.',
       parameters: { type: 'object', properties: {} },
     },
   },
