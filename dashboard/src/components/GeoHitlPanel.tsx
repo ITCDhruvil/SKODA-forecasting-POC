@@ -191,12 +191,17 @@ export function GeoHitlPanel({ hitl }: { hitl?: GeoHitlBlock }) {
 
   useEffect(() => {
     fetch('/api/hitl-status')
-      .then((r) => r.json())
-      .then((payload: { statuses?: StoredState }) => {
-        if (payload.statuses) setStored(payload.statuses);
+      .then((r) => r.json().then((payload: { statuses?: StoredState }) => ({ r, payload })))
+      .then(({ r, payload }) => {
+        if (r.ok && payload.statuses) {
+          setStored(payload.statuses);
+          setSaveError(null);
+        } else {
+          setSaveError("Couldn't load alert status — showing may be out of date.");
+        }
       })
       .catch(() => {
-        /* leave everything pending if the initial load fails */
+        setSaveError("Couldn't load alert status — showing may be out of date.");
       });
   }, []);
 
