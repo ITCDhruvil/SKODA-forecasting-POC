@@ -51,8 +51,24 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   withHelpers(res);
+
+  const pathname = req.url.split('?')[0];
+  const routeName = pathname.replace(/^\/api\//, '');
+
+  let mod;
   try {
-    const mod = await import(new URL('../api/chat.ts', import.meta.url).href);
+    mod = await import(new URL(`../api/${routeName}.ts`, import.meta.url).href);
+  } catch (err) {
+    if (err?.code === 'ERR_MODULE_NOT_FOUND') {
+      send(res, 404, { error: `no api route for ${pathname}` });
+      return;
+    }
+    console.error('[dev-api] failed to load handler', err);
+    send(res, 500, { error: 'internal error' });
+    return;
+  }
+
+  try {
     await mod.default(req, res);
   } catch (err) {
     console.error('[dev-api] handler error', err);
