@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import { runChatLoop, type ChatClient, type ChatMessage } from './lib/chatLoop';
-import { checkRateLimit } from './lib/rateLimit';
-import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './lib/tools';
-import { SYSTEM_PROMPT } from './lib/systemPrompt';
+import { runChatLoop, type ChatClient, type ChatMessage } from './_lib/chatLoop';
+import { checkRateLimit } from './_lib/rateLimit';
+import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
+import { SYSTEM_PROMPT } from './_lib/systemPrompt';
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 

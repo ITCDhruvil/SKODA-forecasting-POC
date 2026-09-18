@@ -3,7 +3,7 @@ import path from 'node:path';
 import Papa from 'papaparse';
 import type { DashboardData } from '../../src/types';
 
-const DASHBOARD_JSON_PATH = path.join(process.cwd(), 'public', 'dashboard.json');
+const DASHBOARD_JSON_PATH = path.join(process.cwd(), 'api', '_data', 'dashboard.json');
 const FORECASTS_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'forecasts.csv');
 const PARTS_PRICES_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'parts_prices.csv');
 

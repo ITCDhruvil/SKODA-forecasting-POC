@@ -16,6 +16,10 @@ const FILES = [
     src: path.join(REPO_ROOT, 'data', 'raw', 'parts_prices.csv'),
     dest: path.join(DEST_DIR, 'parts_prices.csv'),
   },
+  {
+    src: path.join(DASHBOARD_ROOT, 'public', 'dashboard.json'),
+    dest: path.join(DEST_DIR, 'dashboard.json'),
+  },
 ];
 
 mkdirSync(DEST_DIR, { recursive: true });
