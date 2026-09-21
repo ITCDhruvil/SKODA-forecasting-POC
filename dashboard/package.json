@@ -12,7 +12,8 @@
     "predev": "npm run sync-data",
     "test": "vitest run",
     "typecheck:api": "tsc -b tsconfig.api.json",
-    "preflight:openai": "tsx scripts/openai-preflight.ts"
+    "preflight:openai": "tsx scripts/openai-preflight.ts",
+    "eval:router": "tsx scripts/router-eval.ts"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",

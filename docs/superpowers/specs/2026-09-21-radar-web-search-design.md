@@ -170,3 +170,104 @@ Current rule "only use information returned by your tools" is extended for `web`
   - `gpt-5-nano` effort=low: PASS by the script's criterion (searches=3) but weak: no citations, and it replied that it could not access the allowed sources. Not recommended for the web model.
   - Cited hosts were always inside the allow-list (`issue.autonews.com` is a subdomain of `autonews.com`); reuters.com and ft.com were never cited in these runs.
 - Vercel plan max function duration: NOT CHECKED (user to confirm in Project Settings > Functions; this plan sets `maxDuration` to 60)
+
+### Model selection (Task 7)
+
+Date: 2026-09-21. Golden set: 35 questions (12 data, 14 web, 9 action, 6 of the action cases marked critical), `api/_eval/routerGolden.ts`. Run with `npm run eval:router -- --models <a,b> --efforts none,low` (`none` = no `reasoning` parameter sent). PASS = accuracy >= 95% and zero critical failures. Router timeout in production is 5s. Each row is a single run of 35 calls (5 concurrent), so accuracy moves by about one question (2.9 points) from run to run.
+
+#### Router eval, BEFORE the prompt clarification
+
+| Model | Effort | Accuracy | Critical failures | p50 | p95 | Result | Misroutes |
+|---|---|---|---|---|---|---|---|
+| gpt-4o-mini | none | 97.1% | 0 | 967ms | 2463ms | PASS | data-11 -> action |
+| gpt-4.1-mini | none | 100.0% | 0 | 1002ms | 1937ms | PASS | - |
+| gpt-4.1-nano | none | 94.3% | 0 | 1001ms | 1716ms | FAIL | data-09 -> web, data-11 -> action |
+| gpt-5-mini | minimal | 100.0% | 0 | 1036ms | 1672ms | PASS | - |
+| gpt-5-mini | low | 100.0% | 0 | 1096ms | 2137ms | PASS | - |
+| gpt-5.4-nano | minimal | 54.3% | 0 | 436ms | 1477ms | FAIL | HTTP 400: `minimal` is not supported by gpt-5.4-nano (supported: none, low, medium, high, xhigh). The router swallowed the error and defaulted to `data`, so every web and two action cases were misrouted. |
+| gpt-5.4-nano | low | 100.0% | 0 | 924ms | 1651ms | PASS | - |
+
+The live Task 6 finding was reproduced: gpt-4o-mini routed "Are there any geopolitical alerts pending?" (data-11) to `action`.
+
+#### Router prompt change
+
+`buildRouterPrompt` in `api/_lib/router.ts` now (1) says `action` means asking to confirm, dismiss, approve or reject an alert, (2) says read-only questions about alerts (what is pending, status, counts, details) are `data`, and (3) tells the router to use `<previous_reply>` to resolve short follow-ups such as "yes, do it". No existing test asserted the prompt text, so none was changed.
+
+#### Router eval, AFTER the prompt clarification
+
+| Model | Effort | Accuracy | Critical failures | p50 | p95 | Result | Misroutes |
+|---|---|---|---|---|---|---|---|
+| gpt-4o-mini (run 1) | none | 100.0% | 0 | 883ms | 1736ms | PASS | - |
+| gpt-4o-mini (run 2) | none | 100.0% | 0 | 969ms | 1696ms | PASS | - |
+| gpt-4o-mini (run 3) | none | 100.0% | 0 | 949ms | 1641ms | PASS | - |
+| gpt-4.1-mini | none | 100.0% | 0 | 926ms | 1637ms | PASS | - |
+| gpt-4.1-nano (run 1) | none | 97.1% | 0 | 906ms | 1662ms | PASS | data-09 -> web |
+| gpt-4.1-nano (run 2) | none | 94.3% | 0 | 855ms | 1552ms | FAIL | data-09 -> web, data-10 -> web |
+| gpt-4.1-nano (run 3) | none | 97.1% | 0 | 923ms | 2327ms | PASS | data-09 -> web |
+| gpt-5.4-nano | none | 100.0% | 0 | 826ms | 1839ms | PASS | - |
+| gpt-5.4-nano (run 1) | low | 100.0% | 0 | 876ms | 1845ms | PASS | - |
+| gpt-5.4-nano (run 2) | low | 100.0% | 0 | 890ms | 1747ms | PASS | - |
+| gpt-5-mini | minimal | 97.1% | 0 | 1255ms | 5800ms | PASS | web-04 -> data |
+| gpt-5-mini | low | 100.0% | 0 | 1244ms | 13392ms | PASS | - |
+
+After the change gpt-4o-mini fixes data-11 (3 of 3 runs at 100%). A live smoke of the original question "Are there any geopolitical risks I need to review?" now routes to `data`. gpt-5-mini shows p95 above the 5s router timeout (a timed-out router call falls back to `data`), so it is not suitable as the router. gpt-4.1-nano is the cheapest model but keeps sending unrelated questions ("What's the capital of France?", "Write me a poem") to `web`, which would trigger paid web searches, so it is rejected.
+
+#### Chosen models
+
+- Router: `gpt-4o-mini`, no effort. Cheapest model that passes consistently (3 of 3 runs at 100%, p95 about 1.7s, no reasoning parameter to get wrong). It is also the current default data model, so no change is needed beyond setting `OPENAI_ROUTER_MODEL` explicitly if `OPENAI_MODEL` ever changes. Alternative if a reasoning router is preferred: `gpt-5.4-nano` with effort `low` (100% in 2 of 2 runs plus 100% with no effort, p95 about 1.8s) at a higher price.
+- Data model: unchanged (`OPENAI_MODEL`, default `gpt-4o-mini`). Not part of this eval.
+- Web model: `gpt-5.4-nano`, no effort. It is about 3.7x cheaper than gpt-5.4-mini per token and gave 4 allow-listed sources on both questions where it searched. `gpt-5.4-mini` is the fallback if answer quality is judged too thin. `gpt-5-mini` (effort low) is not recommended.
+
+#### Web model smoke (dev API, router gpt-4o-mini, `WEB_SEARCH_ENABLED=true`)
+
+Three questions per model through `scripts/chat-smoke.mjs`. Latency is the client-side total; searches and sources come from the server `{"event":"chat"}` log line.
+
+| Web model | Question | Latency | Searches | Sources | Grounded and attributed |
+|---|---|---|---|---|---|
+| gpt-5.4-mini (no effort) | steel tariffs and car makers | 12.3s | 2 | 3 | Yes: dated items, Reuters-reported claims linked to spglobal.com and economictimes |
+| gpt-5.4-mini | aluminium prices next month | 8.3s | 0 | 0 | No search ran; answered from dashboard tools, reply contained raw `citeturn0search0` markers |
+| gpt-5.4-mini | India import duties for car parts | 5.9s | 2 | 0 | No sources; honestly said it could not verify a report |
+| gpt-5.4-nano (no effort) | steel tariffs and car makers | 10.3s | 1 | 4 | Yes: dated S&P Global items with links, labelled as not from the dashboard model |
+| gpt-5.4-nano | aluminium prices next month | 15.6s | 0 | 0 | No search ran; answered from dashboard data |
+| gpt-5.4-nano | India import duties for car parts | 7.1s | 1 | 4 | Yes: WTO tariff tracker and Business Standard, with caveat that no single car-parts rate was found |
+| gpt-5-mini (effort low) | steel tariffs and car makers | 13.1s | 2 | 0 | No: said search was blocked and offered to go outside the allow-list |
+| gpt-5-mini | aluminium prices next month | 8.7s | 1 | 0 | No: same, asked to broaden sources |
+| gpt-5-mini | India import duties for car parts | 17.1s | 2 | 4 | Yes: Business Standard, Economic Times, WTO |
+
+All cited hosts were inside the allow-list. Sample size is 3 per model, so treat this as a directional trade-off, not a benchmark.
+
+Observations:
+
+- The earlier Task 6 result (0 sources after 2 searches with gpt-5.4-mini) recurred once (India duties) but not on every question, and other models/questions returned sources, so the annotation extraction in `responsesClient.ts` is not systematically dropping citations. The 0-source replies were honest "could not verify" answers. Not investigated further.
+- Both gpt-5.4 models skipped web search on "Why might aluminium prices rise next month?" and answered from dashboard tools, although the router chose `web`. The response then has `mode=web`, `usedWeb=false`. Consider forcing the web_search tool for `web` mode (or telling the model it must search first).
+- gpt-5.4-mini leaked raw citation placeholder tokens (`cite`, private-use characters, `turn0search0`) into reply text when no search ran. The reply text may need a sanitising pass.
+- Reply text embeds provider links with `?utm_source=openai`; only the structured `sources` list is cleaned.
+
+#### `usedWeb` recommendation
+
+`usedWeb` should be true only when at least one allow-listed source was returned (`usedWeb = searches > 0 && sources.length > 0`), or the UI should show a separate "searched, no sources found" state. Today a "searched the web" badge with zero sources appears in exactly the cases where the reply says it could not verify anything, which looks contradictory. Not changed in this task.
+
+#### Pricing (source: https://developers.openai.com/api/docs/pricing, fetched 2026-09-21; the older URL platform.openai.com/docs/pricing redirects there)
+
+Standard processing, USD per 1M tokens, input / cached input / output:
+
+| Model | Input | Cached input | Output |
+|---|---|---|---|
+| gpt-4o-mini | 0.15 | 0.075 | 0.60 |
+| gpt-4.1-mini | 0.40 | 0.10 | 1.60 |
+| gpt-4.1-nano | 0.10 | 0.025 | 0.40 |
+| gpt-5-mini | 0.25 | 0.025 | 2.00 |
+| gpt-5-nano | 0.05 | 0.005 | 0.40 |
+| gpt-5.4 | 2.50 | 0.25 | 15.00 |
+| gpt-5.4-mini | 0.75 | 0.075 | 4.50 |
+| gpt-5.4-nano | 0.20 | 0.02 | 1.25 |
+
+Web search tool: $10.00 per 1k calls (about $0.01 per search) plus search content tokens billed at the model's token rates, so the web model's token price is the variable cost. Prices were read from a page summary; confirm on the pricing page before budgeting.
+
+#### Values to set in `dashboard/.env` (not edited by this task)
+
+`OPENAI_ROUTER_MODEL=gpt-4o-mini`, `OPENAI_ROUTER_EFFORT=` (blank), `OPENAI_WEB_MODEL=gpt-5.4-nano`, `OPENAI_WEB_EFFORT=` (blank), `WEB_SEARCH_ENABLED=true` when ready to enable web search.
+
+#### Config caveat found during the eval
+
+`ReasoningEffort` (and `OPENAI_ROUTER_EFFORT` / `OPENAI_WEB_EFFORT` parsing in `config.ts`) allows `minimal` for any model, but gpt-5.4-nano rejects it with HTTP 400 and does not accept the value set of the gpt-5 family; it also supports `none` and `xhigh`, which the type does not allow. A wrong effort silently degrades the router to `data` for every request. Leave efforts blank unless the chosen model is known to accept the value.
