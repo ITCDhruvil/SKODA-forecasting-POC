@@ -37,18 +37,18 @@ Widget --POST {messages, webEnabled}--> /api/chat
 
 A small reasoning-capable model with structured output (JSON schema, enum) and a 5s timeout. Input: the latest user message plus a stub (first ~200 chars) of Radar's previous reply, so follow-ups such as "yes, confirm it" route correctly. It sees no tool results and no earlier history.
 
-Output: `{ mode: 'data' | 'web' | 'action' }`.
+Output (changed in Task 7c): the router model returns `{ mode: 'data' | 'web' }` only. `action` is never a model output; it comes only from the deterministic keyword check below. The `Mode` type stays `'data' | 'web' | 'action'`.
 
 | Mode | Chosen when | Tools |
 |---|---|---|
-| `data` | answerable from the dashboard | read-only dashboard tools |
-| `web` | needs current external context (recent events, policy, news, "why might...") | read-only dashboard tools + `web_search` restricted to allow-listed domains, **no write tools** |
-| `action` | confirm/dismiss an alert | `getGeoHitlAlerts`, `confirmGeoAlert`, `dismissGeoAlert`, **no web** |
+| `data` | answerable from the dashboard, or unrelated to the dashboard (Radar declines those); also the fallback for any router failure | read-only dashboard tools |
+| `web` | the router model decides the message needs ANY current external context (recent events, policy, news, "why might..."), even together with a question about the dashboard's own data, because web mode can also read the dashboard | read-only dashboard tools + `web_search` restricted to allow-listed domains, **no write tools** |
+| `action` | only the deterministic check: a confirm, dismiss, approve or reject verb in the user's message plus an alert mention in that message or in the stub of the previous reply | `getGeoHitlAlerts`, `confirmGeoAlert`, `dismissGeoAlert`, **no web** |
 
 Rules:
 - Any router failure (timeout, bad JSON, API error) falls back to `data`.
-- `webEnabled === false` from the client, or `WEB_SEARCH_ENABLED !== 'true'` on the server, means the router is skipped for the web decision and `web` is never returned.
-- A deterministic keyword check (confirm/dismiss/approve/reject combined with alert or a known alert id) forces `action` regardless of the router.
+- `webEnabled === false` from the client, or `WEB_SEARCH_ENABLED !== 'true'` on the server, means the router model is not called at all and the answer is `data` (Task 7c; previously the model was still consulted for `action`).
+- A deterministic keyword check (verbs confirm, dismiss, approve or reject, combined with an alert mention in the message or in the previous-reply stub) forces `action` regardless of the router and regardless of `webEnabled`, and skips the model. A model answer of `"action"` is treated as `data`, so a model misjudgement can neither expose write tools nor steal a news question (Task 7c).
 - "Withheld" means the write handlers are not loaded into the request's handler map at all, not merely omitted from the tool list. A test asserts that a `web`-mode request cannot resolve `confirmGeoAlert` or `dismissGeoAlert`.
 
 ### 3.2 Responses API adapter
@@ -253,6 +253,54 @@ Observations:
 - Web-section prompt: it now says web search results count as information returned by your tools, and that the model must run a web search before answering a request that was routed to `web`.
 - `usedWeb` now requires `mode === 'web'`, at least one search and at least one allow-listed source, so a "searched the web" badge with zero sources no longer appears.
 - Live check of the prompt change (one request, gpt-5.4-nano, "Why might aluminium prices rise next month?"): INCONCLUSIVE. The router (gpt-4o-mini) sent this run to `data` (server log: `mode=data, usedWeb=false, searches=0, sources=0`), so the web prompt was not exercised. The router variance on this question is itself an observation. The prompt change has unit-test coverage but has not yet been shown to make the web model search.
+
+#### Task 7c: fixes from the business-user scenario test
+
+Date: 2026-09-21. 16 realistic business requests were run through the live pipeline (web on, web model gpt-5.4-nano, router gpt-4o-mini). Defects found:
+
+1. Mixed data + news requests (Red Sea "what does our model say and is there new news"; "director says freight will spike, does our forecast support that and what does the news say") were routed to `action` by the router model, so the news was never searched, and the freight answer told the user to lock in prices from alerts alone while the dashboard's Red Sea scenario shows about -1.4%.
+2. A vague question ("Anything I should be worried about this week?") went to `web`, but the model searched 0 times and answered from dashboard alerts without saying so.
+3. An out-of-scope request (a LinkedIn post celebrating savings) was fulfilled and invented a "significant savings" claim.
+4. News replies used relative dates ("crawled today", "2 months ago") and inline links kept `?utm_source=openai`.
+5. After steel/aluminium news, "which of our parts are most exposed?" returned the top electrical-alert parts labelled as exposed to steel/aluminium; the dashboard has no material-composition data.
+6. `POST /api/chat` with `messages: []` returned 502 instead of 400.
+7. A request naming a subset the tools cannot filter (brake parts in "top movers") showed the unfiltered list without saying so.
+
+What changed:
+
+- Router (3.1): the model chooses only `data` or `web` (schema enum `['data','web']`, prompt no longer mentions an action mode and says a message needing ANY current news, even together with a dashboard question, is `web`). `action` comes only from the keyword check (confirm, dismiss, approve, reject plus an alert mention in the message or previous-reply stub). With web off the router model is not called. A model answer of `"action"` maps to `data`.
+- Forced first search: `ResponsesChatClient` option `forceSearchFirst` sets `tool_choice: { type: 'web_search' }` on the first call only (never on chained follow-ups), and the orchestrator passes it for web mode.
+- Honest no-search note: web mode with zero searches appends `NO_SEARCH_NOTE` ("I didn't run a live news search for this question, so this answer uses dashboard data only."). A run that searched but found no allow-listed source gets no note.
+- Prompt rules (shared BASE): scope and polite refusal, never state a result the tools did not return, say so when the premise conflicts with the data and do not advise locking in prices unless the tool data supports it, no material-composition data (offer a labelled closest grounded view), and say what could not be filtered instead of showing an unfiltered list as the answer. Web section: absolute dates only, never relative dates.
+- `stripTrackingParams` removes only the exact `utm_source=openai` parameter from reply text (`extractOutputText` applies it after the citation-marker strip).
+- `POST /api/chat` returns 400 `invalid request body` for an empty `messages` array or a last message that is not from the user. `api/__tests__/chat.test.ts` covers the handler.
+
+Step 2 probe (gpt-5.4-nano, `tools: [web_search with allowed_domains, one function tool]`, `tool_choice: { type: 'web_search' }`, vague prompt, 2 requests):
+
+- The API ACCEPTED `tool_choice: { type: 'web_search' }` alongside a function tool (HTTP 200, `status=completed`). The first response contained a `web_search_call` item followed by a `function_call` item in the same response (`output` types: `["web_search_call","function_call"]`).
+- Chained follow-up (`previous_response_id` plus a `function_call_output`, no `tool_choice`) returned a normal `message`, so forcing the first call does not stop function calls afterwards.
+
+Finding from the live re-check (not fixed in this task, needs a decision): when the forced first response already contains a function call, the search happens in call 1 and the final answer comes from call 2. A follow-up diagnostic showed that call 2's `message` carries citation markers (4 in the sample) but ZERO `annotations`, so no `url_citation` is available, `sources` stays empty and `usedWeb` is false even though a search ran and the reply cites outlets by name (with the markers stripped, no links remain). Requesting `include: ['web_search_call.action.sources']` on call 1 does return the consulted URLs (13 URLs, hosts spglobal.com and supplychaindive.com; each item has only `type` and `url`, no title), so consulted sources could be used, but that is "consulted", not "cited", and needs a product decision. News-only questions are unaffected in principle, because there the search and the final message are usually in the same response and keep their annotations (not re-measured in this task).
+
+Router eval after Task 7c (`npm run eval:router -- --models gpt-4o-mini --efforts none`, 35 cases, action cases now decided by the keyword check, no prompt iteration needed):
+
+| Run | Accuracy | Critical failures | p50 | p95 | Result | Misroutes |
+|---|---|---|---|---|---|---|
+| 1 | 100.0% | 0 | 915ms | 1835ms | PASS | - |
+| 2 | 100.0% | 0 | 899ms | 1435ms | PASS | - |
+
+The golden set has no mixed data + news case, so these numbers do not measure the defect 1 fix; the live re-check below does, on n=1 each.
+
+Live re-check (dev API on port 3002, web model gpt-5.4-nano, router gpt-4o-mini, one request per scenario; S8 and any confirm/dismiss request were not run):
+
+| Scenario | Mode | usedWeb | Sources | Searches | Latency | Judgement |
+|---|---|---|---|---|---|---|
+| S5 Red Sea, model plus news | web | false | 0 | 1 | 14.5s | Routing fixed (was `action`). It read the freight scenarios, noted that the model's sign does not match the "disruption means higher costs" intuition, and gave three dated S&P Global items with a caveat that news is not part of the forecast model. Sources are empty because of the annotation finding above. One item still says "published 4 days ago" (relative date, prompt rule not followed). |
+| S6 director wants to lock in prices | web | false | 0 | 1 | 12.0s | Routing fixed. It did NOT tell the user to lock in prices: it said the dashboard has no freight-rate scenario (it showed the FX scenarios and labelled them as currency), gave S&P Global news context, and the bottom line separates "forecast does not model this" from "news describes pressure". Weakness: it said no freight scenario was available although S5's run found freight scenarios; sources empty (same finding). |
+| S9 LinkedIn post | data | false | 0 | 0 | 2.6s | Declined in one sentence and said what it can help with; no invented savings. |
+| S12 vague worry | web | false | 0 | 1 | 9.9s | It searched (forced search worked), so no no-search note was needed; it combined the alert queue with news context. Issues: dates such as "2026-??" appear, and it lists a dismissed alert under "Confirmed (4)". Sources empty (same finding). |
+
+Not verified live in this task: S1, S2, S13 (top movers filter, exposure wording), the relative-date rule on a news-only question, and the `utm_source` strip on a real reply (unit tests only).
 
 #### Pricing (source: https://developers.openai.com/api/docs/pricing, fetched 2026-09-21; the older URL platform.openai.com/docs/pricing redirects there)
 
