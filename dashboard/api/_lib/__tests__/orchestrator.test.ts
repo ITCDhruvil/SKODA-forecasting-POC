@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { answer, LIMIT_NOTE, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator';
+import { answer, LIMIT_NOTE, NO_SEARCH_NOTE, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator';
 import type { ChatConfig } from '../config';
 import type { ResponseLike, ResponsesApi } from '../responsesClient';
 import { ALLOWED_DOMAINS } from '../webSources';
@@ -101,6 +101,16 @@ describe('answer', () => {
     expect(t.checkBudget).toHaveBeenCalledWith('1.2.3.4');
   });
 
+  it('forces the web search on the first web-mode call, and never in data mode', async () => {
+    const web = setup({ router: () => route('web'), main: () => text('x') });
+    await answer(ask('Any news on steel tariffs?'), web.deps);
+    expect(web.mainCalls()[0].tool_choice).toEqual({ type: 'web_search' });
+
+    const data = setup({ router: () => route('data'), main: () => text('x') });
+    await answer(ask('Which parts moved most?'), data.deps);
+    expect(data.mainCalls()[0].tool_choice).toBeUndefined();
+  });
+
   it('web mode: searches that produced no allow-listed source do not claim usedWeb', async () => {
     const uncited: ResponseLike = {
       id: 'r',
@@ -129,6 +139,18 @@ describe('answer', () => {
     const t2 = setup({ router: () => route('web'), main: () => noAnnotations });
     expect(await answer(ask('Any news on steel tariffs?'), t2.deps)).toEqual({
       reply: 'Nothing found.',
+      mode: 'web',
+      usedWeb: false,
+      sources: [],
+    });
+  });
+
+  it('web mode that ran no search says so and reports no web use', async () => {
+    const t = setup({ router: () => route('web'), main: () => text('Alerts show two pending items.') });
+    const result = await answer(ask('Anything I should be worried about this week?'), t.deps);
+
+    expect(result).toEqual({
+      reply: `Alerts show two pending items.\n\n${NO_SEARCH_NOTE}`,
       mode: 'web',
       usedWeb: false,
       sources: [],
@@ -177,21 +199,40 @@ describe('answer', () => {
     await expect(answer(ask('hi'), t.deps)).rejects.toThrow('boom');
   });
 
-  it('web off from the client: router never offered web, budget untouched', async () => {
-    const t = setup({ router: () => route('web'), main: () => text('ok') });
+  it('web off from the client: the router is not called at all, budget untouched', async () => {
+    const t = setup({ router: () => { throw new Error('router must not run'); }, main: () => text('ok') });
     const result = await answer(ask('Any news?', { webEnabled: false }), t.deps);
 
-    const routerBody = t.create.mock.calls[0][0] as Body;
-    expect(routerBody.text.format.schema.properties.mode.enum).toEqual(['data', 'action']);
+    expect(t.create).toHaveBeenCalledTimes(1);
+    expect(t.mainCalls()).toHaveLength(1);
     expect(result.mode).toBe('data');
     expect(t.checkBudget).not.toHaveBeenCalled();
   });
 
   it('web off on the server: same as off from the client', async () => {
-    const t = setup({ router: () => route('web'), main: () => text('ok'), config: { webSearchEnabled: false } });
+    const t = setup({
+      router: () => { throw new Error('router must not run'); },
+      main: () => text('ok'),
+      config: { webSearchEnabled: false },
+    });
     const result = await answer(ask('Any news?'), t.deps);
+    expect(t.create).toHaveBeenCalledTimes(1);
     expect(result.mode).toBe('data');
     expect(t.checkBudget).not.toHaveBeenCalled();
+  });
+
+  it('web off does not block a clear alert action, which still skips the router', async () => {
+    const t = setup({ router: () => { throw new Error('router must not run'); }, main: () => text('done') });
+    const result = await answer(ask('Confirm the Red Sea alert', { webEnabled: false }), t.deps);
+    expect(result.mode).toBe('action');
+    expect(t.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('the router model choosing "action" degrades to data mode with no write tools', async () => {
+    const t = setup({ router: () => route('action'), main: () => text('ok') });
+    const result = await answer(ask('Anything on the Red Sea?'), t.deps);
+    expect(result.mode).toBe('data');
+    expect(t.toolNames(t.mainCalls()[0])).not.toContain('confirmGeoAlert');
   });
 
   it('a clear alert action skips the router and gets only alert tools', async () => {

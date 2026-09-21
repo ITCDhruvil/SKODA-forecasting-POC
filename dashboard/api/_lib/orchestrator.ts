@@ -36,6 +36,7 @@ export const MIN_FALLBACK_MS = 8_000;
 export const MAX_SEARCHES = 2;
 export const LIMIT_NOTE = '_Live news is limited right now, so this answer uses dashboard data only._';
 export const UNREACHABLE_NOTE = "_I couldn't reach live news just now, so this answer uses dashboard data only._";
+export const NO_SEARCH_NOTE = "_I didn't run a live news search for this question, so this answer uses dashboard data only._";
 
 interface RunResult {
   reply: string;
@@ -78,6 +79,7 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
       deadline: started + TOTAL_BUDGET_MS,
       now,
       reasoningEffort: isWeb ? config.webEffort : undefined,
+      forceSearchFirst: toolset.webSearch,
     });
     const messages: ChatMessage[] = [{ role: 'system', content: buildSystemPrompt(m) }, ...req.messages];
     const reply = await runChatLoop(client, toolset.handlers, messages);
@@ -95,6 +97,10 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     note = UNREACHABLE_NOTE;
     result = await run('data');
   }
+
+  // Web mode that never searched must say so. A search that found no allow-listed source gets no note:
+  // the reply itself already says what was (not) found.
+  if (mode === 'web' && result.searches === 0) note = NO_SEARCH_NOTE;
 
   const usedWeb = mode === 'web' && result.searches > 0 && result.sources.length > 0;
   console.info(

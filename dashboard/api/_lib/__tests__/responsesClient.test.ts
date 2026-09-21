@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   ResponsesChatClient,
   extractOutputText,
+  stripTrackingParams,
   toInputItems,
   type ResponseLike,
   type ResponsesApi,
@@ -223,6 +224,46 @@ describe('extractOutputText', () => {
   });
 });
 
+describe('stripTrackingParams', () => {
+  it('removes utm_source=openai when it is the only query parameter', () => {
+    expect(stripTrackingParams('([reuters.com](https://www.reuters.com/a/b?utm_source=openai))')).toBe(
+      '([reuters.com](https://www.reuters.com/a/b))',
+    );
+  });
+
+  it('keeps other parameters whether utm_source=openai comes first or last', () => {
+    expect(stripTrackingParams('https://x.com/a?utm_source=openai&id=5')).toBe('https://x.com/a?id=5');
+    expect(stripTrackingParams('https://x.com/a?id=5&utm_source=openai')).toBe('https://x.com/a?id=5');
+  });
+
+  it('removes every occurrence in the text', () => {
+    expect(stripTrackingParams('[a](https://a.com/1?utm_source=openai) and [b](https://b.com/2?utm_source=openai)')).toBe(
+      '[a](https://a.com/1) and [b](https://b.com/2)',
+    );
+  });
+
+  it('returns text without the parameter byte-identical, double spaces included', () => {
+    const plain = 'Copper  rose.  See [Reuters](https://www.reuters.com/a?id=1) for more .';
+    expect(stripTrackingParams(plain)).toBe(plain);
+  });
+
+  it('leaves other utm parameters and other utm_source values alone', () => {
+    expect(stripTrackingParams('https://x.com/a?utm_medium=email')).toBe('https://x.com/a?utm_medium=email');
+    expect(stripTrackingParams('https://x.com/a?utm_source=newsletter')).toBe('https://x.com/a?utm_source=newsletter');
+    expect(stripTrackingParams('https://x.com/a?utm_source=openai_x')).toBe('https://x.com/a?utm_source=openai_x');
+    expect(stripTrackingParams('https://x.com/a?utm_source=openai_x&id=5')).toBe('https://x.com/a?utm_source=openai_x&id=5');
+  });
+
+  it('is applied by extractOutputText, which still collapses whitespace only when a citation marker was removed', () => {
+    const only = (t: string) => extractOutputText(textResponse(t));
+    expect(only('See ([reuters.com](https://www.reuters.com/a?utm_source=openai)).')).toBe(
+      'See ([reuters.com](https://www.reuters.com/a)).',
+    );
+    expect(only('Two  spaces ([r](https://r.com/a?utm_source=openai)).')).toBe('Two  spaces ([r](https://r.com/a)).');
+    expect(only('A \uE200cite\uE202t0\uE201 b  ([r](https://r.com/a?utm_source=openai)).')).toBe('A b ([r](https://r.com/a)).');
+  });
+});
+
 describe('toInputItems', () => {
   it('replays an assistant tool-call turn and its tool result', () => {
     const items = toInputItems([
@@ -300,6 +341,50 @@ describe('ResponsesChatClient web search', () => {
     expect(second.tools.some((t: { type: string }) => t.type === 'web_search')).toBe(false);
     expect(second.max_tool_calls).toBeUndefined();
     expect(client.getSearchCount()).toBe(2);
+  });
+
+  describe('forceSearchFirst', () => {
+    const toolCallResponse: ResponseLike = {
+      id: 'r1',
+      output: [{ type: 'web_search_call' }, { type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' }],
+    };
+    const followUp: ChatMessage[] = [
+      ...base,
+      { role: 'assistant', content: null, tool_calls: [{ id: 'c1', name: 'getKpis', arguments: '{}' }] },
+      { role: 'tool', tool_call_id: 'c1', name: 'getKpis', content: '{}' },
+    ];
+
+    it('forces the web_search tool on the first call', async () => {
+      const { api, create } = fakeApi(textResponse('x'));
+      await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1, forceSearchFirst: true }).createCompletion(base);
+      expect(create.mock.calls[0][0].tool_choice).toEqual({ type: 'web_search' });
+    });
+
+    it('never forces it on the chained follow-up call', async () => {
+      const { api, create } = fakeApi(toolCallResponse, textResponse('done', 'r2'));
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1, forceSearchFirst: true });
+      await client.createCompletion(base);
+      await client.createCompletion(followUp);
+      expect(create.mock.calls[0][0].tool_choice).toEqual({ type: 'web_search' });
+      expect(create.mock.calls[1][0].previous_response_id).toBe('r1');
+      expect(create.mock.calls[1][0].tool_choice).toBeUndefined();
+    });
+
+    it('does not set tool_choice when forceSearchFirst is false or undefined', async () => {
+      const { api, create } = fakeApi(textResponse('a'), textResponse('b'));
+      await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1, forceSearchFirst: false }).createCompletion(base);
+      await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 }).createCompletion(base);
+      expect(create.mock.calls[0][0].tool_choice).toBeUndefined();
+      expect(create.mock.calls[1][0].tool_choice).toBeUndefined();
+    });
+
+    it('does not set tool_choice when no webSearch is configured', async () => {
+      const { api, create } = fakeApi(textResponse('a'), textResponse('b'));
+      await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1, forceSearchFirst: true }).createCompletion(base);
+      await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: null, timeoutMs: 1, forceSearchFirst: true }).createCompletion(base);
+      expect(create.mock.calls[0][0].tool_choice).toBeUndefined();
+      expect(create.mock.calls[1][0].tool_choice).toBeUndefined();
+    });
   });
 
   it('never offers web_search when it is not configured', async () => {

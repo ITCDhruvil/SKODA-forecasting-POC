@@ -26,6 +26,16 @@ describe('looksLikeAlertAction', () => {
     expect(looksLikeAlertAction('please dismiss the india budget duty alert', null)).toBe(true);
   });
 
+  it('is true for approve/reject messages that mention an alert', () => {
+    expect(looksLikeAlertAction('Approve the India duty alert', null)).toBe(true);
+    expect(looksLikeAlertAction("Reject the Houthi alert, it's not relevant", null)).toBe(true);
+  });
+
+  it('is false for approve/reject verbs without an alert mention and for bare follow-ups', () => {
+    expect(looksLikeAlertAction('Can you approve the budget?', null)).toBe(false);
+    expect(looksLikeAlertAction('yes, do it', null)).toBe(false);
+  });
+
   it('is false for confirm/dismiss messages that are not about alerts', () => {
     expect(looksLikeAlertAction('Can you confirm whether steel tariffs rose recently?', null)).toBe(false);
     expect(looksLikeAlertAction('Which parts moved most?', null)).toBe(false);
@@ -63,7 +73,10 @@ describe('routeMessage', () => {
   it('returns the mode chosen by the model', async () => {
     expect(await routeMessage({ api: apiReturning('{"mode":"web"}').api, model: 'm', timeoutMs: 5000 }, input)).toBe('web');
     expect(await routeMessage({ api: apiReturning('{"mode":"data"}').api, model: 'm', timeoutMs: 5000 }, input)).toBe('data');
-    expect(await routeMessage({ api: apiReturning('{"mode":"action"}').api, model: 'm', timeoutMs: 5000 }, input)).toBe('action');
+  });
+
+  it('treats a model answer of "action" as data: only the keyword check can choose action', async () => {
+    expect(await routeMessage({ api: apiReturning('{"mode":"action"}').api, model: 'm', timeoutMs: 5000 }, input)).toBe('data');
   });
 
   it('falls back to data on API error, invalid JSON or an unknown mode', async () => {
@@ -74,12 +87,38 @@ describe('routeMessage', () => {
     expect(await routeMessage(deps(''), input)).toBe('data');
   });
 
-  it('never returns web when web is not allowed, and does not offer it in the schema', async () => {
+  it('returns data without calling the model when web is not allowed', async () => {
     const { api, create } = apiReturning('{"mode":"web"}');
     const mode = await routeMessage({ api, model: 'm', timeoutMs: 5000 }, { ...input, webAllowed: false });
     expect(mode).toBe('data');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('a forced alert action wins over webAllowed=false and still skips the model', async () => {
+    const { api, create } = apiReturning('{"mode":"data"}');
+    const mode = await routeMessage(
+      { api, model: 'm', timeoutMs: 5000 },
+      { ...input, lastUserMessage: 'Dismiss the Red Sea alert', webAllowed: false },
+    );
+    expect(mode).toBe('action');
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('always offers only data and web in the schema (never action)', async () => {
+    const { api, create } = apiReturning('{"mode":"data"}');
+    await routeMessage({ api, model: 'm', timeoutMs: 5000 }, input);
     const body = create.mock.calls[0][0];
-    expect(body.text.format.schema.properties.mode.enum).toEqual(['data', 'action']);
+    expect(body.text.format.schema.properties.mode.enum).toEqual(['data', 'web']);
+  });
+
+  it('the router prompt sends mixed news + dashboard requests to web and no longer mentions an action mode', async () => {
+    const { api, create } = apiReturning('{"mode":"data"}');
+    await routeMessage({ api, model: 'm', timeoutMs: 5000 }, input);
+    const prompt: string = create.mock.calls[0][0].instructions;
+    expect(prompt).toContain('even together with');
+    expect(prompt).toContain('web mode can also read the dashboard');
+    expect(prompt).not.toContain('"action"');
+    expect(prompt).toContain('choose "data"');
   });
 
   it('skips the model entirely when the message is clearly an alert action', async () => {

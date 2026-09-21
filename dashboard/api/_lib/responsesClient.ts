@@ -37,6 +37,11 @@ export interface ResponsesClientOptions {
   deadline?: number;
   now?: () => number;
   reasoningEffort?: ReasoningEffort;
+  /**
+   * Forces the hosted web_search tool on the client's FIRST call (never on chained follow-ups), so the
+   * model cannot skip the search in web mode. Ignored when web search is not being offered.
+   */
+  forceSearchFirst?: boolean;
 }
 
 // The Responses API anchors citations inline as U+E200 "cite" U+E202 id(s) U+E201, all private-use characters. Only U+E200-U+E2FF is stripped, so legitimate private-use glyphs (icon fonts, U+F8FF) survive. The marker body excludes U+E200 so a stray unclosed start cannot swallow text up to a later marker.
@@ -53,6 +58,15 @@ export function stripCitationMarkers(text: string): string {
   return stripped.replace(/ {2,}/g, ' ').replace(/ ([.,;:!?])/g, '$1');
 }
 
+// The hosted search tool appends ?utm_source=openai to the links it writes. Only that exact value is removed.
+const UTM_FIRST_WITH_MORE = /\?utm_source=openai&/g;
+const UTM_OPENAI = /[?&]utm_source=openai(?![\w.~%-])/g;
+
+/** Removes the `utm_source=openai` tracking parameter from URLs in reply text; other text is untouched. */
+export function stripTrackingParams(text: string): string {
+  return text.replace(UTM_FIRST_WITH_MORE, '?').replace(UTM_OPENAI, '');
+}
+
 export function extractOutputText(response: ResponseLike): string {
   let text = '';
   for (const item of response.output ?? []) {
@@ -61,7 +75,7 @@ export function extractOutputText(response: ResponseLike): string {
       if (part.type === 'output_text' && typeof part.text === 'string') text += part.text;
     }
   }
-  return stripCitationMarkers(text);
+  return stripTrackingParams(stripCitationMarkers(text));
 }
 
 function toFunctionTool(def: ToolDefinition): Record<string, unknown> {
@@ -131,6 +145,7 @@ export class ResponsesChatClient implements ChatClient {
     if (webSearch && searchesLeft > 0) {
       requestTools.push({ type: 'web_search', filters: { allowed_domains: webSearch.allowedDomains } });
       body.max_tool_calls = searchesLeft;
+      if (this.opts.forceSearchFirst && !followUp) body.tool_choice = { type: 'web_search' };
     }
     if (requestTools.length > 0) body.tools = requestTools;
     if (reasoningEffort) body.reasoning = { effort: reasoningEffort };

@@ -13,6 +13,31 @@ describe('buildSystemPrompt', () => {
     }
   });
 
+  it('every mode carries the scope, honesty, premise, material-composition and unfilterable-subset rules', () => {
+    for (const mode of ['data', 'web', 'action'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).toContain('Politely decline');
+      expect(p).toContain('Never state a result the tools did not return');
+      expect(p).toContain('conflicts with the data');
+      expect(p).toContain('no material-composition');
+      expect(p).toContain('never present an unfiltered list');
+    }
+  });
+
+  it('the new shared rules come after the list-completeness rules and before the mode section', () => {
+    const p = buildSystemPrompt('web');
+    expect(p.indexOf('count the array entries')).toBeLessThan(p.indexOf('Politely decline'));
+    expect(p.indexOf('never present an unfiltered list')).toBeLessThan(p.indexOf('Live news (you have a web search tool'));
+  });
+
+  it('only the web prompt demands absolute dates', () => {
+    const web = buildSystemPrompt('web');
+    expect(web).toContain('absolute dates');
+    expect(web).toContain('Never write relative dates');
+    expect(buildSystemPrompt('data')).not.toContain('absolute dates');
+    expect(buildSystemPrompt('action')).not.toContain('absolute dates');
+  });
+
   it('data and web prompts name neither write tool', () => {
     for (const mode of ['data', 'web'] as const) {
       const p = buildSystemPrompt(mode);

@@ -44,6 +44,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // The conversation must be non-empty and end with the user's question.
+  if (body.messages.length === 0 || body.messages[body.messages.length - 1].role !== 'user') {
+    res.status(400).json({ error: 'invalid request body' });
+    return;
+  }
+
   if (body.messages.length > MAX_MESSAGES) {
     res.status(400).json({ error: 'too many messages' });
     return;
