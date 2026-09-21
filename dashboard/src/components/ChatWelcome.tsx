@@ -57,15 +57,19 @@ const EXPLORE_PROMPTS = [
   'What does Real-Data Validation show?',
 ];
 
+const NEWS_PROMPT = 'What is the latest news affecting auto-parts prices?';
+
 interface ChatWelcomeProps {
   onPick: (prompt: string) => void;
   disabled?: boolean;
+  webEnabled?: boolean;
 }
 
 /** Opening screen shown before the first message: scope, capability cards, trust note. */
-export function ChatWelcome({ onPick, disabled }: ChatWelcomeProps) {
+export function ChatWelcome({ onPick, disabled, webEnabled }: ChatWelcomeProps) {
   const reduceMotion = useReducedMotion();
   const greeting = greetingFor(new Date().getHours());
+  const explorePrompts = webEnabled ? [NEWS_PROMPT, ...EXPLORE_PROMPTS] : EXPLORE_PROMPTS;
 
   return (
     <section aria-label="Welcome" className="relative -mx-5 -mt-4 overflow-hidden px-5 pb-2 pt-6">
@@ -122,7 +126,7 @@ export function ChatWelcome({ onPick, disabled }: ChatWelcomeProps) {
         <div className="flex flex-col gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Explore</p>
           <div className="flex flex-wrap gap-2">
-            {EXPLORE_PROMPTS.map((prompt) => (
+            {explorePrompts.map((prompt) => (
               <button
                 key={prompt}
                 type="button"
@@ -138,7 +142,9 @@ export function ChatWelcome({ onPick, disabled }: ChatWelcomeProps) {
 
         <p className="flex items-start gap-2 text-xs leading-relaxed text-slate-400">
           <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          Answers come only from your dashboard data. Radar can confirm or dismiss geopolitical alerts when you ask.
+          {webEnabled
+            ? 'Dashboard answers come from your data. When Radar checks live news, the sources are shown with the answer. Radar can also confirm or dismiss geopolitical alerts when you ask.'
+            : 'Answers come only from your dashboard data. Radar can confirm or dismiss geopolitical alerts when you ask.'}
         </p>
       </div>
     </section>

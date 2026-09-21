@@ -4,12 +4,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChatHistoryPanel } from './ChatHistoryPanel';
 import { ChatWelcome } from './ChatWelcome';
+import { SourceList } from './SourceList';
 import {
   IconCheck,
   IconClear,
   IconClose,
   IconCopy,
   IconEdit,
+  IconGlobe,
   IconHistory,
   IconRefresh,
   IconSend,
@@ -19,7 +21,9 @@ import {
   deleteConversation,
   loadHistory,
   saveHistory,
+  sanitizeSources,
   togglePin,
+  toApiMessages,
   truncateForEdit,
   truncateForRegenerate,
   upsertConversation,
@@ -27,6 +31,7 @@ import {
   type Conversation,
 } from '../lib/chatHistory';
 import { pickThinkingWord } from '../lib/thinkingWords';
+import { loadWebEnabled, saveWebEnabled } from '../lib/webPreference';
 
 const markdownComponents = {
   p: ({ ...props }) => <p className="text-sm leading-relaxed text-slate-800" {...props} />,
@@ -59,13 +64,23 @@ function getStorage(): Storage | null {
   }
 }
 
-function ThinkingIndicator() {
+function ThinkingIndicator({ webHint }: { webHint: boolean }) {
   const [word, setWord] = useState(() => pickThinkingWord(null));
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setWord((previous) => pickThinkingWord(previous)), 1800);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!webHint) return;
+    // A web answer takes noticeably longer; after 3s with Web on, say what is probably happening.
+    const id = setTimeout(() => setSlow(true), 3000);
+    return () => clearTimeout(id);
+  }, [webHint]);
+
+  const label = webHint && slow ? 'Checking live news' : word;
 
   return (
     <div className="flex items-start gap-3">
@@ -77,7 +92,7 @@ function ThinkingIndicator() {
           aria-hidden="true"
           className="text-shimmer text-sm font-medium [--shimmer-base:#94a3b8] [--shimmer-hi:#1e293b]"
         >
-          {word}…
+          {label}…
         </span>
       </div>
     </div>
@@ -227,6 +242,7 @@ function MessageRow({
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
               {message.content}
             </ReactMarkdown>
+            <SourceList sources={message.sources ?? []} usedWeb={message.usedWeb === true} />
           </div>
         )}
 
@@ -270,6 +286,10 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [webEnabled, setWebEnabled] = useState<boolean>(() => {
+    const storage = getStorage();
+    return storage ? loadWebEnabled(storage) : true;
+  });
   const requestRef = useRef(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -278,6 +298,11 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
     const storage = getStorage();
     if (storage) saveHistory(storage, conversations);
   }, [conversations]);
+
+  useEffect(() => {
+    const storage = getStorage();
+    if (storage) saveWebEnabled(storage, webEnabled);
+  }, [webEnabled]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -315,14 +340,19 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: base }),
+        body: JSON.stringify({ messages: toApiMessages(base), webEnabled }),
       });
       const payload = await response.json();
       if (!response.ok) {
         if (requestRef.current === token) setError(payload.error ?? 'chat unavailable, try again');
         return;
       }
-      const withReply: ChatEntry[] = [...base, { role: 'assistant', content: payload.reply as string }];
+      const reply: ChatEntry = { role: 'assistant', content: payload.reply as string };
+      if (payload.usedWeb === true) {
+        reply.usedWeb = true;
+        reply.sources = sanitizeSources(payload.sources);
+      }
+      const withReply: ChatEntry[] = [...base, reply];
       setConversations((prev) => upsertConversation(prev, { id: conversationId, messages: withReply }));
       if (requestRef.current === token) setMessages(withReply);
     } catch {
@@ -418,6 +448,21 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
           <div className="flex items-center gap-1">
             <button
               type="button"
+              onClick={() => setWebEnabled((v) => !v)}
+              aria-pressed={webEnabled}
+              title={webEnabled ? 'Live news is on: Radar may search trusted news sources' : 'Live news is off: Radar uses dashboard data only'}
+              className={clsx(
+                'mr-1 flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition',
+                webEnabled
+                  ? 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100'
+                  : 'border-slate-200 text-slate-500 hover:bg-slate-50',
+              )}
+            >
+              <IconGlobe className="h-3.5 w-3.5" />
+              Web
+            </button>
+            <button
+              type="button"
               onClick={() => setHistoryOpen(true)}
               aria-label="History"
               title="History"
@@ -449,7 +494,9 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
             aria-live="polite"
             className="scrollbar-hidden h-full space-y-5 overflow-y-auto px-5 pb-32 pt-4"
           >
-            {messages.length === 0 && <ChatWelcome onPick={(prompt) => send(prompt)} disabled={loading} />}
+            {messages.length === 0 && (
+              <ChatWelcome onPick={(prompt) => send(prompt)} disabled={loading} webEnabled={webEnabled} />
+            )}
             {messages.map((m, i) => (
               <MessageRow
                 key={i}
@@ -465,7 +512,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
                 onSubmitEdit={(text) => submitEdit(i, text)}
               />
             ))}
-            {loading && <ThinkingIndicator />}
+            {loading && <ThinkingIndicator webHint={webEnabled} />}
             {error && <div className="text-sm text-red-600">{error}</div>}
           </div>
 
