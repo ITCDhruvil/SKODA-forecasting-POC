@@ -5,6 +5,7 @@ import { createOpenAIResponsesApi } from './_lib/openaiApi';
 import { answer, type IncomingMessage } from './_lib/orchestrator';
 import { checkRateLimit } from './_lib/rateLimit';
 import type { Mode } from './_lib/router';
+import { recordUsage } from './_lib/usageStats';
 import { checkWebBudget } from './_lib/webBudget';
 
 const MAX_MESSAGES = 30;
@@ -94,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         api: createOpenAIResponsesApi(apiKey),
         config: loadChatConfig(),
         checkBudget: (clientIp) => checkWebBudget(kv, clientIp),
+        recordUsage: (kind, tokens) => recordUsage(kv, kind, tokens),
         ...(streaming ? { onMode: (mode: Mode) => writeLine({ type: 'mode', mode }) } : {}),
       },
     );

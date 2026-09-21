@@ -6,6 +6,10 @@
     "api/chat.ts": {
       "includeFiles": "api/_data/**",
       "maxDuration": 60
+    },
+    "api/briefing.ts": {
+      "includeFiles": "api/_data/**",
+      "maxDuration": 60
     }
   }
 }

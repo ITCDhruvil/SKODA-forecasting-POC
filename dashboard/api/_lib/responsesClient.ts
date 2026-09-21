@@ -18,10 +18,70 @@ export interface ResponseOutputItem {
   }[];
 }
 
+export interface ResponseUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+}
+
 export interface ResponseLike {
   id: string;
   status?: string;
   output: ResponseOutputItem[];
+  /** Token usage the API reports for this one response (all fields optional; missing counts as 0). */
+  usage?: ResponseUsage;
+}
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
+function tokenCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+/** Token usage of one response. `totalTokens` is `total_tokens` when present, else input + output. */
+export function usageOf(response: ResponseLike): TokenUsage {
+  const usage = response.usage;
+  const inputTokens = tokenCount(usage?.input_tokens);
+  const outputTokens = tokenCount(usage?.output_tokens);
+  const total = tokenCount(usage?.total_tokens);
+  return { inputTokens, outputTokens, totalTokens: total > 0 ? total : inputTokens + outputTokens };
+}
+
+export interface CollectedSources {
+  /** Sources from `url_citation` annotations on the answer. */
+  cited: WebSource[];
+  /** Sources the search call reports it consulted (`action.sources`); no titles, and present even when the answer has no annotations. */
+  consulted: WebSource[];
+  /** Number of `web_search_call` items. */
+  searches: number;
+}
+
+/** Gathers the allow-listed sources (annotations and search-call sources) and the search count of one response. */
+export function collectSources(response: ResponseLike, allowedDomains: readonly string[]): CollectedSources {
+  const out: CollectedSources = { cited: [], consulted: [], searches: 0 };
+  for (const item of response.output ?? []) {
+    if (item.type === 'web_search_call') {
+      out.searches += 1;
+      for (const s of item.action?.sources ?? []) {
+        if (!s.url) continue;
+        const source = toWebSource(s.url, s.title, allowedDomains);
+        if (source) out.consulted.push(source);
+      }
+    } else if (item.type === 'message') {
+      for (const part of item.content ?? []) {
+        for (const a of part.annotations ?? []) {
+          if (a.type !== 'url_citation' || !a.url) continue;
+          const source = toWebSource(a.url, a.title, allowedDomains);
+          if (source) out.cited.push(source);
+        }
+      }
+    }
+  }
+  return out;
 }
 
 /** Minimal structural view of `openai.responses`, so tests and SDK upgrades stay decoupled. */
@@ -133,6 +193,7 @@ export class ResponsesChatClient implements ChatClient {
   /** Sources the search call reports it consulted (`action.sources`); no titles, and present even when the answer has no annotations. */
   private consulted: WebSource[] = [];
   private searchCount = 0;
+  private usage: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
 
   constructor(opts: ResponsesClientOptions) {
     this.opts = opts;
@@ -180,23 +241,18 @@ export class ResponsesChatClient implements ChatClient {
     for (const item of response.output ?? []) {
       if (item.type === 'function_call' && item.call_id && item.name) {
         toolCalls.push({ id: item.call_id, name: item.name, arguments: item.arguments ?? '' });
-      } else if (item.type === 'web_search_call') {
-        this.searchCount += 1;
-        for (const s of item.action?.sources ?? []) {
-          if (!s.url) continue;
-          const source = toWebSource(s.url, s.title, webSearch?.allowedDomains ?? []);
-          if (source) this.consulted.push(source);
-        }
-      } else if (item.type === 'message') {
-        for (const part of item.content ?? []) {
-          for (const a of part.annotations ?? []) {
-            if (a.type !== 'url_citation' || !a.url) continue;
-            const source = toWebSource(a.url, a.title, webSearch?.allowedDomains ?? []);
-            if (source) this.cited.push(source);
-          }
-        }
       }
     }
+    const collected = collectSources(response, webSearch?.allowedDomains ?? []);
+    this.searchCount += collected.searches;
+    this.cited.push(...collected.cited);
+    this.consulted.push(...collected.consulted);
+    const used = usageOf(response);
+    this.usage = {
+      inputTokens: this.usage.inputTokens + used.inputTokens,
+      outputTokens: this.usage.outputTokens + used.outputTokens,
+      totalTokens: this.usage.totalTokens + used.totalTokens,
+    };
     const text = extractOutputText(response);
     return { content: text === '' ? null : text, toolCalls };
   }
@@ -208,5 +264,10 @@ export class ResponsesChatClient implements ChatClient {
 
   getSearchCount(): number {
     return this.searchCount;
+  }
+
+  /** Token usage summed over every call this client made (router calls are made elsewhere and not included). */
+  getUsage(): TokenUsage {
+    return { ...this.usage };
   }
 }

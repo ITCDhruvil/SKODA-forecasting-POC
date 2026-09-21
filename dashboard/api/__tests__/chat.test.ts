@@ -6,7 +6,8 @@ import { _resetRateLimitForTests } from '../_lib/rateLimit';
 
 vi.mock('../_lib/orchestrator', () => ({ answer: vi.fn() }));
 vi.mock('../_lib/openaiApi', () => ({ createOpenAIResponsesApi: vi.fn(() => ({ create: vi.fn() })) }));
-vi.mock('../_lib/kvClient', () => ({ kv: {} }));
+const kvMock = vi.hoisted(() => ({ hincrby: vi.fn() }));
+vi.mock('../_lib/kvClient', () => ({ kv: kvMock }));
 
 const RESULT: ChatResult = { reply: 'hello', mode: 'data', usedWeb: false, sources: [] };
 const answerMock = vi.mocked(answer);
@@ -69,6 +70,7 @@ beforeEach(() => {
   process.env.OPENAI_API_KEY = 'test-key';
   _resetRateLimitForTests();
   answerMock.mockReset();
+  kvMock.hincrby.mockReset();
   answerMock.mockResolvedValue(RESULT);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -186,6 +188,24 @@ describe('POST /api/chat handler', () => {
     expect(answerMock.mock.calls[0][1].onMode).toBeUndefined();
     const explicitFalse = await call({ body: valid({ stream: false }) });
     expect(explicitFalse).toMatchObject({ status: 200, body: RESULT, written: [] });
+  });
+
+  it('wires recordUsage to the usage counters in the KV store', async () => {
+    kvMock.hincrby.mockResolvedValue(1);
+    await call({ body: valid() });
+    const record = answerMock.mock.calls[0][1].recordUsage;
+    expect(typeof record).toBe('function');
+    await record?.('web', 1234);
+    expect(kvMock.hincrby.mock.calls).toEqual([
+      ['radar-usage', 'web:calls', 1],
+      ['radar-usage', 'web:tokens', 1234],
+    ]);
+  });
+
+  it('a failing usage store does not make the recordUsage dependency throw', async () => {
+    kvMock.hincrby.mockRejectedValue(new Error('kv down'));
+    await call({ body: valid() });
+    await expect(answerMock.mock.calls[0][1].recordUsage?.('data', 10)).resolves.toBeUndefined();
   });
 
   describe('stream: true', () => {

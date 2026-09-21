@@ -514,6 +514,49 @@ describe('ResponsesChatClient web search', () => {
     });
   });
 
+  describe('usage', () => {
+    it('sums usage across chained calls', async () => {
+      const { api } = fakeApi(
+        {
+          id: 'r1',
+          output: [{ type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' }],
+          usage: { input_tokens: 100, output_tokens: 20, total_tokens: 120 },
+        },
+        { ...textResponse('done', 'r2'), usage: { input_tokens: 150, output_tokens: 30, total_tokens: 180 } },
+      );
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 });
+      await client.createCompletion(base);
+      await client.createCompletion([
+        ...base,
+        { role: 'assistant', content: null, tool_calls: [{ id: 'c1', name: 'getKpis', arguments: '{}' }] },
+        { role: 'tool', tool_call_id: 'c1', name: 'getKpis', content: '{}' },
+      ]);
+      expect(client.getUsage()).toEqual({ inputTokens: 250, outputTokens: 50, totalTokens: 300 });
+    });
+
+    it('reports zeros when the response carries no usage', async () => {
+      const { api } = fakeApi(textResponse('hello'));
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 });
+      expect(client.getUsage()).toEqual({ inputTokens: 0, outputTokens: 0, totalTokens: 0 });
+      await client.createCompletion(base);
+      expect(client.getUsage()).toEqual({ inputTokens: 0, outputTokens: 0, totalTokens: 0 });
+    });
+
+    it('falls back to input plus output when total_tokens is absent', async () => {
+      const { api } = fakeApi({ ...textResponse('hello'), usage: { input_tokens: 40, output_tokens: 2 } });
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 });
+      await client.createCompletion(base);
+      expect(client.getUsage()).toEqual({ inputTokens: 40, outputTokens: 2, totalTokens: 42 });
+    });
+
+    it('treats missing fields as zero', async () => {
+      const { api } = fakeApi({ ...textResponse('hello'), usage: { output_tokens: 7 } });
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 });
+      await client.createCompletion(base);
+      expect(client.getUsage()).toEqual({ inputTokens: 0, outputTokens: 7, totalTokens: 7 });
+    });
+  });
+
   it('never offers web_search when it is not configured', async () => {
     const { api, create } = fakeApi(textResponse('x'));
     await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 }).createCompletion(base);

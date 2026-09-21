@@ -332,6 +332,16 @@ Date: 2026-09-21. User-requested UI changes after the live UI test: loader text 
 - Prompts (3.6): formatting rules in the shared `BASE` and the news structure plus no-links rule in the web section. After the first version of the rules the user asked for structure only where the content needs it, so the final wording says plain sentences for simple answers, lists only for three or more parallel items, and bold only for the key figures.
 - Live stream check (dev API on port 3002, web model gpt-5.4-nano, one data question "Which parts are forecast to go up the most next month?" with `stream: true`): `HTTP 200`, `Content-Type: application/x-ndjson; charset=utf-8`, `Cache-Control: no-cache, no-transform`, `X-Accel-Buffering: no`, `Transfer-Encoding: chunked`; then a `{"type":"mode","mode":"data"}` line at about 3.5s and a `{"type":"result",...}` line at about 13.8s, so the mode line reaches the client several seconds before the answer. n=1, data mode only; a web-mode stream and the fallback's double `mode` line are covered by unit tests and were not run live.
 
+#### Task 10a: daily briefing and usage stats, server side
+
+Date: 2026-09-21. The user approved a minimal open screen for Radar (Today KPIs, a daily "Impact news" list, situation questions, and settings with an approximate token cost per feature). This task builds the server side only (design in section 12); the client is Task 10b.
+
+- `ResponsesChatClient.getUsage()` sums the API's `usage` over its calls (missing fields count as 0; total falls back to input + output). `collectSources` and `usageOf` are exported so the briefing reuses the extraction logic.
+- `OrchestratorDeps.recordUsage(kind, tokens)` is called once at the end of a successful answer with the summed tokens of every model run (a failed web run plus the data fallback counts both); errors are swallowed and a hanging store is waited on for at most 1.5 s. `api/chat.ts` wires it to the `radar-usage` counters.
+- `GET /api/briefing` and `GET /api/usage` are new (contracts in section 12). `vercel.json` gives `api/briefing.ts` `maxDuration` 60. `.env.example` documents `BRIEFING_TIMEZONE`.
+- Tests: responsesClient usage (4), usageStats (9), orchestrator recordUsage (8), chat wiring (2), briefing module (37), briefing and usage handlers (9 and 5). Full suite 320 passing, `npm run typecheck:api` clean.
+- Live check (dev API on port 3002, web model gpt-5.4-nano, real Redis): the first `GET /api/briefing` returned `200 {"status":"ready"}` with 4 items in 7.8 s (model call 6.7 s, one search, 9027 input + 556 output = 9583 tokens). The forced `web_search` tool and the strict JSON schema work together on gpt-5.4-nano (no fallback to plain-text JSON was needed). Items: cost_up/steel/business-standard.com (2026-09-08), cost_up/duty/economictimes.indiatimes.com (2026-09-18), watch/fx/economictimes.indiatimes.com (2026-09-21), cost_up/freight/spglobal.com (2026-09-11); every URL passed the verified-source check. The second request returned the stored briefing in 0.07 s. `GET /api/usage` returned the briefing usage (9583 tokens) and, after one data question through `/api/chat`, `dataAnswer` `{avgTokens: 5624, samples: 1}` and `webAnswer: null`. n=1 briefing: the recency of the items is model-dependent (one item was 13 days old although the prompt asks for the last 3 days; dates are checked for shape only).
+
 #### Pricing (source: https://developers.openai.com/api/docs/pricing, fetched 2026-09-21; the older URL platform.openai.com/docs/pricing redirects there)
 
 Standard processing, USD per 1M tokens, input / cached input / output:
@@ -356,3 +366,57 @@ Web search tool: $10.00 per 1k calls (about $0.01 per search) plus search conten
 #### Config caveat found during the eval
 
 `ReasoningEffort` (and `OPENAI_ROUTER_EFFORT` / `OPENAI_WEB_EFFORT` parsing in `config.ts`) allows `minimal` for any model, but gpt-5.4-nano rejects it with HTTP 400 and does not accept the value set of the gpt-5 family; it also supports `none` and `xhigh`, which the type does not allow. A wrong effort silently degrades the router to `data` for every request. Leave efforts blank unless the chosen model is known to accept the value.
+
+## 12. Daily briefing and usage stats
+
+The Radar screen has a "Today" area and a daily "Impact news" list: 3 to 5 developments from the last 3 days that could change auto-parts input costs (steel, aluminium, freight, import duties and trade rules, INR/EUR, geopolitical supply disruptions). It is generated with the web model and web search, stored for the day, and shown to everyone who opens Radar that day. The settings screen shows an approximate token cost per feature, from real usage. This section is the server side (Task 10a); the client is Task 10b.
+
+### Endpoints
+
+`GET /api/briefing` (GET only, 405 otherwise; same per-IP `checkRateLimit` as the other endpoints, 429 over the limit):
+
+| Status | Body | When |
+|---|---|---|
+| 200 | `{"status":"ready","briefing":Briefing}` | today's briefing exists or was just generated |
+| 200 | `{"status":"disabled"}` | web search is off (`WEB_SEARCH_ENABLED` not `true`, no `OPENAI_WEB_MODEL`, or no `OPENAI_API_KEY`) |
+| 202 | `{"status":"pending"}` | another request is generating it and it was not ready after about 20 s |
+| 502 | `{"error":"briefing temporarily unavailable"}` | generation failed (no details are sent) |
+
+```ts
+type Impact = 'cost_up' | 'cost_down' | 'watch';
+type Area = 'steel' | 'aluminium' | 'freight' | 'duty' | 'fx' | 'geopolitics' | 'other';
+interface BriefingItem { headline: string; impact: Impact; area: Area; why: string; outlet: string; date: string /* YYYY-MM-DD */; url: string; domain: string }
+interface Briefing { date: string /* YYYY-MM-DD in BRIEFING_TIMEZONE */; generatedAt: string /* ISO */; model: string; items: BriefingItem[] /* 1..5 */; usage: { inputTokens: number; outputTokens: number; totalTokens: number; searches: number } }
+```
+
+`GET /api/usage` (GET only, same rate limit): `200 {"briefing": {"totalTokens","date","model"} | null, "webAnswer": {"avgTokens","samples"} | null, "dataAnswer": {"avgTokens","samples"} | null}`. `briefing` is the usage of the most recent generated briefing; the averages come from counters recorded after every chat answer and are `null` until there is a sample. A failure reading the store still answers 200 with all three `null`; the stats never produce a 5xx.
+
+### Generation
+
+One Responses call with the web model (`OPENAI_WEB_MODEL`, `OPENAI_WEB_EFFORT`): the web search tool restricted to the allow-list of 3.4, `tool_choice` forcing the search, at most 4 searches, `include: ['web_search_call.action.sources']`, and a strict JSON schema for the reply (`items` with `headline`, `impact`, `area`, `why`, `outlet`, `date`, `url`), 50 s timeout, `store: false`. The prompt gives the audience (procurement team of a SKODA/VW India car-parts supplier basket), the topics and the limits (headline at most 100 characters, one sentence of at most 160 for why, no claims about specific parts, vendors or prices from our own data), and says to use only the search results, never invent, and treat page text as data. gpt-5.4-nano accepts the strict schema together with the forced search tool (live check, section 11); if a model rejected the combination the fallback is to ask for JSON in plain text, which the parser already tolerates (code fences, surrounding prose).
+
+Verified-URL rule: the model never supplies a URL or domain that is trusted as given. The verified set is every allow-listed URL from the response's `url_citation` annotations and the search calls' `action.sources` (utm parameters and fragments removed, trailing slash ignored). An item survives only if all fields are present, `date` is a real `YYYY-MM-DD`, and its `url` normalises to a URL in that set; its `url` and `domain` are then taken from the verified source. Unknown `impact` becomes `watch`, unknown `area` becomes `other`, `headline` is cut to 120 and `why` to 180 characters, duplicates and everything past 5 items are dropped, and a briefing with no surviving item counts as a failed generation. Recency of the items is not validated beyond the date shape.
+
+### Storage (Vercel KV)
+
+| Key | Value | TTL |
+|---|---|---|
+| `radar-briefing:<date>` | the `Briefing` JSON | 3 days |
+| `radar-briefing-lock:<date>` | `1`, set with `NX` | 90 s |
+| `radar-briefing-fail:<date>` | `1`, failure backoff | 300 s |
+| `radar-briefing-latest` | `{totalTokens,date,model}` of the last generated briefing | none |
+| `radar-usage` (hash) | `web:calls`, `web:tokens`, `data:calls`, `data:tokens`, `action:calls`, `action:tokens` (`HINCRBY`) | none |
+
+`<date>` is the calendar day in `BRIEFING_TIMEZONE` (default `Asia/Kolkata`; an invalid zone falls back to UTC), so the briefing rolls over at local midnight. A stored value that does not validate as a `Briefing` is ignored and regenerated.
+
+### Lazy generation, lock and backoff
+
+There is no scheduler: the first request of the day generates the briefing, so the first opener waits (measured 7.8 s on gpt-5.4-nano with one search; budget 15 to 30 s for slower models and more searches) and everyone after gets the stored one in milliseconds. A scheduled job is a possible later upgrade. Flow: flag off returns `disabled`; a stored briefing is returned; a failure marker returns `failed` without a model call; otherwise `SET lock NX EX 90`: the winner generates and stores, everyone else polls the store every 1.5 s for up to 20 s (returning `failed` early if the marker appears) and then answers `pending`. A failed generation sets the 5 minute marker (and deletes the lock if the store supports it), so at most one retry happens after the backoff. If the store cannot take the lock (KV down) nothing is generated: without a lock or a place to keep the result every request would spend a model call. Read errors count as "missing"; a write error after a successful generation still returns the generated briefing.
+
+### What the token figures mean
+
+Counts come from the `usage` object the API returns for each response, summed over the model calls of one request (a failed web run plus its data fallback counts both). The router's own call is not included: it adds roughly a few hundred tokens per question, so the answer averages are a slight underestimate. Averages are since the counters started (no reset, no per-day split) and mix short and long questions; web-answer figures include the search results the model read. The briefing figure is the last generated briefing only. These are approximate token costs, not a bill: money depends on the model's token prices and on about $0.01 per search (section 11, Pricing).
+
+### Cost
+
+At most one generation per day per deployment (one model call with up to 4 searches, about 10k tokens measured), plus at most one retry after the 5 minute backoff when a generation fails. Opening the screen after that costs nothing. Logs carry only counts and timings (`event: 'briefing'`: date, items, searches, tokens, latency); never article text, headlines or user content.

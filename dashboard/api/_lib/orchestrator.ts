@@ -31,11 +31,19 @@ export interface OrchestratorDeps {
   now?: () => number;
   /** Reports the mode chosen for the main run (after routing and the web-budget check), and again with 'data' if web mode fails and the data fallback starts. */
   onMode?: (mode: Mode) => void;
+  /**
+   * Called once at the end of a successful answer with the final mode and the total tokens the API reported for
+   * every model run of the request (a failed web run plus the data fallback counts both). The router's own call
+   * (a few hundred tokens) is not included, so the figures are an approximation. Failures and hangs are contained.
+   */
+  recordUsage?: (kind: Mode, tokens: number) => void | Promise<void>;
 }
 
 export const TOTAL_BUDGET_MS = 55_000;
 export const MIN_FALLBACK_MS = 8_000;
 export const MAX_SEARCHES = 2;
+/** Longest an answer waits for the usage counters to be written, so a slow store cannot hold a finished answer. */
+export const RECORD_USAGE_GRACE_MS = 1_500;
 export const LIMIT_NOTE = '_Live news is limited right now, so this answer uses dashboard data only._';
 export const UNREACHABLE_NOTE = "_I couldn't reach live news just now, so this answer uses dashboard data only._";
 export const NO_SEARCH_NOTE = "_I didn't run a live news search for this question, so this answer uses dashboard data only._";
@@ -44,6 +52,21 @@ interface RunResult {
   reply: string;
   sources: WebSource[];
   searches: number;
+}
+
+/** Calls recordUsage and waits for it for at most RECORD_USAGE_GRACE_MS. Never throws. */
+async function reportUsage(record: (kind: Mode, tokens: number) => void | Promise<void>, kind: Mode, tokens: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const grace = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, RECORD_USAGE_GRACE_MS);
+    });
+    await Promise.race([Promise.resolve().then(() => record(kind, tokens)), grace]);
+  } catch {
+    // Usage stats are best effort: a failing store must never break an answer.
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<ChatResult> {
@@ -79,6 +102,8 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
   };
   reportMode(mode);
 
+  // Every client created for this request, so the usage of a failed web run is counted too.
+  const clients: ResponsesChatClient[] = [];
   const run = async (m: Mode): Promise<RunResult> => {
     const toolset = buildToolset(m);
     const isWeb = m === 'web';
@@ -93,6 +118,7 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
       reasoningEffort: isWeb ? config.webEffort : undefined,
       forceSearchFirst: toolset.webSearch,
     });
+    clients.push(client);
     const messages: ChatMessage[] = [{ role: 'system', content: buildSystemPrompt(m) }, ...req.messages];
     const reply = await runChatLoop(client, toolset.handlers, messages);
     return { reply, sources: client.getSources(), searches: client.getSearchCount() };
@@ -118,6 +144,11 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
   if (mode === 'web' && result.searches === 0) note = NO_SEARCH_NOTE;
 
   const usedWeb = mode === 'web' && result.searches > 0 && result.sources.length > 0;
+  if (deps.recordUsage) {
+    const total = clients.reduce((sum, c) => sum + c.getUsage().totalTokens, 0);
+    await reportUsage(deps.recordUsage, mode, total);
+  }
+
   console.info(
     JSON.stringify({
       event: 'chat',

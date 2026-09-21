@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { answer, LIMIT_NOTE, NO_SEARCH_NOTE, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator';
+import { answer, LIMIT_NOTE, NO_SEARCH_NOTE, RECORD_USAGE_GRACE_MS, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator';
 import type { ChatConfig } from '../config';
 import type { ResponseLike, ResponsesApi } from '../responsesClient';
 import type { Mode } from '../router';
@@ -30,6 +30,7 @@ function setup(opts: {
   config?: Partial<ChatConfig>;
   now?: () => number;
   onMode?: (mode: Mode) => void;
+  recordUsage?: (kind: Mode, tokens: number) => void | Promise<void>;
 }) {
   const create = vi.fn(async (body: Body, _options?: { timeout?: number }) => {
     const isRouter = body.text?.format?.name === 'route';
@@ -42,6 +43,7 @@ function setup(opts: {
     checkBudget,
     now: opts.now,
     onMode: opts.onMode,
+    recordUsage: opts.recordUsage,
   };
   const mainCalls = () => create.mock.calls.filter((c) => c[0].text?.format?.name !== 'route').map((c) => c[0] as Body);
   const toolNames = (b: Body) => (b.tools ?? []).map((t: Body) => t.name ?? t.type);
@@ -410,5 +412,105 @@ describe('answer onMode', () => {
     });
     await answer(ask('Any news on steel tariffs?'), t.deps);
     expect(order).toEqual(['mode:web', 'main']);
+  });
+});
+
+describe('recordUsage', () => {
+  const withUsage = (t: string, total: number): ResponseLike => ({ ...text(t), usage: { input_tokens: total - 10, output_tokens: 10, total_tokens: total } });
+  const isWebCall = (b: Body) => (b.tools ?? []).some((x: Body) => x.type === 'web_search');
+
+  it('reports the tokens of a data answer once, with the data mode', async () => {
+    const record = vi.fn();
+    const t = setup({ router: () => route('data'), main: () => withUsage('the answer', 1234), recordUsage: record });
+    await answer(ask('Which parts moved most?'), t.deps);
+    expect(record.mock.calls).toEqual([['data', 1234]]);
+  });
+
+  it('sums every model call of the run and does not count the router', async () => {
+    const record = vi.fn();
+    let n = 0;
+    const t = setup({
+      router: () => ({ ...route('data'), usage: { total_tokens: 500 } }),
+      main: () => {
+        n += 1;
+        if (n === 1) {
+          return { id: 'r1', output: [{ type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' }], usage: { total_tokens: 300 } };
+        }
+        return withUsage('done', 200);
+      },
+      recordUsage: record,
+    });
+    await answer(ask('Which parts moved most?'), t.deps);
+    expect(record.mock.calls).toEqual([['data', 500]]);
+  });
+
+  it('reports a web answer under web', async () => {
+    const record = vi.fn();
+    const t = setup({
+      router: () => route('web'),
+      main: () => ({ ...withUsage('news', 900), output: [{ type: 'web_search_call' }, ...withUsage('news', 900).output] }),
+      recordUsage: record,
+    });
+    await answer(ask('Any news?'), t.deps);
+    expect(record.mock.calls).toEqual([['web', 900]]);
+  });
+
+  it('a web failure with a data fallback sums both runs and reports data', async () => {
+    const record = vi.fn();
+    let webCalls = 0;
+    const t = setup({
+      router: () => route('web'),
+      main: (b) => {
+        if (isWebCall(b)) {
+          webCalls += 1;
+          if (webCalls === 1) {
+            return { id: 'w1', output: [{ type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' }], usage: { total_tokens: 700 } };
+          }
+          throw new Error('search down');
+        }
+        return withUsage('dashboard answer', 400);
+      },
+      recordUsage: record,
+    });
+    const result = await answer(ask('Any news?'), t.deps);
+    expect(result.mode).toBe('data');
+    expect(record.mock.calls).toEqual([['data', 1100]]);
+  });
+
+  it('is not called when the answer throws', async () => {
+    const record = vi.fn();
+    const t = setup({ router: () => route('data'), main: () => { throw new Error('boom'); }, recordUsage: record });
+    await expect(answer(ask('hi'), t.deps)).rejects.toThrow('boom');
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it('a recordUsage that throws or rejects does not break the answer', async () => {
+    const thrower = vi.fn(() => {
+      throw new Error('kv down');
+    });
+    const t1 = setup({ router: () => route('data'), main: () => withUsage('the answer', 50), recordUsage: thrower });
+    expect(await answer(ask('hi'), t1.deps)).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [] });
+    const rejecter = vi.fn().mockRejectedValue(new Error('kv down'));
+    const t2 = setup({ router: () => route('data'), main: () => withUsage('the answer', 50), recordUsage: rejecter });
+    expect(await answer(ask('hi'), t2.deps)).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [] });
+    expect(thrower).toHaveBeenCalledTimes(1);
+    expect(rejecter).toHaveBeenCalledTimes(1);
+  });
+
+  it('a hanging recordUsage is not awaited past a short grace period', async () => {
+    vi.useFakeTimers();
+    try {
+      const t = setup({ router: () => route('data'), main: () => withUsage('the answer', 50), recordUsage: () => new Promise<void>(() => {}) });
+      const pending = answer(ask('hi'), t.deps);
+      await vi.advanceTimersByTimeAsync(RECORD_USAGE_GRACE_MS + 100);
+      expect((await pending).reply).toBe('the answer');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('works without a recordUsage dependency', async () => {
+    const t = setup({ router: () => route('data'), main: () => withUsage('the answer', 50) });
+    expect((await answer(ask('hi'), t.deps)).reply).toBe('the answer');
   });
 });
