@@ -1,6 +1,15 @@
+export interface ChatSource {
+  title: string;
+  url: string;
+  domain: string;
+}
+
 export interface ChatEntry {
   role: 'user' | 'assistant';
   content: string;
+  /** Present on assistant replies that used live news. */
+  sources?: ChatSource[];
+  usedWeb?: boolean;
 }
 
 export interface Conversation {
@@ -15,6 +24,33 @@ export interface Conversation {
 export const HISTORY_STORAGE_KEY = 'radar-chat-history-v1';
 export const MAX_CONVERSATIONS = 50;
 const MAX_TITLE_LENGTH = 80;
+const MAX_SOURCES = 10;
+
+/** Validates untrusted source data (server payload or localStorage): http(s) urls only, string fields only. */
+export function sanitizeSources(raw: unknown): ChatSource[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ChatSource[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const s = item as Record<string, unknown>;
+    if (typeof s.title !== 'string' || typeof s.url !== 'string' || typeof s.domain !== 'string') continue;
+    let protocol: string;
+    try {
+      protocol = new URL(s.url).protocol;
+    } catch {
+      continue;
+    }
+    if (protocol !== 'https:' && protocol !== 'http:') continue;
+    out.push({ title: s.title, url: s.url, domain: s.domain });
+    if (out.length === MAX_SOURCES) break;
+  }
+  return out;
+}
+
+/** What is sent to /api/chat: role and content only (sources and flags stay on the client). */
+export function toApiMessages(entries: ChatEntry[]): { role: 'user' | 'assistant'; content: string }[] {
+  return entries.map(({ role, content }) => ({ role, content }));
+}
 
 export function createId(): string {
   const c = globalThis.crypto;
@@ -95,7 +131,13 @@ function normalizeConversation(raw: unknown): Conversation[] {
     if (!m || typeof m !== 'object') return [];
     const entry = m as Record<string, unknown>;
     if ((entry.role !== 'user' && entry.role !== 'assistant') || typeof entry.content !== 'string') return [];
-    messages.push({ role: entry.role, content: entry.content });
+    const sources = sanitizeSources(entry.sources);
+    messages.push({
+      role: entry.role,
+      content: entry.content,
+      ...(sources.length > 0 ? { sources } : {}),
+      ...(entry.usedWeb === true ? { usedWeb: true } : {}),
+    });
   }
   if (messages.length === 0) return [];
 

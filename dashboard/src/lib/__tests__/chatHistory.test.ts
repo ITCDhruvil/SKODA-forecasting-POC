@@ -6,9 +6,11 @@ import {
   deriveTitle,
   formatRelativeTime,
   loadHistory,
+  sanitizeSources,
   saveHistory,
   splitForDisplay,
   togglePin,
+  toApiMessages,
   truncateForEdit,
   truncateForRegenerate,
   upsertConversation,
@@ -207,5 +209,80 @@ describe('createId', () => {
     const ids = new Set(Array.from({ length: 50 }, () => createId()));
     expect(ids.size).toBe(50);
     for (const id of ids) expect(id.length).toBeGreaterThan(5);
+  });
+});
+
+describe('sanitizeSources', () => {
+  it('keeps well-formed http(s) sources and drops everything else', () => {
+    const raw = [
+      { title: 'Steel up', url: 'https://reuters.com/a', domain: 'reuters.com' },
+      { title: 'bad scheme', url: 'javascript:alert(1)', domain: 'x' },
+      { title: 5, url: 'https://ft.com/b', domain: 'ft.com' },
+      'nope',
+      null,
+    ];
+    expect(sanitizeSources(raw)).toEqual([{ title: 'Steel up', url: 'https://reuters.com/a', domain: 'reuters.com' }]);
+  });
+
+  it('returns an empty list for non-arrays and caps the list at 10', () => {
+    expect(sanitizeSources(undefined)).toEqual([]);
+    expect(sanitizeSources({})).toEqual([]);
+    const many = Array.from({ length: 15 }, (_, i) => ({ title: `t${i}`, url: `https://ft.com/${i}`, domain: 'ft.com' }));
+    expect(sanitizeSources(many)).toHaveLength(10);
+  });
+});
+
+describe('toApiMessages', () => {
+  it('sends only role and content, never sources or flags', () => {
+    const entries: ChatEntry[] = [
+      u('hi'),
+      { role: 'assistant', content: 'yo', usedWeb: true, sources: [{ title: 't', url: 'https://reuters.com/a', domain: 'reuters.com' }] },
+    ];
+    expect(toApiMessages(entries)).toEqual([
+      { role: 'user', content: 'hi' },
+      { role: 'assistant', content: 'yo' },
+    ]);
+  });
+});
+
+describe('history with web sources', () => {
+  function memoryStorage() {
+    const store = { value: '' };
+    return {
+      getItem: () => store.value || null,
+      setItem: (_k: string, v: string) => {
+        store.value = v;
+      },
+    };
+  }
+
+  it('round-trips usedWeb and sources on assistant messages', () => {
+    const storage = memoryStorage();
+    const sources = [{ title: 'Steel', url: 'https://reuters.com/a', domain: 'reuters.com' }];
+    saveHistory(storage, [conv('a', { messages: [u('q'), { role: 'assistant', content: 'r', usedWeb: true, sources }] })]);
+    const loaded = loadHistory(storage);
+    expect(loaded[0].messages[1]).toEqual({ role: 'assistant', content: 'r', usedWeb: true, sources });
+  });
+
+  it('drops unsafe source urls from stored history and still loads records without sources', () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      'k',
+      JSON.stringify([
+        {
+          id: 'a',
+          title: 't',
+          messages: [
+            { role: 'user', content: 'q' },
+            { role: 'assistant', content: 'r', usedWeb: true, sources: [{ title: 'x', url: 'javascript:alert(1)', domain: 'x' }] },
+          ],
+        },
+        { id: 'b', title: 't2', messages: [{ role: 'user', content: 'q' }, { role: 'assistant', content: 'r' }] },
+      ]),
+    );
+    const loaded = loadHistory(storage);
+    expect(loaded).toHaveLength(2);
+    expect(loaded[0].messages[1].sources).toBeUndefined();
+    expect(loaded[1].messages[1]).toEqual({ role: 'assistant', content: 'r' });
   });
 });
