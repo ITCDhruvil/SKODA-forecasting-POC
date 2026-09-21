@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { answer, LIMIT_NOTE, NO_SEARCH_NOTE, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator';
 import type { ChatConfig } from '../config';
 import type { ResponseLike, ResponsesApi } from '../responsesClient';
+import type { Mode } from '../router';
 import { ALLOWED_DOMAINS } from '../webSources';
 
 const config: ChatConfig = {
@@ -28,6 +29,7 @@ function setup(opts: {
   budget?: { allowed: boolean };
   config?: Partial<ChatConfig>;
   now?: () => number;
+  onMode?: (mode: Mode) => void;
 }) {
   const create = vi.fn(async (body: Body, _options?: { timeout?: number }) => {
     const isRouter = body.text?.format?.name === 'route';
@@ -39,6 +41,7 @@ function setup(opts: {
     config: { ...config, ...opts.config },
     checkBudget,
     now: opts.now,
+    onMode: opts.onMode,
   };
   const mainCalls = () => create.mock.calls.filter((c) => c[0].text?.format?.name !== 'route').map((c) => c[0] as Body);
   const toolNames = (b: Body) => (b.tools ?? []).map((t: Body) => t.name ?? t.type);
@@ -339,5 +342,73 @@ describe('answer', () => {
     expect(logged).toContain('"mode":"data"');
     expect(logged).not.toContain('a very private question');
     expect(logged).not.toContain('the reply');
+  });
+});
+
+describe('answer onMode', () => {
+  it('reports data once for a data route', async () => {
+    const onMode = vi.fn();
+    const t = setup({ router: () => route('data'), main: () => text('ok'), onMode });
+    await answer(ask('Which parts moved most?'), t.deps);
+    expect(onMode.mock.calls).toEqual([['data']]);
+  });
+
+  it('reports web once for a web route with budget available', async () => {
+    const onMode = vi.fn();
+    const t = setup({ router: () => route('web'), main: () => text('ok'), onMode });
+    await answer(ask('Any news on steel tariffs?'), t.deps);
+    expect(onMode.mock.calls).toEqual([['web']]);
+  });
+
+  it('reports data once when the web budget is denied', async () => {
+    const onMode = vi.fn();
+    const t = setup({ router: () => route('web'), main: () => text('ok'), budget: { allowed: false }, onMode });
+    await answer(ask('Any news?'), t.deps);
+    expect(onMode.mock.calls).toEqual([['data']]);
+  });
+
+  it('reports web then data when web mode fails and falls back', async () => {
+    const onMode = vi.fn();
+    const t = setup({
+      router: () => route('web'),
+      main: (b) => {
+        if ((b.tools ?? []).some((x: Body) => x.type === 'web_search')) throw new Error('search down');
+        return text('dashboard answer');
+      },
+      onMode,
+    });
+    await answer(ask('Any news?'), t.deps);
+    expect(onMode.mock.calls).toEqual([['web'], ['data']]);
+  });
+
+  it('reports action once for a forced action, without calling the router', async () => {
+    const onMode = vi.fn();
+    const t = setup({ router: () => { throw new Error('router must not run'); }, main: () => text('done'), onMode });
+    await answer(ask('Confirm the Red Sea alert'), t.deps);
+    expect(onMode.mock.calls).toEqual([['action']]);
+  });
+
+  it('an onMode that throws does not change the result', async () => {
+    const onMode = vi.fn(() => {
+      throw new Error('client gone');
+    });
+    const t = setup({ router: () => route('data'), main: () => text('the answer'), onMode });
+    const result = await answer(ask('Which parts moved most?'), t.deps);
+    expect(result).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [] });
+    expect(onMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onMode before the main model call', async () => {
+    const order: string[] = [];
+    const t = setup({
+      router: () => route('web'),
+      main: () => {
+        order.push('main');
+        return text('ok');
+      },
+      onMode: (m) => order.push(`mode:${m}`),
+    });
+    await answer(ask('Any news on steel tariffs?'), t.deps);
+    expect(order).toEqual(['mode:web', 'main']);
   });
 });

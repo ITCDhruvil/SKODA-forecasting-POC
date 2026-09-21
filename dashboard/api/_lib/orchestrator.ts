@@ -29,6 +29,8 @@ export interface OrchestratorDeps {
   config: ChatConfig;
   checkBudget: (ip: string) => Promise<{ allowed: boolean }>;
   now?: () => number;
+  /** Reports the mode chosen for the main run (after routing and the web-budget check), and again with 'data' if web mode fails and the data fallback starts. */
+  onMode?: (mode: Mode) => void;
 }
 
 export const TOTAL_BUDGET_MS = 55_000;
@@ -67,6 +69,16 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     }
   }
 
+  // A failing observer (for example a closed client connection) must never break the answer.
+  const reportMode = (m: Mode) => {
+    try {
+      deps.onMode?.(m);
+    } catch {
+      // ignored on purpose
+    }
+  };
+  reportMode(mode);
+
   const run = async (m: Mode): Promise<RunResult> => {
     const toolset = buildToolset(m);
     const isWeb = m === 'web';
@@ -95,6 +107,7 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     if (TOTAL_BUDGET_MS - (now() - started) < MIN_FALLBACK_MS) throw err;
     mode = 'data';
     note = UNREACHABLE_NOTE;
+    reportMode('data');
     result = await run('data');
   }
 

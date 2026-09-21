@@ -71,4 +71,36 @@ describe('buildSystemPrompt', () => {
     expect(p).toContain('Run a web search before you answer');
     expect(p).not.toContain('confirmGeoAlert');
   });
+
+  it('every mode carries the formatting rules, after the shared rules and before the mode section', () => {
+    for (const mode of ['data', 'web', 'action'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).toContain('Formatting (the reader is a busy business user)');
+      expect(p).toContain('Use structure only where it helps');
+      expect(p).toContain('no list, heading or table');
+      expect(p).toContain('Never make a list of one or two items');
+      expect(p).toContain('numbered list only for ranked or sequential items');
+      expect(p).toContain('Bold only the one or two figures');
+      expect(p).toContain('Use a table only to compare three or more items');
+      expect(p).toContain('Never put a heading on a short answer');
+      expect(p).toContain('Keep paragraphs to three lines or fewer');
+      expect(p).toContain('+2.4%');
+      expect(p.indexOf('never present an unfiltered list')).toBeLessThan(p.indexOf('Formatting (the reader'));
+    }
+    const web = buildSystemPrompt('web');
+    expect(web.indexOf('Keep paragraphs to three lines or fewer')).toBeLessThan(web.indexOf('Live news (you have a web search tool'));
+  });
+
+  it('only the web prompt carries the news answer structure and the no-links rule', () => {
+    const web = buildSystemPrompt('web');
+    expect(web).toContain('With only one development');
+    expect(web).toContain('(Outlet, DD Mon YYYY)');
+    expect(web).toContain('Do not put links or URLs in the answer');
+    expect(web).toContain('do not add your own sources list');
+    for (const mode of ['data', 'action'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).not.toContain('With only one development');
+      expect(p).not.toContain('Do not put links or URLs in the answer');
+    }
+  });
 });

@@ -4,6 +4,7 @@ import { kv } from './_lib/kvClient';
 import { createOpenAIResponsesApi } from './_lib/openaiApi';
 import { answer, type IncomingMessage } from './_lib/orchestrator';
 import { checkRateLimit } from './_lib/rateLimit';
+import type { Mode } from './_lib/router';
 import { checkWebBudget } from './_lib/webBudget';
 
 const MAX_MESSAGES = 30;
@@ -33,12 +34,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const body = req.body as { messages?: unknown; webEnabled?: unknown } | undefined;
+  const body = req.body as { messages?: unknown; webEnabled?: unknown; stream?: unknown } | undefined;
   if (
     !body ||
     !Array.isArray(body.messages) ||
     !body.messages.every(isValidIncomingMessage) ||
-    (body.webEnabled !== undefined && typeof body.webEnabled !== 'boolean')
+    (body.webEnabled !== undefined && typeof body.webEnabled !== 'boolean') ||
+    (body.stream !== undefined && typeof body.stream !== 'boolean')
   ) {
     res.status(400).json({ error: 'invalid request body' });
     return;
@@ -65,6 +67,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // With stream: true the response is NDJSON: a "mode" line as soon as the mode is known (possibly twice when web
+  // mode falls back to data), then one "result" line, or one "error" line if the run fails. Everything above this
+  // point (405, 429, validation, missing key) is still a plain JSON error with its status code.
+  const streaming = body.stream === true;
+  const writeLine = (event: Record<string, unknown>) => {
+    res.write(`${JSON.stringify(event)}\n`);
+  };
+  if (streaming) {
+    res.status(200);
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+  }
+
   try {
     const result = await answer(
       {
@@ -77,11 +94,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         api: createOpenAIResponsesApi(apiKey),
         config: loadChatConfig(),
         checkBudget: (clientIp) => checkWebBudget(kv, clientIp),
+        ...(streaming ? { onMode: (mode: Mode) => writeLine({ type: 'mode', mode }) } : {}),
       },
     );
-    res.status(200).json(result);
+    if (streaming) {
+      writeLine({ type: 'result', ...result });
+      res.end();
+    } else {
+      res.status(200).json(result);
+    }
   } catch (err) {
     console.error('chat endpoint error', err);
-    res.status(502).json({ error: 'chat temporarily unavailable' });
+    if (streaming) {
+      writeLine({ type: 'error', error: 'chat temporarily unavailable' });
+      res.end();
+    } else {
+      res.status(502).json({ error: 'chat temporarily unavailable' });
+    }
   }
 }

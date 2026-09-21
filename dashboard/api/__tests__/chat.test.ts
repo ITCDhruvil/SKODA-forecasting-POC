@@ -14,10 +14,15 @@ const answerMock = vi.mocked(answer);
 interface Sent {
   status: number | undefined;
   body: unknown;
+  headers: Record<string, string>;
+  written: string[];
+  ended: boolean;
+  jsonCalled: boolean;
+  flushed: boolean;
 }
 
 async function call(opts: { method?: string; body?: unknown; ip?: string } = {}): Promise<Sent> {
-  const sent: Sent = { status: undefined, body: undefined };
+  const sent: Sent = { status: undefined, body: undefined, headers: {}, written: [], ended: false, jsonCalled: false, flushed: false };
   const req = {
     method: opts.method ?? 'POST',
     headers: {},
@@ -31,6 +36,22 @@ async function call(opts: { method?: string; body?: unknown; ip?: string } = {})
     },
     json(body: unknown) {
       sent.body = body;
+      sent.jsonCalled = true;
+      return res;
+    },
+    setHeader(name: string, value: string) {
+      sent.headers[name.toLowerCase()] = value;
+      return res;
+    },
+    flushHeaders() {
+      sent.flushed = true;
+    },
+    write(chunk: string) {
+      sent.written.push(chunk);
+      return true;
+    },
+    end() {
+      sent.ended = true;
       return res;
     },
   } as unknown as VercelResponse;
@@ -76,13 +97,13 @@ describe('POST /api/chat handler', () => {
 
   it('rejects an empty messages array with 400', async () => {
     const sent = await call({ body: { messages: [] } });
-    expect(sent).toEqual({ status: 400, body: { error: 'invalid request body' } });
+    expect(sent).toMatchObject({ status: 400, body: { error: 'invalid request body' } });
     expect(answerMock).not.toHaveBeenCalled();
   });
 
   it('rejects a conversation whose last message is from the assistant with 400', async () => {
     const sent = await call({ body: { messages: [userMsg(), { role: 'assistant', content: 'yo' }] } });
-    expect(sent).toEqual({ status: 400, body: { error: 'invalid request body' } });
+    expect(sent).toMatchObject({ status: 400, body: { error: 'invalid request body' } });
     expect(answerMock).not.toHaveBeenCalled();
   });
 
@@ -96,7 +117,7 @@ describe('POST /api/chat handler', () => {
 
   it('rejects a non-boolean webEnabled with 400', async () => {
     const sent = await call({ body: valid({ webEnabled: 'yes' }) });
-    expect(sent).toEqual({ status: 400, body: { error: 'invalid request body' } });
+    expect(sent).toMatchObject({ status: 400, body: { error: 'invalid request body' } });
     expect(answerMock).not.toHaveBeenCalled();
   });
 
@@ -125,7 +146,7 @@ describe('POST /api/chat handler', () => {
   it('rejects more than 30 messages with 400 too many messages', async () => {
     const messages = Array.from({ length: 31 }, (_, i) => (i % 2 === 0 ? userMsg() : { role: 'assistant', content: 'a' }));
     const sent = await call({ body: { messages } });
-    expect(sent).toEqual({ status: 400, body: { error: 'too many messages' } });
+    expect(sent).toMatchObject({ status: 400, body: { error: 'too many messages' } });
   });
 
   it('accepts exactly 30 messages ending with a user message', async () => {
@@ -135,7 +156,7 @@ describe('POST /api/chat handler', () => {
 
   it('rejects a message over 4000 characters with 400 message too long', async () => {
     const sent = await call({ body: { messages: [userMsg('x'.repeat(4001))] } });
-    expect(sent).toEqual({ status: 400, body: { error: 'message too long' } });
+    expect(sent).toMatchObject({ status: 400, body: { error: 'message too long' } });
     expect((await call({ body: { messages: [userMsg('x'.repeat(4000))] } })).status).toBe(200);
   });
 
@@ -149,11 +170,81 @@ describe('POST /api/chat handler', () => {
   it('returns 502 chat temporarily unavailable when answer rejects', async () => {
     answerMock.mockRejectedValue(new Error('boom'));
     const sent = await call({ body: valid() });
-    expect(sent).toEqual({ status: 502, body: { error: 'chat temporarily unavailable' } });
+    expect(sent).toMatchObject({ status: 502, body: { error: 'chat temporarily unavailable' } });
   });
 
   it('returns 200 with the ChatResult on success', async () => {
     const sent = await call({ body: valid() });
-    expect(sent).toEqual({ status: 200, body: RESULT });
+    expect(sent).toMatchObject({ status: 200, body: RESULT });
+  });
+
+  it('a plain request does not stream: no NDJSON headers, no writes, and no onMode wired', async () => {
+    const sent = await call({ body: valid() });
+    expect(sent.headers['content-type']).toBeUndefined();
+    expect(sent.written).toEqual([]);
+    expect(sent.ended).toBe(false);
+    expect(answerMock.mock.calls[0][1].onMode).toBeUndefined();
+    const explicitFalse = await call({ body: valid({ stream: false }) });
+    expect(explicitFalse).toMatchObject({ status: 200, body: RESULT, written: [] });
+  });
+
+  describe('stream: true', () => {
+    const lines = (sent: Sent) => sent.written.map((w) => JSON.parse(w));
+
+    it('rejects a non-boolean stream with 400 invalid request body', async () => {
+      const sent = await call({ body: valid({ stream: 'yes' }) });
+      expect(sent).toMatchObject({ status: 400, body: { error: 'invalid request body' }, written: [] });
+      expect(answerMock).not.toHaveBeenCalled();
+    });
+
+    it('streams a mode line then the result line as NDJSON, then ends', async () => {
+      answerMock.mockImplementation(async (_req, deps) => {
+        deps.onMode?.('web');
+        return RESULT;
+      });
+      const sent = await call({ body: valid({ stream: true }) });
+
+      expect(sent.status).toBe(200);
+      expect(sent.headers['content-type']).toBe('application/x-ndjson; charset=utf-8');
+      expect(sent.headers['cache-control']).toBe('no-cache, no-transform');
+      expect(sent.flushed).toBe(true);
+      expect(sent.written.every((w) => w.endsWith('\n') && !w.slice(0, -1).includes('\n'))).toBe(true);
+      expect(lines(sent)).toEqual([{ type: 'mode', mode: 'web' }, { type: 'result', ...RESULT }]);
+      expect(sent.ended).toBe(true);
+      expect(sent.jsonCalled).toBe(false);
+    });
+
+    it('forwards a second mode line when the orchestrator falls back', async () => {
+      answerMock.mockImplementation(async (_req, deps) => {
+        deps.onMode?.('web');
+        deps.onMode?.('data');
+        return RESULT;
+      });
+      const sent = await call({ body: valid({ stream: true }) });
+      expect(lines(sent).map((l) => l.type)).toEqual(['mode', 'mode', 'result']);
+      expect(lines(sent)[1]).toEqual({ type: 'mode', mode: 'data' });
+    });
+
+    it('writes a single error line and ends when answer rejects, without a JSON 502 afterwards', async () => {
+      answerMock.mockRejectedValue(new Error('boom'));
+      const sent = await call({ body: valid({ stream: true }) });
+
+      expect(sent.status).toBe(200);
+      expect(lines(sent)).toEqual([{ type: 'error', error: 'chat temporarily unavailable' }]);
+      expect(sent.ended).toBe(true);
+      expect(sent.jsonCalled).toBe(false);
+    });
+
+    it('keeps validation errors as plain JSON before streaming starts', async () => {
+      const sent = await call({ body: { messages: [], stream: true } });
+      expect(sent).toMatchObject({ status: 400, body: { error: 'invalid request body' }, written: [], ended: false });
+      expect(sent.headers['content-type']).toBeUndefined();
+    });
+
+    it('keeps the missing-key 502 as plain JSON before streaming starts', async () => {
+      delete process.env.OPENAI_API_KEY;
+      const sent = await call({ body: valid({ stream: true }) });
+      expect(sent).toMatchObject({ status: 502, body: { error: 'chat temporarily unavailable' }, written: [], ended: false });
+    });
   });
 });
