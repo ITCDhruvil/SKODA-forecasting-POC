@@ -15,6 +15,7 @@ import {
   IconCurrency,
   IconGlobe,
   IconHelp,
+  IconSparkle,
 } from './Icons';
 import type { Insight } from '../types';
 
@@ -57,6 +58,8 @@ interface Props {
   onViewInsight: () => void;
   collapsed: boolean;
   onToggle: () => void;
+  onAskRadar: () => void;
+  radarOpen: boolean;
 }
 
 /**
@@ -72,6 +75,8 @@ export function Sidebar({
   onViewInsight,
   collapsed,
   onToggle,
+  onAskRadar,
+  radarOpen,
 }: Props) {
   const [insightOpen, setInsightOpen] = useState(false);
 
@@ -169,6 +174,28 @@ export function Sidebar({
       </nav>
 
       <div className="mt-auto overflow-y-auto">
+        <div className={clsx('pt-3', collapsed ? 'flex justify-center px-2' : 'px-3')}>
+          <button
+            type="button"
+            onClick={onAskRadar}
+            aria-label="Ask Radar"
+            aria-expanded={radarOpen}
+            aria-controls="radar-panel"
+            title={collapsed ? 'Ask Radar' : undefined}
+            className={clsx(
+              'flex items-center justify-center bg-gradient-to-r from-brand-600 via-brand-500 to-indigo-500 text-white shadow-sm ring-1 ring-inset ring-white/10 transition hover:shadow-md hover:brightness-110 active:scale-[0.98]',
+              collapsed ? 'h-9 w-9 rounded-lg' : 'w-full gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold',
+            )}
+          >
+            <IconSparkle className="h-4 w-4 shrink-0" />
+            {!collapsed && (
+              <span className="text-shimmer [--shimmer-base:#ffffff] [--shimmer-hi:rgba(255,255,255,0.5)]">
+                Ask Radar
+              </span>
+            )}
+          </button>
+        </div>
+
         {!collapsed && (
           <div className="p-3">
             <div className={clsx('rounded-xl border', toneClasses)}>

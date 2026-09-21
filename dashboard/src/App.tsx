@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DashboardData } from './types';
 import {
   Sidebar,
@@ -88,6 +88,8 @@ export default function App() {
   const [view, setView] = useState<View>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [parametersOpen, setParametersOpen] = useState(false);
+  const [radarOpen, setRadarOpen] = useState(false);
+  const closeRadar = useCallback(() => setRadarOpen(false), []);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}dashboard.json`)
@@ -147,6 +149,8 @@ export default function App() {
         onViewInsight={() => setView('validation')}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((c) => !c)}
+        onAskRadar={() => setRadarOpen((open) => !open)}
+        radarOpen={radarOpen}
       />
 
       <main
@@ -289,7 +293,7 @@ export default function App() {
         />
       )}
 
-      <ChatWidget />
+      <ChatWidget open={radarOpen} onClose={closeRadar} />
     </div>
   );
 }
