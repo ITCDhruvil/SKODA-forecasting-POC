@@ -98,6 +98,50 @@ describe('ResponsesChatClient', () => {
     expect(create.mock.calls[1][0].reasoning).toBeUndefined();
   });
 
+  it('without a deadline the per-call timeout is exactly timeoutMs', async () => {
+    const { api, create } = fakeApi(textResponse('a'), textResponse('b', 'r2'));
+    const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 25_000, now: () => 999_999 });
+    await client.createCompletion(base);
+    await client.createCompletion(base);
+    expect(create.mock.calls[0][1]).toEqual({ timeout: 25_000 });
+    expect(create.mock.calls[1][1]).toEqual({ timeout: 25_000 });
+  });
+
+  it('clamps each call timeout to the time left before the deadline', async () => {
+    const { api, create } = fakeApi(textResponse('a'), textResponse('b', 'r2'), textResponse('c', 'r3'));
+    let clock = 0;
+    const client = new ResponsesChatClient({
+      api,
+      model: 'm',
+      tools: [TOOL],
+      timeoutMs: 25_000,
+      deadline: 30_000,
+      now: () => clock,
+    });
+    await client.createCompletion(base); // 30_000 left, cap 25_000 wins
+    clock = 20_000;
+    await client.createCompletion(base); // 10_000 left
+    clock = 29_500;
+    await expect(client.createCompletion(base)).rejects.toThrow('chat deadline exceeded'); // 500 left
+    expect(create.mock.calls[0][1]).toEqual({ timeout: 25_000 });
+    expect(create.mock.calls[1][1]).toEqual({ timeout: 10_000 });
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+
+  it('with under a second left it throws and does not call the API', async () => {
+    const { api, create } = fakeApi(textResponse('never'));
+    const client = new ResponsesChatClient({
+      api,
+      model: 'm',
+      tools: [TOOL],
+      timeoutMs: 25_000,
+      deadline: 10_000,
+      now: () => 9_001,
+    });
+    await expect(client.createCompletion(base)).rejects.toThrow('chat deadline exceeded');
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it('throws when the API reports a failed response', async () => {
     const { api } = fakeApi({ id: 'r1', status: 'failed', output: [] });
     const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 });

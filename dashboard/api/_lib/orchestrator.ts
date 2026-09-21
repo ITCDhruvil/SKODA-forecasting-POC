@@ -69,13 +69,14 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
   const run = async (m: Mode): Promise<RunResult> => {
     const toolset = buildToolset(m);
     const isWeb = m === 'web';
-    const remaining = TOTAL_BUDGET_MS - (now() - started);
     const client = new ResponsesChatClient({
       api,
       model: isWeb ? config.webModel : config.dataModel,
       tools: toolset.definitions,
       webSearch: toolset.webSearch ? { allowedDomains: ALLOWED_DOMAINS, maxSearches: MAX_SEARCHES } : null,
-      timeoutMs: Math.min(isWeb ? config.webTimeoutMs : config.dataTimeoutMs, Math.max(1000, remaining)),
+      timeoutMs: isWeb ? config.webTimeoutMs : config.dataTimeoutMs,
+      deadline: started + TOTAL_BUDGET_MS,
+      now,
       reasoningEffort: isWeb ? config.webEffort : undefined,
     });
     const messages: ChatMessage[] = [{ role: 'system', content: buildSystemPrompt(m) }, ...req.messages];

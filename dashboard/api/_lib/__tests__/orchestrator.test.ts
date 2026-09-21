@@ -29,7 +29,7 @@ function setup(opts: {
   config?: Partial<ChatConfig>;
   now?: () => number;
 }) {
-  const create = vi.fn(async (body: Body) => {
+  const create = vi.fn(async (body: Body, _options?: { timeout?: number }) => {
     const isRouter = body.text?.format?.name === 'route';
     return isRouter ? opts.router!(body) : opts.main!(body);
   });
@@ -192,6 +192,37 @@ describe('answer', () => {
     expect(content).toContain('latest question');
     expect(content).toContain('previous answer text');
     expect(content).not.toContain('first secret question');
+  });
+
+  it('clamps every OpenAI call timeout to what is left of the 55s total budget', async () => {
+    let clock = 0;
+    const t = setup({
+      router: () => {
+        clock = 40_000; // the router ate 40s
+        return route('data');
+      },
+      main: () => text('ok'),
+      config: { dataTimeoutMs: 100_000 },
+      now: () => clock,
+    });
+    await answer(ask('hi'), t.deps);
+
+    const mainCall = t.create.mock.calls.find((c) => c[0].text?.format?.name !== 'route');
+    expect(mainCall?.[1]).toEqual({ timeout: 15_000 });
+  });
+
+  it('a later call in the tool loop cannot start once the 55s total budget is spent', async () => {
+    let clock = 0;
+    const t = setup({
+      router: () => route('data'),
+      main: () => {
+        clock = 54_500; // the first main call ran long and asked for a tool
+        return { id: 'r1', output: [{ type: 'function_call', call_id: 'c1', name: 'noSuchTool', arguments: '{}' }] };
+      },
+      now: () => clock,
+    });
+    await expect(answer(ask('hi'), t.deps)).rejects.toThrow('chat deadline exceeded');
+    expect(t.mainCalls()).toHaveLength(1);
   });
 
   it('logs mode and latency but never message content', async () => {

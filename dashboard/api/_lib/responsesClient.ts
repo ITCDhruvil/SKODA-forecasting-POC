@@ -33,6 +33,9 @@ export interface ResponsesClientOptions {
   tools: ToolDefinition[];
   webSearch?: { allowedDomains: string[]; maxSearches: number } | null;
   timeoutMs: number;
+  /** Absolute epoch ms by which every call must be finished; each call's timeout is clamped to what is left. */
+  deadline?: number;
+  now?: () => number;
   reasoningEffort?: ReasoningEffort;
 }
 
@@ -118,7 +121,15 @@ export class ResponsesChatClient implements ChatClient {
     if (requestTools.length > 0) body.tools = requestTools;
     if (reasoningEffort) body.reasoning = { effort: reasoningEffort };
 
-    const response = await api.create(body, { timeout: timeoutMs });
+    let timeout = timeoutMs;
+    const { deadline, now } = this.opts;
+    if (deadline !== undefined) {
+      const remaining = deadline - (now ?? Date.now)();
+      if (remaining < 1000) throw new Error('chat deadline exceeded');
+      timeout = Math.min(timeoutMs, remaining);
+    }
+
+    const response = await api.create(body, { timeout });
     if (response.status === 'failed') throw new Error('responses api returned status failed');
 
     this.previousResponseId = response.id;
