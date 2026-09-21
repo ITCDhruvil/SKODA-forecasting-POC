@@ -1,17 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { runChatLoop, type ChatMessage } from './_lib/chatLoop';
+import { loadChatConfig } from './_lib/config';
+import { kv } from './_lib/kvClient';
 import { createOpenAIResponsesApi } from './_lib/openaiApi';
+import { answer, type IncomingMessage } from './_lib/orchestrator';
 import { checkRateLimit } from './_lib/rateLimit';
-import { ResponsesChatClient } from './_lib/responsesClient';
-import { buildSystemPrompt } from './_lib/systemPrompt';
-import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
+import { checkWebBudget } from './_lib/webBudget';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 4000;
-const OPENAI_TIMEOUT_MS = 25_000;
 
-function isValidIncomingMessage(m: unknown): m is { role: 'user' | 'assistant'; content: string } {
+function isValidIncomingMessage(m: unknown): m is IncomingMessage {
   if (!m || typeof m !== 'object') return false;
   const obj = m as Record<string, unknown>;
   return (obj.role === 'user' || obj.role === 'assistant') && typeof obj.content === 'string';
@@ -35,8 +33,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const body = req.body as { messages?: unknown } | undefined;
-  if (!body || !Array.isArray(body.messages) || !body.messages.every(isValidIncomingMessage)) {
+  const body = req.body as { messages?: unknown; webEnabled?: unknown } | undefined;
+  if (
+    !body ||
+    !Array.isArray(body.messages) ||
+    !body.messages.every(isValidIncomingMessage) ||
+    (body.webEnabled !== undefined && typeof body.webEnabled !== 'boolean')
+  ) {
     res.status(400).json({ error: 'invalid request body' });
     return;
   }
@@ -56,24 +59,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  // Only role and content are forwarded; any extra client fields are dropped.
-  const messages: ChatMessage[] = [
-    { role: 'system', content: buildSystemPrompt('action') },
-    ...(body.messages as { role: 'user' | 'assistant'; content: string }[]).map(({ role, content }) => ({
-      role,
-      content,
-    })),
-  ];
-
   try {
-    const client = new ResponsesChatClient({
-      api: createOpenAIResponsesApi(apiKey),
-      model: MODEL,
-      tools: TOOL_DEFINITIONS,
-      timeoutMs: OPENAI_TIMEOUT_MS,
-    });
-    const reply = await runChatLoop(client, TOOL_HANDLERS, messages);
-    res.status(200).json({ reply });
+    const result = await answer(
+      {
+        // Only role and content are forwarded; any extra client fields are dropped.
+        messages: (body.messages as IncomingMessage[]).map(({ role, content }) => ({ role, content })),
+        webEnabled: body.webEnabled ?? true,
+        ip,
+      },
+      {
+        api: createOpenAIResponsesApi(apiKey),
+        config: loadChatConfig(),
+        checkBudget: (clientIp) => checkWebBudget(kv, clientIp),
+      },
+    );
+    res.status(200).json(result);
   } catch (err) {
     console.error('chat endpoint error', err);
     res.status(502).json({ error: 'chat temporarily unavailable' });

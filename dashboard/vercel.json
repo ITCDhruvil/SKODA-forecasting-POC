@@ -5,7 +5,7 @@
     },
     "api/chat.ts": {
       "includeFiles": "api/_data/**",
-      "maxDuration": 30
+      "maxDuration": 60
     }
   }
 }
