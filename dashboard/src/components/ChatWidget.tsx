@@ -1,9 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import clsx from 'clsx';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { ChatHistoryPanel } from './ChatHistoryPanel';
 import { ChatWelcome } from './ChatWelcome';
+import { MessageMarkdown } from './chatMarkdown';
 import { SourceList } from './SourceList';
 import {
   IconCheck,
@@ -30,31 +29,9 @@ import {
   type ChatEntry,
   type Conversation,
 } from '../lib/chatHistory';
+import { readChatStream, type ChatMode } from '../lib/chatStream';
 import { pickThinkingWord } from '../lib/thinkingWords';
 import { loadWebEnabled, saveWebEnabled } from '../lib/webPreference';
-
-const markdownComponents = {
-  p: ({ ...props }) => <p className="text-sm leading-relaxed text-slate-800" {...props} />,
-  strong: ({ ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
-  a: ({ ...props }) => (
-    <a className="text-brand-600 underline hover:text-brand-700" target="_blank" rel="noreferrer" {...props} />
-  ),
-  ul: ({ ...props }) => <ul className="list-disc space-y-1 pl-5 text-sm text-slate-800" {...props} />,
-  ol: ({ ...props }) => <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-800" {...props} />,
-  li: ({ ...props }) => <li className="leading-relaxed" {...props} />,
-  h1: ({ ...props }) => <h1 className="mb-1 mt-2 text-[15px] font-semibold text-slate-900" {...props} />,
-  h2: ({ ...props }) => <h2 className="mb-1 mt-2 text-sm font-semibold text-slate-900" {...props} />,
-  h3: ({ ...props }) => <h3 className="mb-1 mt-2 text-sm font-semibold text-slate-900" {...props} />,
-  code: ({ ...props }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-800" {...props} />,
-  table: ({ ...props }) => (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-xs" {...props} />
-    </div>
-  ),
-  thead: ({ ...props }) => <thead className="border-b border-slate-200" {...props} />,
-  th: ({ ...props }) => <th className="px-2 py-1 text-left font-semibold text-slate-600" {...props} />,
-  td: ({ ...props }) => <td className="border-t border-slate-100 px-2 py-1 text-slate-700" {...props} />,
-};
 
 function getStorage(): Storage | null {
   try {
@@ -64,35 +41,46 @@ function getStorage(): Storage | null {
   }
 }
 
-function ThinkingIndicator({ webHint }: { webHint: boolean }) {
+interface ReplyPayload {
+  reply?: unknown;
+  usedWeb?: unknown;
+  sources?: unknown;
+}
+
+/** Builds the stored assistant entry from a chat reply payload (streamed result or plain JSON body). */
+function entryFromPayload(payload: ReplyPayload): ChatEntry {
+  const entry: ChatEntry = { role: 'assistant', content: payload.reply as string };
+  if (payload.usedWeb === true) {
+    entry.usedWeb = true;
+    entry.sources = sanitizeSources(payload.sources);
+  }
+  return entry;
+}
+
+function ThinkingIndicator({ mode }: { mode: ChatMode | null }) {
   const [word, setWord] = useState(() => pickThinkingWord(null));
-  const [slow, setSlow] = useState(false);
+  const searching = mode === 'web';
 
   useEffect(() => {
+    if (searching) return;
     const id = setInterval(() => setWord((previous) => pickThinkingWord(previous)), 1800);
     return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (!webHint) return;
-    // A web answer takes noticeably longer; after 3s with Web on, say what is probably happening.
-    const id = setTimeout(() => setSlow(true), 3000);
-    return () => clearTimeout(id);
-  }, [webHint]);
-
-  const label = webHint && slow ? 'Checking live news' : word;
+  }, [searching]);
 
   return (
     <div className="flex items-start gap-3">
       <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-brand-600" />
       <div className="flex flex-col gap-1 pt-1.5">
         <span className="text-xs font-semibold text-slate-500">Radar</span>
-        <span className="sr-only">Radar is thinking</span>
+        <span className="sr-only">{searching ? 'Radar is searching the web' : 'Radar is thinking'}</span>
         <span
           aria-hidden="true"
-          className="text-shimmer text-sm font-medium [--shimmer-base:#94a3b8] [--shimmer-hi:#1e293b]"
+          className="flex items-center gap-1.5 text-sm font-medium text-slate-500"
         >
-          {label}…
+          {searching && <IconGlobe className="h-3.5 w-3.5" />}
+          <span className="text-shimmer [--shimmer-base:#94a3b8] [--shimmer-hi:#1e293b]">
+            {searching ? 'Searching the web' : word}…
+          </span>
         </span>
       </div>
     </div>
@@ -239,9 +227,7 @@ function MessageRow({
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{message.content}</p>
         ) : (
           <div className="space-y-2">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {message.content}
-            </ReactMarkdown>
+            <MessageMarkdown content={message.content} />
             <SourceList sources={message.sources ?? []} usedWeb={message.usedWeb === true} />
           </div>
         )}
@@ -282,6 +268,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingMode, setLoadingMode] = useState<ChatMode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -335,30 +322,52 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
     setConversations((prev) => upsertConversation(prev, { id: conversationId, messages: base }));
     setError(null);
     setLoading(true);
+    setLoadingMode(null);
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: toApiMessages(base), webEnabled }),
+        body: JSON.stringify({ messages: toApiMessages(base), webEnabled, stream: true }),
       });
-      const payload = await response.json();
-      if (!response.ok) {
-        if (requestRef.current === token) setError(payload.error ?? 'chat unavailable, try again');
-        return;
+
+      let payload: ReplyPayload;
+
+      if (response.body && response.headers.get('content-type')?.includes('application/x-ndjson')) {
+        const outcome: { result: ReplyPayload | null; error: string | null } = { result: null, error: null };
+        await readChatStream(response.body, (event) => {
+          if (event.type === 'mode') {
+            if (requestRef.current === token) setLoadingMode(event.mode);
+          } else if (event.type === 'result') {
+            outcome.result = event;
+          } else {
+            outcome.error = event.error;
+          }
+        });
+        if (!outcome.result) {
+          if (requestRef.current === token) setError(outcome.error ?? 'chat unavailable, try again');
+          return;
+        }
+        payload = outcome.result;
+      } else {
+        const body = await response.json();
+        if (!response.ok) {
+          if (requestRef.current === token) setError(body.error ?? 'chat unavailable, try again');
+          return;
+        }
+        payload = body;
       }
-      const reply: ChatEntry = { role: 'assistant', content: payload.reply as string };
-      if (payload.usedWeb === true) {
-        reply.usedWeb = true;
-        reply.sources = sanitizeSources(payload.sources);
-      }
-      const withReply: ChatEntry[] = [...base, reply];
+
+      const withReply: ChatEntry[] = [...base, entryFromPayload(payload)];
       setConversations((prev) => upsertConversation(prev, { id: conversationId, messages: withReply }));
       if (requestRef.current === token) setMessages(withReply);
     } catch {
       if (requestRef.current === token) setError('chat unavailable, try again');
     } finally {
-      if (requestRef.current === token) setLoading(false);
+      if (requestRef.current === token) {
+        setLoading(false);
+        setLoadingMode(null);
+      }
     }
   }
 
@@ -385,6 +394,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   function startFreshChat() {
     requestRef.current++;
     setLoading(false);
+    setLoadingMode(null);
     setActiveId(createId());
     setMessages([]);
     setInput('');
@@ -399,6 +409,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
     if (!conversation) return;
     requestRef.current++;
     setLoading(false);
+    setLoadingMode(null);
     setActiveId(id);
     setMessages(conversation.messages);
     setError(null);
@@ -450,11 +461,15 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
               type="button"
               onClick={() => setWebEnabled((v) => !v)}
               aria-pressed={webEnabled}
-              title={webEnabled ? 'Live news is on: Radar may search trusted news sources' : 'Live news is off: Radar uses dashboard data only'}
+              title={
+                webEnabled
+                  ? 'Live news is on: Radar searches trusted news sources only when a question needs current information'
+                  : 'Live news is off: Radar uses dashboard data only'
+              }
               className={clsx(
                 'mr-1 flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition',
                 webEnabled
-                  ? 'border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100'
+                  ? 'border-brand-100 bg-brand-50 text-brand-700 hover:bg-brand-100'
                   : 'border-slate-200 text-slate-500 hover:bg-slate-50',
               )}
             >
@@ -512,7 +527,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
                 onSubmitEdit={(text) => submitEdit(i, text)}
               />
             ))}
-            {loading && <ThinkingIndicator webHint={webEnabled} />}
+            {loading && <ThinkingIndicator mode={loadingMode} />}
             {error && <div className="text-sm text-red-600">{error}</div>}
           </div>
 

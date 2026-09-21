@@ -143,7 +143,7 @@ export function ChatWelcome({ onPick, disabled, webEnabled }: ChatWelcomeProps) 
         <p className="flex items-start gap-2 text-xs leading-relaxed text-slate-400">
           <IconInfo className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {webEnabled
-            ? 'Dashboard answers come from your data. When Radar checks live news, the sources are shown with the answer. Radar can also confirm or dismiss geopolitical alerts when you ask.'
+            ? 'Dashboard answers come from your data. Radar searches trusted news sources only when a question needs current information, and shows the sources. It can also confirm or dismiss geopolitical alerts when you ask.'
             : 'Answers come only from your dashboard data. Radar can confirm or dismiss geopolitical alerts when you ask.'}
         </p>
       </div>
