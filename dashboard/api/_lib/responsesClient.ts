@@ -39,9 +39,9 @@ export interface ResponsesClientOptions {
   reasoningEffort?: ReasoningEffort;
 }
 
-// The Responses API anchors citations inline as U+E200 "cite" U+E202 id(s) U+E201, all private-use characters.
-const CITATION_MARKER = /[^]*/g;
-const PRIVATE_USE = /[-]/g;
+// The Responses API anchors citations inline as U+E200 "cite" U+E202 id(s) U+E201, all private-use characters. Only U+E200-U+E2FF is stripped, so legitimate private-use glyphs (icon fonts, U+F8FF) survive. The marker body excludes U+E200 so a stray unclosed start cannot swallow text up to a later marker.
+const CITATION_MARKER = /\uE200[^\uE200\uE201]*\uE201/g;
+const PRIVATE_USE = /[\uE200-\uE2FF]/g;
 
 /**
  * Removes citation markers (and any stray private-use character) from model text. Whitespace is tidied

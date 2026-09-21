@@ -195,7 +195,20 @@ describe('extractOutputText', () => {
       expect(only(`Up ${open} down.`)).toBe('Up down.');
       expect(only(`Up ${sep} down.`)).toBe('Up down.');
       expect(only(`Up ${close} down.`)).toBe('Up down.');
-      expect(only('abc')).toBe('abc');
+      expect(only('a\uE2FFb\uE250c')).toBe('abc');
+    });
+
+    it('leaves private-use characters just outside U+E200-U+E2FF untouched, double spaces included', () => {
+      for (const ch of ['\uE000', '\uE1FF', '\uE300', '\uF8FF']) {
+        const text = `Apple  ${ch} logo , here.`;
+        expect(only(text)).toBe(text);
+      }
+    });
+
+    it('an unclosed start marker does not swallow text up to the next marker', () => {
+      expect(only(`A ${open} unclosed text here and B ${marker('turn0search0')} done.`)).toBe(
+        'A unclosed text here and B done.',
+      );
     });
 
     it('leaves a router JSON payload unchanged', () => {
