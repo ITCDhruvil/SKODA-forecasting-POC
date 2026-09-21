@@ -42,6 +42,41 @@ export function isAllowedHost(hostname: string, domains: readonly string[] = ALL
   return domains.some((d) => host === d || host.endsWith(`.${d}`));
 }
 
+const MIN_TITLE_LENGTH = 4;
+
+/**
+ * Readable title for a source the provider gave no title for (the search call lists consulted URLs
+ * only): the last non-empty path segment, minus a file extension and a `_xx` language suffix, with
+ * `-` and `_` turned into spaces. Falls back to the domain when the result is shorter than 4
+ * characters or purely numeric. Returns '' when the url cannot be parsed.
+ */
+export function titleFromUrl(rawUrl: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return '';
+  }
+  const domain = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  const segment = parsed.pathname.split('/').filter(Boolean).pop() ?? '';
+  let decoded = segment;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    // Malformed percent-encoding: use the raw segment.
+  }
+  const title = decoded
+    .replace(/\.[a-z0-9]{1,5}$/i, '')
+    .replace(/_[a-z]{2}$/i, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_TITLE_LENGTH)
+    .trim();
+  return title.length < MIN_TITLE_LENGTH || /^[\d\s]+$/.test(title) ? domain : title;
+}
+
+/** Normalises a source url. A missing or blank `title` is replaced by one derived from the url; a given title wins. */
 export function toWebSource(
   rawUrl: string,
   title: string | undefined,
@@ -60,7 +95,7 @@ export function toWebSource(
   parsed.hash = '';
   const domain = parsed.hostname.toLowerCase().replace(/^www\./, '');
   const cleanTitle = (title ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_TITLE_LENGTH);
-  return { title: cleanTitle || domain, url: parsed.toString(), domain };
+  return { title: cleanTitle || titleFromUrl(parsed.toString()) || domain, url: parsed.toString(), domain };
 }
 
 export function dedupeSources(sources: WebSource[]): WebSource[] {

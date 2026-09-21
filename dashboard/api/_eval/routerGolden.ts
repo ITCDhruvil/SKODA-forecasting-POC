@@ -49,7 +49,7 @@ export const GOLDEN_CASES: GoldenCase[] = [
   { id: 'web-13', message: 'Can you confirm whether steel tariffs increased recently?', expected: 'web' },
   { id: 'web-14', message: 'Confirm what the news says about aluminium supply', expected: 'web' },
 
-  // action: confirm or dismiss geopolitical alerts (mixed requests resolve to action)
+  // action: confirm/dismiss/approve/reject a geopolitical alert. The router model never chooses action (only the keyword check does); mixed news + dashboard requests resolve to web.
   { id: 'act-01', message: 'Confirm the Red Sea alert', expected: 'action', critical: true },
   { id: 'act-02', message: 'Dismiss the India budget duty alert', expected: 'action', critical: true },
   { id: 'act-03', message: 'Confirm all pending geo alerts', expected: 'action', critical: true },

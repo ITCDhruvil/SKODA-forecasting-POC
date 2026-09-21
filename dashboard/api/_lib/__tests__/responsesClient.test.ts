@@ -5,6 +5,7 @@ import {
   stripTrackingParams,
   toInputItems,
   type ResponseLike,
+  type ResponseOutputItem,
   type ResponsesApi,
 } from '../responsesClient';
 import type { ChatMessage } from '../chatLoop';
@@ -384,6 +385,132 @@ describe('ResponsesChatClient web search', () => {
       await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: null, timeoutMs: 1, forceSearchFirst: true }).createCompletion(base);
       expect(create.mock.calls[0][0].tool_choice).toBeUndefined();
       expect(create.mock.calls[1][0].tool_choice).toBeUndefined();
+    });
+  });
+
+  describe('consulted sources from the search call', () => {
+    const searchCall = (urls: string[]): ResponseOutputItem => ({
+      type: 'web_search_call',
+      action: { sources: urls.map((url) => ({ url })) },
+    });
+    const citation = (url: string, title: string) => ({ type: 'url_citation', url, title });
+    const messageWith = (annotations: { type: string; url?: string; title?: string }[]): ResponseOutputItem => ({
+      type: 'message',
+      content: [{ type: 'output_text', text: 'Answer.', annotations }],
+    });
+
+    it('returns allow-listed consulted sources with derived titles, deduped, when the message has no annotations', async () => {
+      const response: ResponseLike = {
+        id: 'r1',
+        output: [
+          searchCall([
+            'https://www.reuters.com/markets/steel-tariffs-rise?utm_source=openai',
+            'https://evil.example.com/steel-news',
+            'https://www.reuters.com/markets/steel-tariffs-rise',
+            'https://www.reuters.com/business/freight-rates-jump.html',
+          ]),
+          messageWith([]),
+        ],
+      };
+      const { api } = fakeApi(response);
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+      await client.createCompletion(base);
+
+      expect(client.getSources()).toEqual([
+        { title: 'steel tariffs rise', url: 'https://www.reuters.com/markets/steel-tariffs-rise', domain: 'reuters.com' },
+        { title: 'freight rates jump', url: 'https://www.reuters.com/business/freight-rates-jump.html', domain: 'reuters.com' },
+      ]);
+      expect(client.getSearchCount()).toBe(1);
+    });
+
+    it('lists cited sources first, then consulted, collapses duplicates across the two, and caps the total at 8', async () => {
+      const consulted = Array.from({ length: 7 }, (_, i) => `https://www.reuters.com/news/consulted-item-${i}`);
+      const response: ResponseLike = {
+        id: 'r1',
+        output: [
+          searchCall([consulted[0], 'https://www.reuters.com/news/cited-two', ...consulted.slice(1)]),
+          messageWith([
+            citation('https://www.reuters.com/news/cited-one', 'Cited one'),
+            citation('https://www.reuters.com/news/cited-two', 'Cited two'),
+            citation('https://www.reuters.com/news/cited-three', 'Cited three'),
+          ]),
+        ],
+      };
+      const { api } = fakeApi(response);
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+      await client.createCompletion(base);
+
+      const sources = client.getSources();
+      expect(sources).toHaveLength(8);
+      expect(sources.slice(0, 3).map((s) => s.title)).toEqual(['Cited one', 'Cited two', 'Cited three']);
+      // 3 cited + 7 distinct consulted (cited-two is listed by both and collapses) = 10, capped at 8: consulted 5 and 6 are cut.
+      expect(sources[3].url).toBe('https://www.reuters.com/news/consulted-item-0');
+      expect(sources.map((s) => s.url)).not.toContain('https://www.reuters.com/news/consulted-item-5');
+      expect(new Set(sources.map((s) => s.url)).size).toBe(8);
+    });
+
+    it('an annotation title wins over a title derived from the same url', async () => {
+      const url = 'https://www.reuters.com/news/steel-tariffs-rise';
+      const { api } = fakeApi({ id: 'r1', output: [searchCall([url]), messageWith([citation(url, 'Reuters: Steel tariffs')])] });
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+      await client.createCompletion(base);
+      expect(client.getSources()).toEqual([{ title: 'Reuters: Steel tariffs', url, domain: 'reuters.com' }]);
+    });
+
+    it('keeps sources from a first response that also asked for a tool after the final response has no annotations', async () => {
+      const first: ResponseLike = {
+        id: 'r1',
+        output: [
+          searchCall(['https://www.reuters.com/markets/steel-tariffs-rise']),
+          { type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' },
+        ],
+      };
+      const { api } = fakeApi(first, textResponse('Final answer, no annotations.', 'r2'));
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1, forceSearchFirst: true });
+      await client.createCompletion(base);
+      await client.createCompletion([
+        ...base,
+        { role: 'assistant', content: null, tool_calls: [{ id: 'c1', name: 'getKpis', arguments: '{}' }] },
+        { role: 'tool', tool_call_id: 'c1', name: 'getKpis', content: '{}' },
+      ]);
+
+      expect(client.getSearchCount()).toBe(1);
+      expect(client.getSources()).toEqual([
+        { title: 'steel tariffs rise', url: 'https://www.reuters.com/markets/steel-tariffs-rise', domain: 'reuters.com' },
+      ]);
+    });
+
+    it('ignores search-call sources with a missing or malformed url', async () => {
+      const { api } = fakeApi({
+        id: 'r1',
+        output: [{ type: 'web_search_call', action: { sources: [{}, { url: 'not a url' }, { url: 'javascript:alert(1)' }] } }, { type: 'web_search_call' }],
+      });
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+      await client.createCompletion(base);
+      expect(client.getSources()).toEqual([]);
+      expect(client.getSearchCount()).toBe(2);
+    });
+
+    it('requests the search-call sources only while web search is offered', async () => {
+      const twoSearchesThenCall: ResponseLike = {
+        id: 'r1',
+        output: [{ type: 'web_search_call' }, { type: 'web_search_call' }, { type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' }],
+      };
+      const { api, create } = fakeApi(twoSearchesThenCall, textResponse('done', 'r2'), textResponse('x'));
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+      await client.createCompletion(base);
+      await client.createCompletion([
+        ...base,
+        { role: 'assistant', content: null, tool_calls: [{ id: 'c1', name: 'getKpis', arguments: '{}' }] },
+        { role: 'tool', tool_call_id: 'c1', name: 'getKpis', content: '{}' },
+      ]);
+      await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 }).createCompletion(base);
+
+      expect(create.mock.calls[0][0].include).toEqual(['web_search_call.action.sources']);
+      // Search cap reached: the search tool is no longer offered, so no include either.
+      expect(create.mock.calls[1][0].include).toBeUndefined();
+      // No webSearch configured at all.
+      expect(create.mock.calls[2][0].include).toBeUndefined();
     });
   });
 

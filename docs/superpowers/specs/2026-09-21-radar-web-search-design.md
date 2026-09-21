@@ -87,7 +87,7 @@ The exact list is confirmed with the user before implementation; the provider li
 
 Response: `{ reply: string, mode: 'data'|'web'|'action', usedWeb: boolean, sources: Source[] }` where `Source = { title: string, url: string, domain: string }`.
 
-Sources are deduplicated, must be http(s), and must match the allow-list; anything else is dropped. Existing clients that read only `reply` keep working.
+Sources are deduplicated, must be http(s), and must match the allow-list; anything else is dropped. Order and cap (Task 7c): sources cited by the answer (`url_citation` annotations) come first, then the sources the search call itself reported as consulted (`web_search_call.action.sources`, requested with `include` whenever web search is offered), at most 8 in total. The provider gives no titles for consulted sources, so a title is derived from the URL (`titleFromUrl` in `webSources.ts`: last path segment, extension and `_xx` language suffix removed, `-`/`_` turned into spaces, at most 200 chars, the domain when the result is shorter than 4 characters or purely numeric); a title supplied by an annotation always wins. Existing clients that read only `reply` keep working.
 
 ### 3.6 System prompt changes
 
@@ -280,7 +280,9 @@ Step 2 probe (gpt-5.4-nano, `tools: [web_search with allowed_domains, one functi
 - The API ACCEPTED `tool_choice: { type: 'web_search' }` alongside a function tool (HTTP 200, `status=completed`). The first response contained a `web_search_call` item followed by a `function_call` item in the same response (`output` types: `["web_search_call","function_call"]`).
 - Chained follow-up (`previous_response_id` plus a `function_call_output`, no `tool_choice`) returned a normal `message`, so forcing the first call does not stop function calls afterwards.
 
-Finding from the live re-check (not fixed in this task, needs a decision): when the forced first response already contains a function call, the search happens in call 1 and the final answer comes from call 2. A follow-up diagnostic showed that call 2's `message` carries citation markers (4 in the sample) but ZERO `annotations`, so no `url_citation` is available, `sources` stays empty and `usedWeb` is false even though a search ran and the reply cites outlets by name (with the markers stripped, no links remain). Requesting `include: ['web_search_call.action.sources']` on call 1 does return the consulted URLs (13 URLs, hosts spglobal.com and supplychaindive.com; each item has only `type` and `url`, no title), so consulted sources could be used, but that is "consulted", not "cited", and needs a product decision. News-only questions are unaffected in principle, because there the search and the final message are usually in the same response and keep their annotations (not re-measured in this task).
+Finding from the first live re-check, fixed in the review round (below): when the forced first response already contains a function call, the search happens in call 1 and the final answer comes from call 2. A diagnostic showed that call 2's `message` carries citation markers (4 in the sample) but ZERO `annotations`, so no `url_citation` is available; `sources` was empty and `usedWeb` false for S5, S6 and S12 even though a search ran and the reply cited outlets by name. Requesting `include: ['web_search_call.action.sources']` on call 1 returns the consulted URLs (13 URLs; each item has only `type` and `url`, no title).
+
+Fix (review round): whenever web search is offered on a call, `ResponsesChatClient` sends `include: ['web_search_call.action.sources']` (never otherwise). Sources from `web_search_call` items (`action.sources`) are converted with `toWebSource` (allow-list, http(s), `utm_source` stripped) into a "consulted" list next to the "cited" list from annotations. `getSources()` returns `dedupeSources([...cited, ...consulted]).slice(0, 8)`. Consulted sources have no title, so `titleFromUrl` derives one; annotation titles win. The `usedWeb` rule is unchanged (`mode === 'web'`, at least one search, at least one source). Tests cover the S5 shape (consulted sources in the first response, no annotations in the final one) in `responsesClient.test.ts` and `orchestrator.test.ts`. Caveats: consulted is not cited, so the list can contain pages the answer did not use (in S6 it included cement and dry-bulk shipping items), and S&P Global slugs keep their leading date code in the derived title (for example "072826 houthi threat triggers tanker crunch as saudi oil reroutes"). News-only questions are unaffected in principle, because there the search and the final message are usually in the same response and keep their annotations (not re-measured in this task).
 
 Router eval after Task 7c (`npm run eval:router -- --models gpt-4o-mini --efforts none`, 35 cases, action cases now decided by the keyword check, no prompt iteration needed):
 
@@ -291,7 +293,7 @@ Router eval after Task 7c (`npm run eval:router -- --models gpt-4o-mini --effort
 
 The golden set has no mixed data + news case, so these numbers do not measure the defect 1 fix; the live re-check below does, on n=1 each.
 
-Live re-check (dev API on port 3002, web model gpt-5.4-nano, router gpt-4o-mini, one request per scenario; S8 and any confirm/dismiss request were not run):
+Live re-check, first round, BEFORE the consulted-sources fix (dev API on port 3002, web model gpt-5.4-nano, router gpt-4o-mini, one request per scenario; S8 and any confirm/dismiss request were not run):
 
 | Scenario | Mode | usedWeb | Sources | Searches | Latency | Judgement |
 |---|---|---|---|---|---|---|
@@ -299,6 +301,13 @@ Live re-check (dev API on port 3002, web model gpt-5.4-nano, router gpt-4o-mini,
 | S6 director wants to lock in prices | web | false | 0 | 1 | 12.0s | Routing fixed. It did NOT tell the user to lock in prices: it said the dashboard has no freight-rate scenario (it showed the FX scenarios and labelled them as currency), gave S&P Global news context, and the bottom line separates "forecast does not model this" from "news describes pressure". Weakness: it said no freight scenario was available although S5's run found freight scenarios; sources empty (same finding). |
 | S9 LinkedIn post | data | false | 0 | 0 | 2.6s | Declined in one sentence and said what it can help with; no invented savings. |
 | S12 vague worry | web | false | 0 | 1 | 9.9s | It searched (forced search worked), so no no-search note was needed; it combined the alert queue with news context. Issues: dates such as "2026-??" appear, and it lists a dismissed alert under "Confirmed (4)". Sources empty (same finding). |
+
+Live re-check, review round, AFTER the consulted-sources fix (same setup, S5 and S6 only, once each; S8 and any confirm/dismiss request were not run):
+
+| Scenario | Mode | usedWeb | Sources | Latency | Judgement |
+|---|---|---|---|---|---|
+| S5 Red Sea, model plus news | web | true | 8 (spglobal.com x7, imf.org x1) | 14.0s | The source list now appears. Titles are derived from the URLs, for example "072826 houthi threat triggers tanker crunch as saudi oil reroutes" and "the oil market absorbed the war shock but buffers are running low". The answer uses absolute dates ("17 Sep 2026", "22 Jul 2026", "15 Jul 2026") and cites three of the eight listed pages; the rest were consulted only. |
+| S6 director wants to lock in prices | web | true | 8 (all spglobal.com) | 13.5s | The source list now appears. It did not recommend locking in prices: it said the freight-up scenarios move overall part prices down (-0.17% at +10% freight) while news context shows some freight pressure, and left the decision open. Weaknesses: the news bullets still use relative dates ("2 months ago", "last month"), and some listed sources are unrelated to the answer (cement shipping, dry bulk grain) because consulted sources are not filtered for relevance. |
 
 Not verified live in this task: S1, S2, S13 (top movers filter, exposure wording), the relative-date rule on a news-only question, and the `utm_source` strip on a real reply (unit tests only).
 

@@ -50,6 +50,7 @@ describe('buildSystemPrompt', () => {
     const p = buildSystemPrompt('action');
     expect(p).toContain('confirmGeoAlert');
     expect(p).toContain('dismissGeoAlert');
+    expect(p).toContain('approving an alert means confirming it and rejecting an alert means dismissing it');
   });
 
   it('data mode reads alerts but does not instruct the model to call write tools', () => {

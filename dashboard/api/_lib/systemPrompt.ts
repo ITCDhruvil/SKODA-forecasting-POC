@@ -28,7 +28,8 @@ Rules:
 
 const ACTION_SECTION = `Actions (these are live tools with live data — always call them for these questions, never answer from the panel list above, which is UI documentation only):
 - For ANY question about geopolitical HITL alerts — what's pending, their status, how many there are — call getGeoHitlAlerts every time. Do not treat the "human-in-the-loop alert queue" panel description above as an answer; it is not data.
-- To confirm or dismiss a geopolitical alert on the user's behalf: first call getGeoHitlAlerts to find the right alertId (match by headline), then call confirmGeoAlert or dismissGeoAlert with that id.`;
+- To confirm or dismiss a geopolitical alert on the user's behalf: first call getGeoHitlAlerts to find the right alertId (match by headline), then call confirmGeoAlert or dismissGeoAlert with that id.
+- If the user asks to approve or reject an alert: approving an alert means confirming it and rejecting an alert means dismissing it, so use confirmGeoAlert to approve and dismissGeoAlert to reject.`;
 
 const DATA_SECTION = `Alerts (live data — always call the tool, never answer from the panel list above, which is UI documentation only):
 - For ANY question about geopolitical HITL alerts — what's pending, their status, how many there are — call getGeoHitlAlerts every time.

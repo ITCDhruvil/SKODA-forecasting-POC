@@ -98,8 +98,10 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     result = await run('data');
   }
 
-  // Web mode that never searched must say so. A search that found no allow-listed source gets no note:
-  // the reply itself already says what was (not) found.
+  // Web mode that never searched must say so. A search that produced no allow-listed source at all (neither
+  // cited annotations nor consulted URLs from the search call) gets no note: the reply then states what it
+  // found. Annotations can be missing on their own when the forced search shared a response with a tool
+  // call, which is why consulted sources are collected too.
   if (mode === 'web' && result.searches === 0) note = NO_SEARCH_NOTE;
 
   const usedWeb = mode === 'web' && result.searches > 0 && result.sources.length > 0;

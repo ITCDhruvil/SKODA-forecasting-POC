@@ -9,6 +9,8 @@ export interface ResponseOutputItem {
   call_id?: string;
   name?: string;
   arguments?: string;
+  /** On `web_search_call` items, present when the request asked to `include` `web_search_call.action.sources`. */
+  action?: { sources?: { url?: string; title?: string }[] };
   content?: {
     type: string;
     text?: string;
@@ -39,7 +41,10 @@ export interface ResponsesClientOptions {
   reasoningEffort?: ReasoningEffort;
   /**
    * Forces the hosted web_search tool on the client's FIRST call (never on chained follow-ups), so the
-   * model cannot skip the search in web mode. Ignored when web search is not being offered.
+   * model cannot skip the search in web mode. Ignored when web search is not being offered. When the
+   * forced response also contains a function call, the final answer arrives in a later response that can
+   * carry citation markers but no `url_citation` annotations; that is why the URLs the search call
+   * consulted are collected too (see getSources).
    */
   forceSearchFirst?: boolean;
 }
@@ -113,6 +118,8 @@ function toolOutputsFrom(messages: ChatMessage[], start: number): Record<string,
   return toInputItems(messages.slice(start).filter((m) => m.role === 'tool'));
 }
 
+export const MAX_SOURCES = 8;
+
 /**
  * ChatClient over the Responses API. One instance per request: after the first call it
  * chains with `previous_response_id` and sends only new tool outputs.
@@ -121,7 +128,10 @@ export class ResponsesChatClient implements ChatClient {
   private opts: ResponsesClientOptions;
   private previousResponseId: string | null = null;
   private consumed = 0;
-  private sources: WebSource[] = [];
+  /** Sources from `url_citation` annotations on the answer. */
+  private cited: WebSource[] = [];
+  /** Sources the search call reports it consulted (`action.sources`); no titles, and present even when the answer has no annotations. */
+  private consulted: WebSource[] = [];
   private searchCount = 0;
 
   constructor(opts: ResponsesClientOptions) {
@@ -145,6 +155,7 @@ export class ResponsesChatClient implements ChatClient {
     if (webSearch && searchesLeft > 0) {
       requestTools.push({ type: 'web_search', filters: { allowed_domains: webSearch.allowedDomains } });
       body.max_tool_calls = searchesLeft;
+      body.include = ['web_search_call.action.sources'];
       if (this.opts.forceSearchFirst && !followUp) body.tool_choice = { type: 'web_search' };
     }
     if (requestTools.length > 0) body.tools = requestTools;
@@ -171,12 +182,17 @@ export class ResponsesChatClient implements ChatClient {
         toolCalls.push({ id: item.call_id, name: item.name, arguments: item.arguments ?? '' });
       } else if (item.type === 'web_search_call') {
         this.searchCount += 1;
+        for (const s of item.action?.sources ?? []) {
+          if (!s.url) continue;
+          const source = toWebSource(s.url, s.title, webSearch?.allowedDomains ?? []);
+          if (source) this.consulted.push(source);
+        }
       } else if (item.type === 'message') {
         for (const part of item.content ?? []) {
           for (const a of part.annotations ?? []) {
             if (a.type !== 'url_citation' || !a.url) continue;
             const source = toWebSource(a.url, a.title, webSearch?.allowedDomains ?? []);
-            if (source) this.sources.push(source);
+            if (source) this.cited.push(source);
           }
         }
       }
@@ -185,8 +201,9 @@ export class ResponsesChatClient implements ChatClient {
     return { content: text === '' ? null : text, toolCalls };
   }
 
+  /** Cited sources first, then the ones the search consulted; allow-listed, deduplicated, at most MAX_SOURCES. */
   getSources(): WebSource[] {
-    return dedupeSources(this.sources);
+    return dedupeSources([...this.cited, ...this.consulted]).slice(0, MAX_SOURCES);
   }
 
   getSearchCount(): number {

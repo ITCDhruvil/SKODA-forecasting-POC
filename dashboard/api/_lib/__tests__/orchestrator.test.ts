@@ -145,6 +145,36 @@ describe('answer', () => {
     });
   });
 
+  it('web mode: a forced search that shares a response with a tool call still yields sources and usedWeb when the final answer has no annotations', async () => {
+    const t = setup({
+      router: () => route('web'),
+      main: (b) =>
+        b.previous_response_id
+          ? text('News and dashboard numbers combined.')
+          : {
+              id: 'r1',
+              output: [
+                {
+                  type: 'web_search_call',
+                  action: { sources: [{ url: 'https://www.spglobal.com/commodity/red-sea-freight-rates?utm_source=openai' }] },
+                },
+                { type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' },
+              ],
+            },
+    });
+    const result = await answer(ask('Red Sea: what does our model say and is there new news?'), t.deps);
+
+    expect(t.mainCalls()).toHaveLength(2);
+    expect(t.mainCalls()[0].tool_choice).toEqual({ type: 'web_search' });
+    expect(t.mainCalls()[1].tool_choice).toBeUndefined();
+    expect(result.mode).toBe('web');
+    expect(result.usedWeb).toBe(true);
+    expect(result.sources).toEqual([
+      { title: 'red sea freight rates', url: 'https://www.spglobal.com/commodity/red-sea-freight-rates', domain: 'spglobal.com' },
+    ]);
+    expect(result.reply).toBe('News and dashboard numbers combined.');
+  });
+
   it('web mode that ran no search says so and reports no web use', async () => {
     const t = setup({ router: () => route('web'), main: () => text('Alerts show two pending items.') });
     const result = await answer(ask('Anything I should be worried about this week?'), t.deps);
