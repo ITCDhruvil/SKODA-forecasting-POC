@@ -153,3 +153,20 @@ Current rule "only use information returned by your tools" is extended for `web`
 - OpenAI key/org access to `web_search` and the chosen models: unknown until task 1.
 - Vercel plan maximum function duration: unknown until task 1.
 - Separate pre-existing issue, awaiting the user's decision: `npm run build` fails on two type errors in `GeoScenarioPanel.tsx` (lines 164, 219).
+
+## 11. Preflight results (Task 1)
+
+- Date: 2026-09-21
+- Models visible to the key (gpt/o-series): 116 ids. Relevant to this design: gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, gpt-5, gpt-5-mini, gpt-5-nano, gpt-5.1, gpt-5.2, gpt-5.4, gpt-5.4-mini, gpt-5.4-nano, gpt-5.5, gpt-5.6-luna, gpt-5.6-sol, gpt-5.6-terra, gpt-6-astra, o3, o3-mini, o4-mini (plus dated snapshots, pro, codex, chat, audio, realtime, image and search-preview variants; full list via `npm run preflight:openai -- --list`).
+- `web_search` with `filters.allowed_domains` and `max_tool_calls`: accepted on the gpt-5 family (HTTP 200, `status=completed`). Rejected on `gpt-4o-mini` and `gpt-4.1-mini` with `400 Parameter 'filters' not supported with model '<model>'`; the domain filter is therefore unavailable on the gpt-4o / gpt-4.1 families. Note: `max_tool_calls: 2` was sent every time and did not error, but gpt-5.4-mini, gpt-5.4-nano, gpt-5.4 and gpt-5-nano recorded 3 `web_search_call` items, so treat it as a soft cap and enforce the limit with the timeout and source cap as well.
+- Per-model smoke (latency, searches, cited hosts):
+  - `gpt-4o-mini` (no effort): FAIL, 1948ms, 400 `Parameter 'filters' not supported with model 'gpt-4o-mini'`
+  - `gpt-4.1-mini` (no effort): FAIL, 1559ms, 400 `Parameter 'filters' not supported with model 'gpt-4.1-mini'`
+  - `gpt-5-mini` effort=low: PASS, 11649ms, searches=2, cited issue.autonews.com
+  - `gpt-5.4-mini` effort=low: PASS, 8487ms, searches=3, cited issue.autonews.com
+  - `gpt-5.4-mini` (no effort): PASS, 7196ms, searches=2, cited issue.autonews.com
+  - `gpt-5.4-nano` effort=low: PASS, 8889ms, searches=3, cited issue.autonews.com
+  - `gpt-5.4` effort=low: PASS, 13218ms, searches=3, cited issue.autonews.com
+  - `gpt-5-nano` effort=low: PASS by the script's criterion (searches=3) but weak: no citations, and it replied that it could not access the allowed sources. Not recommended for the web model.
+  - Cited hosts were always inside the allow-list (`issue.autonews.com` is a subdomain of `autonews.com`); reuters.com and ft.com were never cited in these runs.
+- Vercel plan max function duration: NOT CHECKED (user to confirm in Project Settings > Functions; this plan sets `maxDuration` to 60)
