@@ -133,3 +133,74 @@ describe('toInputItems', () => {
     ]);
   });
 });
+
+describe('ResponsesChatClient web search', () => {
+  const web = { allowedDomains: ['reuters.com'], maxSearches: 2 };
+  const cited: ResponseLike = {
+    id: 'r1',
+    output: [
+      { type: 'web_search_call' },
+      {
+        type: 'message',
+        content: [
+          {
+            type: 'output_text',
+            text: 'Steel is up.',
+            annotations: [
+              { type: 'url_citation', url: 'https://www.reuters.com/x?utm_source=openai', title: 'Steel jumps' },
+              { type: 'url_citation', url: 'https://evil.example.com/y', title: 'nope' },
+              { type: 'url_citation', url: 'https://www.reuters.com/x?utm_source=openai', title: 'Steel jumps' },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('offers web_search with the domain filter and a tool-call cap, and collects allowed sources', async () => {
+    const { api, create } = fakeApi(cited);
+    const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+
+    await client.createCompletion(base);
+
+    const body = create.mock.calls[0][0];
+    expect(body.tools).toContainEqual({ type: 'web_search', filters: { allowed_domains: ['reuters.com'] } });
+    expect(body.max_tool_calls).toBe(2);
+    expect(client.getSources()).toEqual([
+      { title: 'Steel jumps', url: 'https://www.reuters.com/x', domain: 'reuters.com' },
+    ]);
+    expect(client.getSearchCount()).toBe(1);
+  });
+
+  it('stops offering web_search once the per-request search cap is reached', async () => {
+    const twoSearchesThenCall: ResponseLike = {
+      id: 'r1',
+      output: [
+        { type: 'web_search_call' },
+        { type: 'web_search_call' },
+        { type: 'function_call', call_id: 'c1', name: 'getKpis', arguments: '{}' },
+      ],
+    };
+    const { api, create } = fakeApi(twoSearchesThenCall, textResponse('done', 'r2'));
+    const client = new ResponsesChatClient({ api, model: 'm', tools: [TOOL], webSearch: web, timeoutMs: 1 });
+
+    await client.createCompletion(base);
+    await client.createCompletion([
+      ...base,
+      { role: 'assistant', content: null, tool_calls: [{ id: 'c1', name: 'getKpis', arguments: '{}' }] },
+      { role: 'tool', tool_call_id: 'c1', name: 'getKpis', content: '{}' },
+    ]);
+
+    const second = create.mock.calls[1][0];
+    expect(second.tools.some((t: { type: string }) => t.type === 'web_search')).toBe(false);
+    expect(second.max_tool_calls).toBeUndefined();
+    expect(client.getSearchCount()).toBe(2);
+  });
+
+  it('never offers web_search when it is not configured', async () => {
+    const { api, create } = fakeApi(textResponse('x'));
+    await new ResponsesChatClient({ api, model: 'm', tools: [TOOL], timeoutMs: 1 }).createCompletion(base);
+    expect(create.mock.calls[0][0].tools.some((t: { type: string }) => t.type === 'web_search')).toBe(false);
+    expect(create.mock.calls[0][0].max_tool_calls).toBeUndefined();
+  });
+});

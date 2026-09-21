@@ -1,5 +1,6 @@
 import type { ChatClient, ChatMessage, ToolCall } from './chatLoop';
 import type { ToolDefinition } from './tools';
+import { dedupeSources, toWebSource, type WebSource } from './webSources';
 
 export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
 
@@ -89,6 +90,8 @@ export class ResponsesChatClient implements ChatClient {
   private opts: ResponsesClientOptions;
   private previousResponseId: string | null = null;
   private consumed = 0;
+  private sources: WebSource[] = [];
+  private searchCount = 0;
 
   constructor(opts: ResponsesClientOptions) {
     this.opts = opts;
@@ -105,7 +108,14 @@ export class ResponsesChatClient implements ChatClient {
     };
     if (system?.content) body.instructions = system.content;
     if (followUp) body.previous_response_id = this.previousResponseId;
-    if (tools.length > 0) body.tools = tools.map(toFunctionTool);
+    const webSearch = this.opts.webSearch;
+    const searchesLeft = webSearch ? webSearch.maxSearches - this.searchCount : 0;
+    const requestTools: Record<string, unknown>[] = tools.map(toFunctionTool);
+    if (webSearch && searchesLeft > 0) {
+      requestTools.push({ type: 'web_search', filters: { allowed_domains: webSearch.allowedDomains } });
+      body.max_tool_calls = searchesLeft;
+    }
+    if (requestTools.length > 0) body.tools = requestTools;
     if (reasoningEffort) body.reasoning = { effort: reasoningEffort };
 
     const response = await api.create(body, { timeout: timeoutMs });
@@ -119,19 +129,27 @@ export class ResponsesChatClient implements ChatClient {
     for (const item of response.output ?? []) {
       if (item.type === 'function_call' && item.call_id && item.name) {
         toolCalls.push({ id: item.call_id, name: item.name, arguments: item.arguments ?? '' });
+      } else if (item.type === 'web_search_call') {
+        this.searchCount += 1;
+      } else if (item.type === 'message') {
+        for (const part of item.content ?? []) {
+          for (const a of part.annotations ?? []) {
+            if (a.type !== 'url_citation' || !a.url) continue;
+            const source = toWebSource(a.url, a.title, webSearch?.allowedDomains ?? []);
+            if (source) this.sources.push(source);
+          }
+        }
       }
     }
     const text = extractOutputText(response);
     return { content: text === '' ? null : text, toolCalls };
   }
 
-  /** Wired in Task 3. */
-  getSources(): never[] {
-    return [];
+  getSources(): WebSource[] {
+    return dedupeSources(this.sources);
   }
 
-  /** Wired in Task 3. */
   getSearchCount(): number {
-    return 0;
+    return this.searchCount;
   }
 }
