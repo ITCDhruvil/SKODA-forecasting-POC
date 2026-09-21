@@ -3,7 +3,7 @@ import { runChatLoop, type ChatMessage } from './_lib/chatLoop';
 import { createOpenAIResponsesApi } from './_lib/openaiApi';
 import { checkRateLimit } from './_lib/rateLimit';
 import { ResponsesChatClient } from './_lib/responsesClient';
-import { SYSTEM_PROMPT } from './_lib/systemPrompt';
+import { buildSystemPrompt } from './_lib/systemPrompt';
 import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Only role and content are forwarded; any extra client fields are dropped.
   const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: buildSystemPrompt('action') },
     ...(body.messages as { role: 'user' | 'assistant'; content: string }[]).map(({ role, content }) => ({
       role,
       content,
