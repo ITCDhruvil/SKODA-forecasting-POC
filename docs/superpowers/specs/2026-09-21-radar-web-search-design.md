@@ -210,7 +210,7 @@ The live Task 6 finding was reproduced: gpt-4o-mini routed "Are there any geopol
 | gpt-5-mini | minimal | 97.1% | 0 | 1255ms | 5800ms | PASS | web-04 -> data |
 | gpt-5-mini | low | 100.0% | 0 | 1244ms | 13392ms | PASS | - |
 
-After the change gpt-4o-mini fixes data-11 (3 of 3 runs at 100%). A live smoke of the original question "Are there any geopolitical risks I need to review?" now routes to `data`. gpt-5-mini shows p95 above the 5s router timeout (a timed-out router call falls back to `data`), so it is not suitable as the router. gpt-4.1-nano is the cheapest of the tested candidates but keeps sending unrelated questions ("What's the capital of France?", "Write me a poem") to `web`, which would trigger paid web searches, so it is rejected. `gpt-5-nano` is listed cheaper still in the pricing table below but was not evaluated as a router, so the claims here about cost hold only within the tested set (gpt-4o-mini, gpt-4.1-mini, gpt-4.1-nano, gpt-5-mini, gpt-5.4-nano).
+The example phrases added to the prompt are close to three golden cases (web-12, act-04, data-11), so these AFTER numbers are in-sample, not a held-out measurement. After the change gpt-4o-mini fixes data-11 (3 of 3 runs at 100%). A live smoke of the original question "Are there any geopolitical risks I need to review?" now routes to `data`. gpt-5-mini latency was unstable: p95 was 1.7s and 2.1s in the two BEFORE runs but 5.8s and 13.4s in the two AFTER runs, above the 5s router timeout in both AFTER runs (a timed-out router call falls back to `data`), so it is not suitable as the router. gpt-4.1-nano is the cheapest of the tested candidates but keeps sending unrelated questions ("What's the capital of France?", "Write me a poem") to `web`, which would trigger paid web searches, so it is rejected. `gpt-5-nano` is listed cheaper still in the pricing table below but was not evaluated as a router, so the claims here about cost hold only within the tested set (gpt-4o-mini, gpt-4.1-mini, gpt-4.1-nano, gpt-5-mini, gpt-5.4-nano).
 
 #### Chosen models
 
@@ -238,14 +238,21 @@ All cited hosts were inside the allow-list. Sample size is 3 per model, so treat
 
 Observations:
 
-- The earlier Task 6 result (0 sources after 2 searches with gpt-5.4-mini) recurred once (India duties) but not on every question, and other models/questions returned sources, so the annotation extraction in `responsesClient.ts` is not systematically dropping citations. The 0-source replies were honest "could not verify" answers. Not investigated further.
+- The earlier Task 6 result (0 sources after 2 searches with gpt-5.4-mini) recurred once (India duties). Across the 7 runs above where a search ran, 3 returned 0 sources (gpt-5.4-mini India duties, gpt-5-mini steel tariffs, gpt-5-mini aluminium) and 4 returned sources, so there is no evidence of the annotation extraction in `responsesClient.ts` systematically dropping citations in this small sample. The raw response annotations were not inspected, so this is not proven either way.
 - Both gpt-5.4 models skipped web search on "Why might aluminium prices rise next month?" and answered from dashboard tools, although the router chose `web`. The response then has `mode=web`, `usedWeb=false`. Consider forcing the web_search tool for `web` mode (or telling the model it must search first).
 - gpt-5.4-mini leaked raw citation placeholder tokens (`cite`, private-use characters, `turn0search0`) into reply text when no search ran. The reply text may need a sanitising pass.
 - Reply text embeds provider links with `?utm_source=openai`; only the structured `sources` list is cleaned.
 
 #### `usedWeb` recommendation
 
-`usedWeb` should be true only when at least one allow-listed source was returned (`usedWeb = searches > 0 && sources.length > 0`), or the UI should show a separate "searched, no sources found" state. Today a "searched the web" badge with zero sources appears in exactly the cases where the reply says it could not verify anything, which looks contradictory. Not changed in this task.
+`usedWeb` should be true only when at least one allow-listed source was returned (`usedWeb = searches > 0 && sources.length > 0`), or the UI should show a separate "searched, no sources found" state. Today a "searched the web" badge with zero sources appears in exactly the cases where the reply says it could not verify anything, which looks contradictory. Implemented in Task 7b (see below).
+
+#### Follow-ups fixed in Task 7b
+
+- Citation markers: `extractOutputText` now strips the private-use citation markers (`stripCitationMarkers` in `responsesClient.ts`), so they no longer reach reply text. Reply text can still contain provider links with `?utm_source=openai`.
+- Web-section prompt: it now says web search results count as information returned by your tools, and that the model must run a web search before answering a request that was routed to `web`.
+- `usedWeb` now requires `mode === 'web'`, at least one search and at least one allow-listed source, so a "searched the web" badge with zero sources no longer appears.
+- Live check of the prompt change (one request, gpt-5.4-nano, "Why might aluminium prices rise next month?"): INCONCLUSIVE. The router (gpt-4o-mini) sent this run to `data` (server log: `mode=data, usedWeb=false, searches=0, sources=0`), so the web prompt was not exercised. The router variance on this question is itself an observation. The prompt change has unit-test coverage but has not yet been shown to make the web model search.
 
 #### Pricing (source: https://developers.openai.com/api/docs/pricing, fetched 2026-09-21; the older URL platform.openai.com/docs/pricing redirects there)
 
