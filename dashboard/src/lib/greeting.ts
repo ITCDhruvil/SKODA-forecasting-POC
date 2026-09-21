@@ -1,0 +1,6 @@
+/** Time-of-day greeting for the chat opening screen (hour is 0-23, local time). */
+export function greetingFor(hour: number): string {
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}

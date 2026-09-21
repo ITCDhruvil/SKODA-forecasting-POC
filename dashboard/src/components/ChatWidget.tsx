@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChatHistoryPanel } from './ChatHistoryPanel';
+import { ChatWelcome } from './ChatWelcome';
 import {
   IconCheck,
   IconClear,
@@ -26,14 +27,6 @@ import {
   type Conversation,
 } from '../lib/chatHistory';
 import { pickThinkingWord } from '../lib/thinkingWords';
-
-const SUGGESTED_PROMPTS = [
-  'Which parts are seeing the biggest price increases?',
-  "What's our spend at risk this quarter?",
-  'Are there any geopolitical risks I need to review?',
-  'How accurate is the forecasting model?',
-  'How do I see the FX impact scenarios?',
-];
 
 const markdownComponents = {
   p: ({ ...props }) => <p className="text-sm leading-relaxed text-slate-800" {...props} />,
@@ -288,7 +281,10 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
 
   useEffect(() => {
     const list = listRef.current;
-    if (open && list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+    if (!open || !list) return;
+    // Empty state stays at the top so the welcome hero is visible; conversations follow the latest message.
+    if (messages.length === 0) list.scrollTo({ top: 0 });
+    else list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
   }, [messages, loading, open]);
 
   useEffect(() => {
@@ -453,26 +449,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
             aria-live="polite"
             className="scrollbar-hidden h-full space-y-5 overflow-y-auto px-5 pb-32 pt-4"
           >
-            {messages.length === 0 && (
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-slate-400">
-                  Ask about forecasts, alerts, validation, scenarios, or how to use this tool.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {SUGGESTED_PROMPTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      type="button"
-                      onClick={() => send(prompt)}
-                      disabled={loading}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-left text-xs text-slate-600 transition hover:border-brand-100 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {messages.length === 0 && <ChatWelcome onPick={(prompt) => send(prompt)} disabled={loading} />}
             {messages.map((m, i) => (
               <MessageRow
                 key={i}
