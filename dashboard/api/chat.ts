@@ -1,56 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import OpenAI from 'openai';
-import { runChatLoop, type ChatClient, type ChatMessage } from './_lib/chatLoop';
+import { runChatLoop, type ChatMessage } from './_lib/chatLoop';
+import { createOpenAIResponsesApi } from './_lib/openaiApi';
 import { checkRateLimit } from './_lib/rateLimit';
-import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
+import { ResponsesChatClient } from './_lib/responsesClient';
 import { SYSTEM_PROMPT } from './_lib/systemPrompt';
+import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 4000;
 const OPENAI_TIMEOUT_MS = 25_000;
-
-function toOpenAIMessage(m: ChatMessage): OpenAI.Chat.ChatCompletionMessageParam {
-  if (m.role === 'tool') {
-    return { role: 'tool', tool_call_id: m.tool_call_id!, content: m.content ?? '' };
-  }
-  if (m.role === 'assistant') {
-    return {
-      role: 'assistant',
-      content: m.content,
-      tool_calls: m.tool_calls?.map((tc) => ({
-        id: tc.id,
-        type: 'function',
-        function: { name: tc.name, arguments: tc.arguments },
-      })),
-    };
-  }
-  return { role: m.role, content: m.content ?? '' };
-}
-
-class OpenAIChatClient implements ChatClient {
-  private openai: OpenAI;
-  private model: string;
-
-  constructor(openai: OpenAI, model: string) {
-    this.openai = openai;
-    this.model = model;
-  }
-
-  async createCompletion(messages: ChatMessage[]) {
-    const completion = await this.openai.chat.completions.create({
-      model: this.model,
-      messages: messages.map(toOpenAIMessage),
-      tools: TOOL_DEFINITIONS,
-      tool_choice: 'auto',
-    });
-    const choice = completion.choices[0].message;
-    const toolCalls = (choice.tool_calls ?? [])
-      .filter((tc): tc is OpenAI.Chat.ChatCompletionMessageToolCall & { type: 'function' } => tc.type === 'function')
-      .map((tc) => ({ id: tc.id, name: tc.function.name, arguments: tc.function.arguments }));
-    return { content: choice.content, toolCalls };
-  }
-}
 
 function isValidIncomingMessage(m: unknown): m is { role: 'user' | 'assistant'; content: string } {
   if (!m || typeof m !== 'object') return false;
@@ -91,19 +50,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     res.status(502).json({ error: 'chat temporarily unavailable' });
     return;
   }
 
+  // Only role and content are forwarded; any extra client fields are dropped.
   const messages: ChatMessage[] = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...(body.messages as { role: 'user' | 'assistant'; content: string }[]),
+    ...(body.messages as { role: 'user' | 'assistant'; content: string }[]).map(({ role, content }) => ({
+      role,
+      content,
+    })),
   ];
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS });
-    const client = new OpenAIChatClient(openai, MODEL);
+    const client = new ResponsesChatClient({
+      api: createOpenAIResponsesApi(apiKey),
+      model: MODEL,
+      tools: TOOL_DEFINITIONS,
+      timeoutMs: OPENAI_TIMEOUT_MS,
+    });
     const reply = await runChatLoop(client, TOOL_HANDLERS, messages);
     res.status(200).json({ reply });
   } catch (err) {

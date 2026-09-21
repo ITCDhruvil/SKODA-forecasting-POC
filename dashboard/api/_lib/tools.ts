@@ -1,8 +1,12 @@
-// dashboard/api/lib/tools.ts
-import type OpenAI from 'openai';
+// dashboard/api/_lib/tools.ts
 import { getDashboardJson, getPartsIndex, type PartRecord } from './data';
 import { getAllStatuses, setStatus, type KvHashClient } from './hitlStatus';
 import { kv } from './kvClient';
+
+export interface ToolDefinition {
+  type: 'function';
+  function: { name: string; description: string; parameters: Record<string, unknown> };
+}
 
 function changePct(current: number | null, forecast: number | null): number | null {
   if (current === null || forecast === null || current === 0) return null;
@@ -202,7 +206,7 @@ export const TOOL_HANDLERS: Record<string, (args: any) => unknown> = {
   dismissGeoAlert: (args) => dismissGeoAlert(kv, args),
 };
 
-export const TOOL_DEFINITIONS: OpenAI.Chat.ChatCompletionTool[] = [
+export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     type: 'function',
     function: {
