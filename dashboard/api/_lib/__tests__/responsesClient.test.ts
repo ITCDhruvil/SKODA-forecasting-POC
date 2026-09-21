@@ -160,6 +160,54 @@ describe('extractOutputText', () => {
     };
     expect(extractOutputText(res)).toBe('abc');
   });
+
+  describe('citation markers', () => {
+    // The Responses API wraps citation anchors in private-use characters:
+    // U+E200 (start) "cite" U+E202 (separator) id ... U+E201 (end).
+    const open = '';
+    const sep = '';
+    const close = '';
+    const marker = (...ids: string[]) => `${open}cite${sep}${ids.join(sep)}${close}`;
+    const only = (t: string) => extractOutputText(textResponse(t));
+
+    it('removes a marker and collapses the double space it leaves', () => {
+      expect(only(`Steel is up ${marker('turn0search0')} again.`)).toBe('Steel is up again.');
+    });
+
+    it('removes several markers and markers with several separated ids', () => {
+      expect(only(`A ${marker('turn0search0')} and B ${marker('turn0search1', 'turn0search2')} both rose.`)).toBe(
+        'A and B both rose.',
+      );
+    });
+
+    it('removes the space before punctuation that a marker leaves behind', () => {
+      expect(only(`Prices rose ${marker('turn0search0')}. Then fell ${marker('turn0search1')}, again.`)).toBe(
+        'Prices rose. Then fell, again.',
+      );
+    });
+
+    it('returns plain text, markdown links and non-BMP emoji byte-identical', () => {
+      const plain = 'Copper  rose 3 % .  See [Reuters](https://www.reuters.com/a) \u{1F600} for more, ok?';
+      expect(only(plain)).toBe(plain);
+    });
+
+    it('removes stray private-use characters outside a well-formed pair', () => {
+      expect(only(`Up ${open} down.`)).toBe('Up down.');
+      expect(only(`Up ${sep} down.`)).toBe('Up down.');
+      expect(only(`Up ${close} down.`)).toBe('Up down.');
+      expect(only('abc')).toBe('abc');
+    });
+
+    it('leaves a router JSON payload unchanged', () => {
+      expect(only('{"mode":"web"}')).toBe('{"mode":"web"}');
+    });
+
+    it('strips markers from the text ResponsesChatClient returns', async () => {
+      const { api } = fakeApi(textResponse(`Steel is up ${marker('turn0search0')} again.`));
+      const client = new ResponsesChatClient({ api, model: 'm', tools: [], timeoutMs: 1000 });
+      expect((await client.createCompletion(base)).content).toBe('Steel is up again.');
+    });
+  });
 });
 
 describe('toInputItems', () => {

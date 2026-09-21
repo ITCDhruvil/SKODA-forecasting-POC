@@ -101,6 +101,40 @@ describe('answer', () => {
     expect(t.checkBudget).toHaveBeenCalledWith('1.2.3.4');
   });
 
+  it('web mode: searches that produced no allow-listed source do not claim usedWeb', async () => {
+    const uncited: ResponseLike = {
+      id: 'r',
+      output: [
+        { type: 'web_search_call' },
+        {
+          type: 'message',
+          content: [
+            {
+              type: 'output_text',
+              text: 'I could not verify this.',
+              annotations: [{ type: 'url_citation', url: 'https://example.com/blog', title: 'Blog' }],
+            },
+          ],
+        },
+      ],
+    };
+    const t = setup({ router: () => route('web'), main: () => uncited });
+    const result = await answer(ask('Any news on steel tariffs?'), t.deps);
+    expect(result).toEqual({ reply: 'I could not verify this.', mode: 'web', usedWeb: false, sources: [] });
+
+    const noAnnotations: ResponseLike = {
+      id: 'r',
+      output: [{ type: 'web_search_call' }, ...text('Nothing found.').output],
+    };
+    const t2 = setup({ router: () => route('web'), main: () => noAnnotations });
+    expect(await answer(ask('Any news on steel tariffs?'), t2.deps)).toEqual({
+      reply: 'Nothing found.',
+      mode: 'web',
+      usedWeb: false,
+      sources: [],
+    });
+  });
+
   it('web budget exhausted: answers in data mode with a note and no web tool', async () => {
     const t = setup({ router: () => route('web'), main: () => text('dashboard answer'), budget: { allowed: false } });
     const result = await answer(ask('Any news?'), t.deps);

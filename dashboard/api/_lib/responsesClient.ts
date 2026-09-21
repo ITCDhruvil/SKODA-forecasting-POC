@@ -39,6 +39,20 @@ export interface ResponsesClientOptions {
   reasoningEffort?: ReasoningEffort;
 }
 
+// The Responses API anchors citations inline as U+E200 "cite" U+E202 id(s) U+E201, all private-use characters.
+const CITATION_MARKER = /[^]*/g;
+const PRIVATE_USE = /[-]/g;
+
+/**
+ * Removes citation markers (and any stray private-use character) from model text. Whitespace is tidied
+ * only when something was removed, so text without markers comes back byte-identical.
+ */
+export function stripCitationMarkers(text: string): string {
+  const stripped = text.replace(CITATION_MARKER, '').replace(PRIVATE_USE, '');
+  if (stripped === text) return text;
+  return stripped.replace(/ {2,}/g, ' ').replace(/ ([.,;:!?])/g, '$1');
+}
+
 export function extractOutputText(response: ResponseLike): string {
   let text = '';
   for (const item of response.output ?? []) {
@@ -47,7 +61,7 @@ export function extractOutputText(response: ResponseLike): string {
       if (part.type === 'output_text' && typeof part.text === 'string') text += part.text;
     }
   }
-  return text;
+  return stripCitationMarkers(text);
 }
 
 function toFunctionTool(def: ToolDefinition): Record<string, unknown> {

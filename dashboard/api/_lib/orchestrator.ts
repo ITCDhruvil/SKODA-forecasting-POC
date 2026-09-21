@@ -96,7 +96,7 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     result = await run('data');
   }
 
-  const usedWeb = mode === 'web' && result.searches > 0;
+  const usedWeb = mode === 'web' && result.searches > 0 && result.sources.length > 0;
   console.info(
     JSON.stringify({
       event: 'chat',

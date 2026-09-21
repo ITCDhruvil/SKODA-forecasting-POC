@@ -30,6 +30,16 @@ describe('runRouterEval', () => {
     expect(passes(result)).toBe(true);
   });
 
+  it('fails on a single critical failure even when accuracy is 99%', async () => {
+    const hundred = Array.from({ length: 100 }, (_, i): GoldenCase =>
+      i === 0 ? { id: 'crit', message: 'x', expected: 'action', critical: true } : { id: `c${i}`, message: 'x', expected: 'data' },
+    );
+    const result = await runRouterEval(hundred, async (c) => (c.id === 'crit' ? 'data' : c.expected));
+    expect(result.accuracy).toBe(0.99);
+    expect(result.criticalFailures).toBe(1);
+    expect(passes(result)).toBe(false);
+  });
+
   it('measures latency percentiles with an injected clock', async () => {
     let t = 0;
     const result = await runRouterEval(
@@ -63,5 +73,11 @@ describe('GOLDEN_CASES', () => {
       expect(GOLDEN_CASES.filter((c) => c.expected === mode).length).toBeGreaterThanOrEqual(6);
     }
     for (const c of GOLDEN_CASES) expect(['data', 'web', 'action']).toContain(c.expected);
+  });
+
+  it('only marks action cases as critical', () => {
+    const critical = GOLDEN_CASES.filter((c) => c.critical);
+    expect(critical.length).toBeGreaterThan(0);
+    for (const c of critical) expect(c.expected).toBe('action');
   });
 });
