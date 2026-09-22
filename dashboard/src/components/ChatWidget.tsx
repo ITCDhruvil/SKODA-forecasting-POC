@@ -151,7 +151,7 @@ function EditBox({
   }
 
   return (
-    <div className="rounded-2xl bg-slate-100 p-3">
+    <div className="w-full rounded-2xl bg-slate-100 p-3">
       <textarea
         ref={ref}
         value={text}
@@ -212,12 +212,18 @@ function MessageRow({
   const isUser = message.role === 'user';
   const copyIcon = copied ? <IconCheck className="h-4 w-4" /> : <IconCopy className="h-4 w-4" />;
 
+  if (isUser && editing) {
+    return (
+      <div className="w-full">
+        <EditBox initial={message.content} onCancel={onCancelEdit} onSubmit={onSubmitEdit} />
+      </div>
+    );
+  }
+
   return (
     <div className={clsx('flex', isUser ? 'justify-end' : 'justify-start')}>
       <div className={clsx('group flex flex-col gap-1', isUser ? 'max-w-[85%] items-end' : 'w-full')}>
-        {isUser && editing ? (
-          <EditBox initial={message.content} onCancel={onCancelEdit} onSubmit={onSubmitEdit} />
-        ) : isUser ? (
+        {isUser ? (
           <p
             aria-label="You"
             className="whitespace-pre-wrap rounded-2xl bg-brand-600 px-4 py-2.5 text-sm leading-relaxed text-white"
@@ -231,8 +237,7 @@ function MessageRow({
           </div>
         )}
 
-        {!(isUser && editing) && (
-          <div
+        <div
             className={clsx(
               'mt-0.5 flex items-center gap-0.5',
               isUser && 'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
@@ -252,7 +257,6 @@ function MessageRow({
               </ActionButton>
             )}
           </div>
-        )}
       </div>
     </div>
   );
@@ -491,7 +495,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
   }
 
   const headerButton =
-    'flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600';
+    'flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600';
 
   return (
     <>
@@ -504,13 +508,13 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
         inert={!open}
         aria-hidden={!open}
         className={clsx(
-          'fixed inset-y-3 right-3 z-50 flex w-[calc(100vw-1.5rem)] max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl',
+          'fixed inset-y-3 right-3 z-50 flex w-[calc(100vw-1.5rem)] max-w-xl flex-col gap-3',
           'transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
           open ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-[calc(100%+1.5rem)] opacity-0',
         )}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <p className="text-sm font-semibold text-slate-900">Radar</p>
+        <div className="flex shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-white py-2.5 pl-5 pr-2 shadow-[0_8px_30px_rgba(15,23,42,0.12)]">
+          <p className="text-base font-semibold text-slate-900">Radar</p>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -522,7 +526,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
               title="Settings"
               className={headerButton}
             >
-              <IconGear className="h-4 w-4" />
+              <IconGear className="h-5 w-5" />
             </button>
             <button
               type="button"
@@ -534,7 +538,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
               title="History"
               className={headerButton}
             >
-              <IconHistory className="h-4 w-4" />
+              <IconHistory className="h-5 w-5" />
             </button>
             {messages.length > 0 && (
               <button
@@ -544,7 +548,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
                 title="New chat"
                 className={headerButton}
               >
-                <IconNewChat className="h-4 w-4" />
+                <IconNewChat className="h-5 w-5" />
               </button>
             )}
             <button
@@ -554,12 +558,12 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
               title="Close Radar"
               className={`${headerButton} hover:bg-red-50 hover:text-red-600`}
             >
-              <IconClose className="h-4 w-4" />
+              <IconClose className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        <div className="relative min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
           <div
             ref={listRef}
             role="log"
