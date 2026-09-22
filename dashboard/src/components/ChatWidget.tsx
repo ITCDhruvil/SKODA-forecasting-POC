@@ -74,19 +74,15 @@ function ThinkingIndicator({ mode }: { mode: ChatMode | null }) {
   }, [searching]);
 
   return (
-    <div className="flex items-start gap-3">
-      <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-brand-600" />
-      <div className="flex flex-col gap-1 pt-1.5">
-        <span className="text-xs font-semibold text-slate-500">Radar</span>
+    <div className="flex justify-start">
+      <div
+        aria-label="Radar is thinking"
+        className="flex items-center gap-1.5 rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-500"
+      >
+        {searching && <IconGlobe className="h-3.5 w-3.5" />}
         <span className="sr-only">{searching ? 'Radar is searching the web' : 'Radar is thinking'}</span>
-        <span
-          aria-hidden="true"
-          className="flex items-center gap-1.5 text-sm font-medium text-slate-500"
-        >
-          {searching && <IconGlobe className="h-3.5 w-3.5" />}
-          <span className="text-shimmer [--shimmer-base:#94a3b8] [--shimmer-hi:#1e293b]">
-            {searching ? 'Searching the web' : word}…
-          </span>
+        <span aria-hidden="true" className="text-shimmer [--shimmer-base:#94a3b8] [--shimmer-hi:#1e293b]">
+          {searching ? 'Searching the web' : word}…
         </span>
       </div>
     </div>
@@ -217,29 +213,26 @@ function MessageRow({
   const copyIcon = copied ? <IconCheck className="h-4 w-4" /> : <IconCopy className="h-4 w-4" />;
 
   return (
-    <div className="flex items-start gap-3">
-      <div
-        className={clsx(
-          'mt-0.5 h-7 w-7 shrink-0 rounded-full',
-          isUser ? 'bg-slate-300' : 'bg-brand-600',
-        )}
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-xs font-semibold text-slate-500">{isUser ? 'You' : 'Radar'}</span>
-
+    <div className={clsx('flex', isUser ? 'justify-end' : 'justify-start')}>
+      <div className={clsx('flex max-w-[85%] flex-col gap-1', isUser && 'items-end')}>
         {isUser && editing ? (
           <EditBox initial={message.content} onCancel={onCancelEdit} onSubmit={onSubmitEdit} />
         ) : isUser ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{message.content}</p>
+          <p
+            aria-label="You"
+            className="whitespace-pre-wrap rounded-2xl bg-brand-600 px-4 py-2.5 text-sm leading-relaxed text-white"
+          >
+            {message.content}
+          </p>
         ) : (
-          <div className="space-y-2">
+          <div aria-label="Radar" className="space-y-2 rounded-2xl bg-slate-100 px-4 py-2.5">
             <MessageMarkdown content={message.content} />
             <SourceList sources={message.sources ?? []} usedWeb={message.usedWeb === true} />
           </div>
         )}
 
         {!(isUser && editing) && (
-          <div className="-ml-1.5 mt-0.5 flex items-center gap-0.5">
+          <div className="mt-0.5 flex items-center gap-0.5">
             <ActionButton label={copied ? 'Copied' : 'Copy'} onClick={onCopy}>
               {copyIcon}
             </ActionButton>
