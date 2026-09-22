@@ -1,10 +1,10 @@
-import { sanitizeSources, type ChatSource } from './chatHistory';
+import { sanitizeCharts, sanitizeSources, type ChartSpec, type ChatSource } from './chatHistory';
 
 export type ChatMode = 'data' | 'web' | 'action';
 
 export type ChatStreamEvent =
   | { type: 'mode'; mode: ChatMode }
-  | { type: 'result'; reply: string; mode: ChatMode; usedWeb: boolean; sources: ChatSource[] }
+  | { type: 'result'; reply: string; mode: ChatMode; usedWeb: boolean; sources: ChatSource[]; charts: ChartSpec[] }
   | { type: 'error'; error: string };
 
 const MODES: readonly ChatMode[] = ['data', 'web', 'action'];
@@ -36,6 +36,7 @@ export function parseChatEvent(line: string): ChatStreamEvent | null {
       mode: o.mode,
       usedWeb: o.usedWeb === true,
       sources: sanitizeSources(o.sources),
+      charts: sanitizeCharts(o.charts),
     };
   }
   if (o.type === 'error') {

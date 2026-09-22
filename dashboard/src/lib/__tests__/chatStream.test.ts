@@ -39,7 +39,51 @@ describe('parseChatEvent', () => {
       mode: 'web',
       usedWeb: true,
       sources: [{ title: 'T', url: 'https://a.com/x', domain: 'a.com' }],
+      charts: [],
     });
+  });
+
+  it('parses a result event carrying a valid chart', () => {
+    const chart = {
+      kind: 'donut',
+      title: 't',
+      unit: 'currency',
+      currencySymbol: '₹',
+      source: 's',
+      slices: [{ label: 'A', value: 1 }],
+    };
+    const line = JSON.stringify({
+      type: 'result',
+      reply: 'Hello',
+      mode: 'data',
+      usedWeb: false,
+      sources: [],
+      charts: [chart],
+    });
+    const event = parseChatEvent(line);
+    expect(event).toMatchObject({ type: 'result' });
+    if (event?.type === 'result') expect(event.charts).toEqual([chart]);
+  });
+
+  it('returns charts: [] when the result line has no charts field at all', () => {
+    const line = JSON.stringify({ type: 'result', reply: 'Hello', mode: 'data', usedWeb: false, sources: [] });
+    const event = parseChatEvent(line);
+    expect(event).toMatchObject({ type: 'result' });
+    if (event?.type === 'result') expect(event.charts).toEqual([]);
+  });
+
+  it('drops an invalid chart but keeps the result event', () => {
+    const line = JSON.stringify({
+      type: 'result',
+      reply: 'Hello',
+      mode: 'data',
+      usedWeb: false,
+      sources: [],
+      charts: [{ kind: 'pie', title: 't', unit: 'currency', currencySymbol: '₹', source: 's' }],
+    });
+    const event = parseChatEvent(line);
+    expect(event).toMatchObject({ type: 'result' });
+    if (event?.type === 'result') expect(event.charts).toEqual([]);
   });
 
   it('parses an error event', () => {
@@ -109,7 +153,26 @@ describe('readChatStream', () => {
     expect(events).toEqual([
       { type: 'mode', mode: 'web' },
       { type: 'mode', mode: 'data' },
-      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [] },
+      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [] },
+    ]);
+  });
+
+  it('delivers a result event with a populated charts array', async () => {
+    const chart = {
+      kind: 'donut',
+      title: 't',
+      unit: 'currency',
+      currencySymbol: '₹',
+      source: 's',
+      slices: [{ label: 'A', value: 1 }],
+    };
+    const full =
+      '{"type":"mode","mode":"data"}\n' +
+      `${JSON.stringify({ type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [chart] })}\n`;
+    const events = await collect([enc.encode(full)]);
+    expect(events).toEqual([
+      { type: 'mode', mode: 'data' },
+      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [chart] },
     ]);
   });
 
