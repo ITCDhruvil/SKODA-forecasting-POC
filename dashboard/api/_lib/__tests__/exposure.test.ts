@@ -106,6 +106,69 @@ describe('getExposure: scenario drivers', () => {
       }
     }
   });
+
+  it('picks the top 4 scenarios by largest absolute overall price change, descending', () => {
+    // fx has 6 scenarios in the bundled data, so this exercises real truncation, not just sorting.
+    const raw = getDashboardJson().fxAnalysis!.scenarios!;
+    expect(raw.length).toBeGreaterThan(4);
+    const expectedOrder = [...raw]
+      .sort((a, b) => Math.abs(b.overallPriceChangePct) - Math.abs(a.overallPriceChangePct))
+      .slice(0, 4)
+      .map((s) => s.name);
+
+    const result = getExposure({ driver: 'fx' });
+    if ('error' in result) throw new Error('expected success');
+    if (!('scenarios' in result)) throw new Error('expected a scenario result');
+    expect(result.scenarios.map((s) => s.name)).toEqual(expectedOrder);
+    for (let i = 1; i < result.scenarios.length; i++) {
+      expect(Math.abs(result.scenarios[i - 1].overallPriceChangePct)).toBeGreaterThanOrEqual(
+        Math.abs(result.scenarios[i].overallPriceChangePct),
+      );
+    }
+  });
+
+  it('sorts topCategories/topVendors/topProjects by largest absolute change, descending (fx)', () => {
+    const raw = getDashboardJson().fxAnalysis!.scenarios!;
+    const result = getExposure({ driver: 'fx' });
+    if ('error' in result) throw new Error('expected success');
+    if (!('scenarios' in result)) throw new Error('expected a scenario result');
+
+    for (const s of result.scenarios) {
+      const rawScenario = raw.find((r) => r.name === s.name)!;
+      for (const level of ['category', 'vendor', 'project'] as const) {
+        const key = level === 'category' ? 'topCategories' : level === 'vendor' ? 'topVendors' : 'topProjects';
+        const expectedNames = [...(rawScenario.byLevel[level] ?? [])]
+          .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+          .slice(0, 3)
+          .map((r) => r.name);
+        expect((s as any)[key].map((r: { name: string }) => r.name)).toEqual(expectedNames);
+        const values = (s as any)[key] as { priceChangePct: number }[];
+        for (let i = 1; i < values.length; i++) {
+          expect(Math.abs(values[i - 1].priceChangePct)).toBeGreaterThanOrEqual(Math.abs(values[i].priceChangePct));
+        }
+      }
+    }
+  });
+
+  it('sorts topCategories/topVendors/topProjects by largest absolute change, descending (geo: freight)', () => {
+    const raw = (getDashboardJson().geoAnalysis!.scenarios ?? []).filter((s) => s.family === 'freight');
+    const result = getExposure({ driver: 'freight' });
+    if ('error' in result) throw new Error('expected success');
+    if (!('scenarios' in result)) throw new Error('expected a scenario result');
+    expect(result.scenarios.length).toBeGreaterThan(0);
+
+    for (const s of result.scenarios) {
+      const rawScenario = raw.find((r) => r.name === s.name)!;
+      for (const level of ['category', 'vendor', 'project'] as const) {
+        const key = level === 'category' ? 'topCategories' : level === 'vendor' ? 'topVendors' : 'topProjects';
+        const expectedNames = [...(rawScenario.byLevel[level] ?? [])]
+          .sort((a, b) => Math.abs(b.priceChangePct) - Math.abs(a.priceChangePct))
+          .slice(0, 3)
+          .map((r) => r.name);
+        expect((s as any)[key].map((r: { name: string }) => r.name)).toEqual(expectedNames);
+      }
+    }
+  });
 });
 
 describe('getExposure: errors', () => {

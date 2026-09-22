@@ -32,7 +32,8 @@ Formatting (the reader is a busy business user). Use structure only where it hel
 - Bold only the one or two figures the reader must not miss; do not bold whole phrases or every number.
 - Use a table only to compare three or more items on the same measures.
 - Use short section headings (##) only when the answer has two or more distinct parts, for example "What the data says" and "What the news says". Never put a heading on a short answer.
-- Keep paragraphs to three lines or fewer. No filler and do not restate the question. Show percentages with a sign and one decimal place (for example +2.4%).`;
+- Keep paragraphs to three lines or fewer. No filler and do not restate the question. Show percentages with a sign and one decimal place (for example +2.4%).
+- Never write a markdown image link (\`![...](...)\`); charts render separately from the text.`;
 
 const ACTION_SECTION = `Actions (these are live tools with live data — always call them for these questions, never answer from the panel list above, which is UI documentation only):
 - For ANY question about geopolitical HITL alerts — what's pending, their status, how many there are — call getGeoHitlAlerts every time. Do not treat the "human-in-the-loop alert queue" panel description above as an answer; it is not data.
@@ -59,7 +60,7 @@ const WEB_SECTION = `Live news (you have a web search tool restricted to trusted
 
 const FORECAST_CHARTS_SECTION = `Forecast impact and charts:
 - When the user asks how an external factor or news item (a commodity such as steel or aluminium, freight, duties, exchange rates, geopolitics) affects our parts or our forecast, call getExposure for that driver BEFORE answering, and end the answer with a short "What it means for our forecast" part: the affected categories, their spend and forecast change from the tool, and what to check next. State the tool's basis in one clause (for example "assumed material mapping, not your bill of materials" or "modeled scenario"). Never claim an exposure the tool did not return. Do not offer to look it up later: do it now.
-- When an answer compares or ranks three or more values, shows each item's share of a total, or shows a trend over time, call showChart with the matching chart (at most two charts per answer). The chart complements the text, so do not restate every number. Do not chart a single number or a two-value comparison.
+- When an answer compares or ranks three or more values, shows each item's share of a total, or shows a trend over time, call showChart with the matching chart (at most two charts per answer). Call it even when you also give the numbers as a table or list — the chart is required whenever the answer compares, ranks, or shows the share of three or more values; a table or list alone is not a substitute. The chart complements the text, so do not restate every number. Do not chart a single number or a two-value comparison.
 - Match the chart to the question: trend or "how will it move" => mean_price_trend, basket_forecast or part_forecast; ranking => top_movers, category_forecast_change or model_accuracy; "where is our spend" => spend_share or spend_change; scenario impact => scenario_impact.`;
 
 export function buildSystemPrompt(mode: Mode): string {

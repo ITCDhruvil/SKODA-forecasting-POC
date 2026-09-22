@@ -111,6 +111,26 @@ describe('buildSystemPrompt', () => {
     expect(action).not.toContain('showChart');
   });
 
+  it('the showChart bullet says the chart is required even alongside a table or list, not a substitute for one', () => {
+    for (const mode of ['data', 'web'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).toContain('not a substitute');
+      expect(p).toContain('Call it even when you also give the numbers as a table or list');
+      // The surrounding sentences must still be present, unchanged.
+      expect(p).toContain('at most two charts per answer');
+      expect(p).toContain('Do not chart a single number or a two-value comparison.');
+    }
+    expect(buildSystemPrompt('action')).not.toContain('not a substitute');
+  });
+
+  it('every mode forbids markdown image links in the reply', () => {
+    for (const mode of ['data', 'web', 'action'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).toContain('Never write a markdown image link');
+      expect(p).toContain('charts render separately from the text');
+    }
+  });
+
   it('only the web prompt carries the news answer structure and the no-links rule', () => {
     const web = buildSystemPrompt('web');
     expect(web).toContain('With only one development');
