@@ -6,6 +6,7 @@ import {
   deriveTitle,
   formatRelativeTime,
   loadHistory,
+  sanitizeCharts,
   sanitizeSources,
   saveHistory,
   splitForDisplay,
@@ -15,6 +16,7 @@ import {
   truncateForRegenerate,
   upsertConversation,
   upsertUnlessDeleted,
+  type ChartSpec,
   type ChatEntry,
   type Conversation,
 } from '../chatHistory';
@@ -308,6 +310,165 @@ describe('history with web sources', () => {
     const loaded = loadHistory(storage);
     expect(loaded).toHaveLength(2);
     expect(loaded[0].messages[1].sources).toBeUndefined();
+    expect(loaded[1].messages[1]).toEqual({ role: 'assistant', content: 'r' });
+  });
+});
+
+describe('sanitizeCharts', () => {
+  const lineChart: ChartSpec = {
+    kind: 'line',
+    title: 'Mean price trend',
+    unit: 'currency',
+    currencySymbol: '₹',
+    source: 'model',
+    points: [
+      { x: 'Jan', actual: 100, forecast: null },
+      { x: 'Feb', actual: 110, forecast: 115 },
+    ],
+    series: [
+      { key: 'actual', label: 'Actual', style: 'solid' },
+      { key: 'forecast', label: 'Forecast', style: 'dashed' },
+    ],
+  };
+
+  const barChart: ChartSpec = {
+    kind: 'bar',
+    title: 'Top movers',
+    unit: 'pct',
+    currencySymbol: '₹',
+    source: 'model',
+    orientation: 'horizontal',
+    series: [{ key: 'change', label: 'Change' }],
+    rows: [
+      { label: 'Part A', values: { change: 5.2 }, tone: 'up' },
+      { label: 'Part B', values: { change: -3.1 }, tone: 'down' },
+    ],
+  };
+
+  const donutChart: ChartSpec = {
+    kind: 'donut',
+    title: 'Spend share',
+    unit: 'pct',
+    currencySymbol: '₹',
+    source: 'model',
+    slices: [
+      { label: 'Filters', value: 30 },
+      { label: 'Brakes', value: 70 },
+    ],
+  };
+
+  it('keeps a well-formed line chart unchanged', () => {
+    expect(sanitizeCharts([lineChart])).toEqual([lineChart]);
+  });
+
+  it('keeps a well-formed bar chart unchanged', () => {
+    expect(sanitizeCharts([barChart])).toEqual([barChart]);
+  });
+
+  it('keeps a well-formed donut chart unchanged', () => {
+    expect(sanitizeCharts([donutChart])).toEqual([donutChart]);
+  });
+
+  it('drops a chart with an invalid kind', () => {
+    const bad = { ...lineChart, kind: 'pie' };
+    expect(sanitizeCharts([bad, barChart])).toEqual([barChart]);
+  });
+
+  it('keeps the valid points of a line chart and drops a malformed one', () => {
+    const withBadPoint = {
+      ...lineChart,
+      points: [
+        { x: 'Jan', actual: 100, forecast: null },
+        { x: 'Feb', actual: { nested: true }, forecast: 115 },
+        { x: 'Mar', actual: 120, forecast: 118 },
+      ],
+    };
+    const [result] = sanitizeCharts([withBadPoint]);
+    expect(result.kind).toBe('line');
+    expect((result as typeof lineChart).points).toEqual([
+      { x: 'Jan', actual: 100, forecast: null },
+      { x: 'Mar', actual: 120, forecast: 118 },
+    ]);
+  });
+
+  it('drops a bar chart entirely when every row is malformed', () => {
+    const allRowsBad = {
+      ...barChart,
+      rows: [
+        { label: 'Part A', values: { change: 'not-a-number' } },
+        { label: 5, values: { change: 1 } },
+      ],
+    };
+    expect(sanitizeCharts([allRowsBad])).toEqual([]);
+  });
+
+  it('caps donut slices at 12', () => {
+    const manySlices = {
+      ...donutChart,
+      slices: Array.from({ length: 15 }, (_, i) => ({ label: `Cat ${i}`, value: i + 1 })),
+    };
+    const [result] = sanitizeCharts([manySlices]);
+    expect(result.kind).toBe('donut');
+    expect((result as typeof donutChart).slices).toHaveLength(12);
+  });
+
+  it('caps the chart array at 2', () => {
+    expect(sanitizeCharts([lineChart, barChart, donutChart])).toEqual([lineChart, barChart]);
+  });
+
+  it('returns [] for non-arrays', () => {
+    expect(sanitizeCharts(undefined)).toEqual([]);
+    expect(sanitizeCharts({})).toEqual([]);
+  });
+});
+
+describe('normalizeConversation with charts', () => {
+  function memoryStorage() {
+    const store = { value: '' };
+    return {
+      getItem: () => store.value || null,
+      setItem: (_k: string, v: string) => {
+        store.value = v;
+      },
+    };
+  }
+
+  it('round-trips a stored conversation carrying charts', () => {
+    const storage = memoryStorage();
+    const chart: ChartSpec = {
+      kind: 'donut',
+      title: 'Spend share',
+      unit: 'pct',
+      currencySymbol: '₹',
+      source: 'model',
+      slices: [{ label: 'Filters', value: 30 }],
+    };
+    saveHistory(storage, [
+      conv('a', { messages: [u('q'), { role: 'assistant', content: 'r', charts: [chart] }] }),
+    ]);
+    const loaded = loadHistory(storage);
+    expect(loaded[0].messages[1]).toEqual({ role: 'assistant', content: 'r', charts: [chart] });
+  });
+
+  it('drops an invalid chart from stored data and still loads records without charts', () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      'k',
+      JSON.stringify([
+        {
+          id: 'a',
+          title: 't',
+          messages: [
+            { role: 'user', content: 'q' },
+            { role: 'assistant', content: 'r', charts: [{ kind: 'pie', title: 'x' }] },
+          ],
+        },
+        { id: 'b', title: 't2', messages: [{ role: 'user', content: 'q' }, { role: 'assistant', content: 'r' }] },
+      ]),
+    );
+    const loaded = loadHistory(storage);
+    expect(loaded).toHaveLength(2);
+    expect(loaded[0].messages[1].charts).toBeUndefined();
     expect(loaded[1].messages[1]).toEqual({ role: 'assistant', content: 'r' });
   });
 });

@@ -4,12 +4,66 @@ export interface ChatSource {
   domain: string;
 }
 
+export type ChartUnit = 'pct' | 'currency' | 'number';
+export interface ChartBase {
+  title: string;
+  unit: ChartUnit;
+  currencySymbol: string;
+  source: string;
+}
+export interface LineChartSeries {
+  key: string;
+  label: string;
+  style: 'solid' | 'dashed';
+}
+export interface LineChartPoint {
+  x: string;
+  [seriesKey: string]: string | number | null;
+}
+export interface LineChartBand {
+  lowerKey: string;
+  upperKey: string;
+  label: string;
+}
+export interface LineChartSpec extends ChartBase {
+  kind: 'line';
+  points: LineChartPoint[];
+  series: LineChartSeries[];
+  band?: LineChartBand;
+}
+export interface BarChartSeries {
+  key: string;
+  label: string;
+}
+export interface BarChartRow {
+  label: string;
+  values: Record<string, number>;
+  tone?: 'up' | 'down' | 'neutral';
+}
+export interface BarChartSpec extends ChartBase {
+  kind: 'bar';
+  orientation: 'horizontal' | 'vertical';
+  series: BarChartSeries[];
+  rows: BarChartRow[];
+}
+export interface DonutSlice {
+  label: string;
+  value: number;
+}
+export interface DonutChartSpec extends ChartBase {
+  kind: 'donut';
+  slices: DonutSlice[];
+}
+export type ChartSpec = LineChartSpec | BarChartSpec | DonutChartSpec;
+
 export interface ChatEntry {
   role: 'user' | 'assistant';
   content: string;
   /** Present on assistant replies that used live news. */
   sources?: ChatSource[];
   usedWeb?: boolean;
+  /** Present on assistant replies that include server-rendered charts. */
+  charts?: ChartSpec[];
 }
 
 export interface Conversation {
@@ -25,6 +79,10 @@ export const HISTORY_STORAGE_KEY = 'radar-chat-history-v1';
 export const MAX_CONVERSATIONS = 50;
 const MAX_TITLE_LENGTH = 80;
 const MAX_SOURCES = 10;
+const MAX_CHARTS = 2;
+const MAX_BAR_ROWS = 20;
+const MAX_DONUT_SLICES = 12;
+const MAX_CHART_TEXT_LENGTH = 200;
 
 /** Validates untrusted source data (server payload or localStorage): http(s) urls only, string fields only. */
 export function sanitizeSources(raw: unknown): ChatSource[] {
@@ -43,6 +101,157 @@ export function sanitizeSources(raw: unknown): ChatSource[] {
     if (protocol !== 'https:' && protocol !== 'http:') continue;
     out.push({ title: s.title, url: s.url, domain: s.domain });
     if (out.length === MAX_SOURCES) break;
+  }
+  return out;
+}
+
+/** Trims, and non-empty-after-trim + length-caps, a string field; null if the input isn't usable. */
+function sanitizeChartText(raw: unknown, maxLength: number = MAX_CHART_TEXT_LENGTH): string | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function sanitizeLinePoints(raw: unknown): LineChartPoint[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LineChartPoint[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const p = item as Record<string, unknown>;
+    if (typeof p.x !== 'string') continue;
+    let valid = true;
+    for (const [key, value] of Object.entries(p)) {
+      if (key === 'x') continue;
+      if (typeof value !== 'string' && typeof value !== 'number' && value !== null) {
+        valid = false;
+        break;
+      }
+    }
+    if (!valid) continue;
+    out.push(p as LineChartPoint);
+  }
+  return out;
+}
+
+function sanitizeLineSeries(raw: unknown): LineChartSeries[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LineChartSeries[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const s = item as Record<string, unknown>;
+    if (typeof s.key !== 'string' || typeof s.label !== 'string') continue;
+    if (s.style !== 'solid' && s.style !== 'dashed') continue;
+    out.push({ key: s.key, label: s.label, style: s.style });
+  }
+  return out;
+}
+
+function sanitizeLineBand(raw: unknown): LineChartBand | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const b = raw as Record<string, unknown>;
+  const lowerKey = sanitizeChartText(b.lowerKey);
+  const upperKey = sanitizeChartText(b.upperKey);
+  const label = sanitizeChartText(b.label);
+  if (lowerKey === null || upperKey === null || label === null) return undefined;
+  return { lowerKey, upperKey, label };
+}
+
+function sanitizeBarSeries(raw: unknown): BarChartSeries[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BarChartSeries[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const s = item as Record<string, unknown>;
+    if (typeof s.key !== 'string' || typeof s.label !== 'string') continue;
+    out.push({ key: s.key, label: s.label });
+  }
+  return out;
+}
+
+function sanitizeBarRows(raw: unknown): BarChartRow[] {
+  if (!Array.isArray(raw)) return [];
+  const out: BarChartRow[] = [];
+  for (const item of raw) {
+    if (out.length === MAX_BAR_ROWS) break;
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Record<string, unknown>;
+    if (typeof r.label !== 'string') continue;
+    if (!r.values || typeof r.values !== 'object') continue;
+    const values: Record<string, number> = {};
+    let valid = true;
+    for (const [key, value] of Object.entries(r.values as Record<string, unknown>)) {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        valid = false;
+        break;
+      }
+      values[key] = value;
+    }
+    if (!valid) continue;
+    const tone = r.tone === 'up' || r.tone === 'down' || r.tone === 'neutral' ? r.tone : undefined;
+    out.push({ label: r.label, values, ...(tone ? { tone } : {}) });
+  }
+  return out;
+}
+
+function sanitizeDonutSlices(raw: unknown): DonutSlice[] {
+  if (!Array.isArray(raw)) return [];
+  const out: DonutSlice[] = [];
+  for (const item of raw) {
+    if (out.length === MAX_DONUT_SLICES) break;
+    if (!item || typeof item !== 'object') continue;
+    const s = item as Record<string, unknown>;
+    if (typeof s.label !== 'string') continue;
+    if (typeof s.value !== 'number' || !Number.isFinite(s.value) || s.value < 0) continue;
+    out.push({ label: s.label, value: s.value });
+  }
+  return out;
+}
+
+/** Validates one untrusted chart spec (server payload or localStorage); null if it can't be salvaged. */
+function sanitizeChart(raw: unknown): ChartSpec | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const c = raw as Record<string, unknown>;
+  if (c.kind !== 'line' && c.kind !== 'bar' && c.kind !== 'donut') return null;
+  const title = sanitizeChartText(c.title);
+  const source = sanitizeChartText(c.source);
+  const currencySymbol = sanitizeChartText(c.currencySymbol);
+  if (title === null || source === null || currencySymbol === null) return null;
+  if (c.unit !== 'pct' && c.unit !== 'currency' && c.unit !== 'number') return null;
+  const base: ChartBase = { title, source, currencySymbol, unit: c.unit };
+
+  if (c.kind === 'line') {
+    const points = sanitizeLinePoints(c.points);
+    if (points.length === 0) return null;
+    const series = sanitizeLineSeries(c.series);
+    if (series.length === 0) return null;
+    const band = sanitizeLineBand(c.band);
+    return { kind: 'line', ...base, points, series, ...(band ? { band } : {}) };
+  }
+
+  if (c.kind === 'bar') {
+    if (c.orientation !== 'horizontal' && c.orientation !== 'vertical') return null;
+    const series = sanitizeBarSeries(c.series);
+    if (series.length === 0) return null;
+    const rows = sanitizeBarRows(c.rows);
+    if (rows.length === 0) return null;
+    return { kind: 'bar', ...base, orientation: c.orientation, series, rows };
+  }
+
+  const slices = sanitizeDonutSlices(c.slices);
+  if (slices.length === 0) return null;
+  return { kind: 'donut', ...base, slices };
+}
+
+/** Validates untrusted chart data (server payload or localStorage) the same way `sanitizeSources` does. */
+export function sanitizeCharts(raw: unknown): ChartSpec[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ChartSpec[] = [];
+  for (const item of raw) {
+    const chart = sanitizeChart(item);
+    if (!chart) continue;
+    out.push(chart);
+    if (out.length === MAX_CHARTS) break;
   }
   return out;
 }
@@ -146,11 +355,13 @@ function normalizeConversation(raw: unknown): Conversation[] {
     const entry = m as Record<string, unknown>;
     if ((entry.role !== 'user' && entry.role !== 'assistant') || typeof entry.content !== 'string') return [];
     const sources = sanitizeSources(entry.sources);
+    const charts = sanitizeCharts(entry.charts);
     messages.push({
       role: entry.role,
       content: entry.content,
       ...(sources.length > 0 ? { sources } : {}),
       ...(entry.usedWeb === true ? { usedWeb: true } : {}),
+      ...(charts.length > 0 ? { charts } : {}),
     });
   }
   if (messages.length === 0) return [];
