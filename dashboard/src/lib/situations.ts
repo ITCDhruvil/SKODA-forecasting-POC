@@ -18,4 +18,13 @@ export const SITUATIONS: { label: string; question: string }[] = [
     label: 'Manager update',
     question: 'Give me the three biggest cost risks for this month that I can share with my manager, with numbers.',
   },
+  {
+    label: 'News check',
+    question:
+      'Aluminium and steel prices keep coming up in trade news. Is there anything current that could raise our costs, and how does it link back to our forecast?',
+  },
+  {
+    label: 'Cost comparison',
+    question: 'Compare our top 5 rising and falling parts this month so I can see them side by side.',
+  },
 ];

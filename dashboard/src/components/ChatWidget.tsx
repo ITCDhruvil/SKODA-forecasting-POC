@@ -7,15 +7,16 @@ import { MessageMarkdown } from './chatMarkdown';
 import { SourceList } from './SourceList';
 import {
   IconCheck,
-  IconClear,
   IconClose,
   IconCopy,
   IconEdit,
   IconGear,
   IconGlobe,
   IconHistory,
+  IconNewChat,
   IconRefresh,
   IconSend,
+  IconStop,
 } from './Icons';
 import {
   createId,
@@ -289,6 +290,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const deletedIdsRef = useRef(new Set<string>());
+  const abortRef = useRef<AbortController | null>(null);
 
   const snapshot = useMemo(() => (data ? buildSnapshot(data, pendingAlerts) : []), [data, pendingAlerts]);
 
@@ -359,11 +361,15 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
     setLoading(true);
     setLoadingMode(null);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: toApiMessages(base), webEnabled: settings.liveNews, stream: true }),
+        signal: controller.signal,
       });
 
       let payload: ReplyPayload;
@@ -398,13 +404,18 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
         upsertUnlessDeleted(prev, { id: conversationId, messages: withReply }, deletedIdsRef.current),
       );
       if (requestRef.current === token) setMessages(withReply);
-    } catch {
-      if (requestRef.current === token) setError('chat unavailable, try again');
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        /* user-initiated stop: no error message */
+      } else if (requestRef.current === token) {
+        setError('chat unavailable, try again');
+      }
     } finally {
       if (requestRef.current === token) {
         setLoading(false);
         setLoadingMode(null);
       }
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }
 
@@ -430,6 +441,8 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
 
   function startFreshChat() {
     requestRef.current++;
+    abortRef.current?.abort();
+    abortRef.current = null;
     setLoading(false);
     setLoadingMode(null);
     setActiveId(createId());
@@ -445,12 +458,18 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
     const conversation = conversations.find((c) => c.id === id);
     if (!conversation) return;
     requestRef.current++;
+    abortRef.current?.abort();
+    abortRef.current = null;
     setLoading(false);
     setLoadingMode(null);
     setActiveId(id);
     setMessages(conversation.messages);
     setError(null);
     setEditingIndex(null);
+  }
+
+  function stop() {
+    abortRef.current?.abort();
   }
 
   function removeConversation(id: string) {
@@ -523,14 +542,20 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
               <button
                 type="button"
                 onClick={startFreshChat}
-                aria-label="Clear chat"
-                title="Clear chat"
+                aria-label="New chat"
+                title="New chat"
                 className={headerButton}
               >
-                <IconClear className="h-4 w-4" />
+                <IconNewChat className="h-4 w-4" />
               </button>
             )}
-            <button type="button" onClick={onClose} aria-label="Close Radar" title="Close Radar" className={headerButton}>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close Radar"
+              title="Close Radar"
+              className={`${headerButton} hover:bg-red-50 hover:text-red-600`}
+            >
               <IconClose className="h-4 w-4" />
             </button>
           </div>
@@ -577,14 +602,26 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
                 placeholder="Ask Radar about this dashboard"
                 className="flex-1 bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:opacity-60"
               />
-              <button
-                onClick={() => send()}
-                disabled={loading || !input.trim()}
-                aria-label="Send message"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
-              >
-                <IconSend className="h-4 w-4" />
-              </button>
+              {loading ? (
+                <button
+                  onClick={stop}
+                  disabled={false}
+                  aria-label="Stop"
+                  title="Stop"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-700 text-white transition hover:bg-slate-800"
+                >
+                  <IconStop className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => send()}
+                  disabled={!input.trim()}
+                  aria-label="Send message"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-40"
+                >
+                  <IconSend className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 

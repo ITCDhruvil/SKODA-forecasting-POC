@@ -240,6 +240,19 @@ export const IconEdit = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const IconNewChat = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8M8 12h8" />
+  </svg>
+);
+
+export const IconStop = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24">
+    <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" />
+  </svg>
+);
+
 export const ICON_MAP: Record<string, (p: IconProps) => ReactElement> = {
   trending: IconTrending,
   package: IconPackage,
