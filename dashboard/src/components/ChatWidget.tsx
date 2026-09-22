@@ -497,7 +497,10 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => {
+                setSettingsOpen(true);
+                setHistoryOpen(false);
+              }}
               aria-label="Settings"
               title="Settings"
               className={headerButton}
@@ -506,7 +509,10 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
             </button>
             <button
               type="button"
-              onClick={() => setHistoryOpen(true)}
+              onClick={() => {
+                setHistoryOpen(true);
+                setSettingsOpen(false);
+              }}
               aria-label="History"
               title="History"
               className={headerButton}
