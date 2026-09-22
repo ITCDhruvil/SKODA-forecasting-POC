@@ -1,7 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { buildSystemPrompt } from '../systemPrompt';
+import { getDashboardJson } from '../data';
 
 describe('buildSystemPrompt', () => {
+  it('every mode states the dashboard currency symbol and forbids other currency symbols', () => {
+    const currencySymbol = getDashboardJson().meta.currencySymbol;
+    for (const mode of ['data', 'web', 'action'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).toContain(currencySymbol as string);
+      expect(p).toContain('₹');
+      expect(p).toContain('Never use €, $, £');
+    }
+  });
+
   it('every mode keeps the shared rules and panel reference', () => {
     for (const mode of ['data', 'web', 'action'] as const) {
       const p = buildSystemPrompt(mode);
