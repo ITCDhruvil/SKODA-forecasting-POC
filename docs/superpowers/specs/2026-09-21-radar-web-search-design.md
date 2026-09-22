@@ -378,6 +378,23 @@ Web search tool: $10.00 per 1k calls (about $0.01 per search) plus search conten
 
 `ReasoningEffort` (and `OPENAI_ROUTER_EFFORT` / `OPENAI_WEB_EFFORT` parsing in `config.ts`) allows `minimal` for any model, but gpt-5.4-nano rejects it with HTTP 400 and does not accept the value set of the gpt-5 family; it also supports `none` and `xhigh`, which the type does not allow. A wrong effort silently degrades the router to `data` for every request. Leave efforts blank unless the chosen model is known to accept the value.
 
+#### Task 11a: charts and forecast-linked answers, server side
+
+Date: 2026-09-22. The user asked for answers to show charts when the answer deals with data, and for every news/scenario answer to relate the news to the forecast. Design in section 13; this task builds the server side only (client rendering is Task 11b).
+
+- `charts.ts`: `buildChart({chart, ...params})` builds one `ChartSpec` from the fixed 9-id catalog, every number computed from `getDashboardJson()`/`getPartsIndex()`/the new `getPartHistory()` (never model-typed). `data.ts` gained `getPartHistory(partId)` (up to the last 12 months from `parts_prices.csv`, normalised to `YYYY-MM`) and an exported `changePct` helper (moved out of `tools.ts` so `exposure.ts` and `tools.ts` could share it without a circular import).
+- `exposure.ts`: `getExposure({driver})`. Commodity drivers (steel/aluminium/copper/plastics/electronics) read the editable `api/_data/exposure.json` mapping (`loadExposureMap`, which validates against the real dashboard category names and drops anything else); the result is clearly labelled `basis: 'assumed category mapping, not from a bill of materials (edit api/_data/exposure.json)'`. Scenario drivers (freight/duty/geopolitics/fx) read the already-modeled `fxAnalysis`/`geoAnalysis` scenarios, labelled `basis: 'modeled scenarios (elasticity model on your data), not a forecast of the news itself'`. `getExposure` is registered as a normal tool in `tools.ts` (`TOOL_DEFINITIONS`/`TOOL_HANDLERS`), available in `data`/`web` modes, never `action`.
+- `toolsets.ts`: `buildToolset(mode, opts?: {onChart})` adds a per-request `showChart` tool to `data`/`web` toolsets only (never `action`, alongside the write tools staying `action`-only). The handler validates the chart id, dedupes an identical repeated call (same chart + params, in any key order) without redrawing it, enforces a 2-chart-per-answer limit, calls `opts.onChart` for each newly drawn chart, and returns `{ok, drawn, kind, summary}` (up to 5 "label: value" strings) or a sanitised `{error}`.
+- `orchestrator.ts`: `ChatResult.charts: ChartSpec[]` (always an array, max 2). Each `run(mode)` attempt gets its own fresh chart collector, so a failed web attempt's charts are discarded and only the mode that actually answered (including a data fallback) contributes charts.
+- `systemPrompt.ts`: a `Forecast impact and charts:` section (exact wording in section 13) appended to the `data`/`web` prompts only, telling the model to call `getExposure` before answering a news/factor question and close with a "What it means for our forecast" part, and to call `showChart` (at most twice) for rankings, shares of a total, or trends, with a chart-to-question matching guide.
+- Tests: `charts.test.ts` (18, every catalog id against the real bundled data), `exposure.test.ts` (8, including a dropped-unknown-category fixture and a hand-computed spend-weighted change), `toolsets.test.ts` (+7, the collector's dedupe/limit/error rules and a fresh-collector-per-request check), `tools.test.ts` (+1, registration), `orchestrator.test.ts` (+3, collects a chart, empty when none, discards a failed web run's chart and keeps the fallback's), `systemPrompt.test.ts` (+1), `chat.test.ts` (+2, charts pass through the plain JSON body and the streamed `result` line unchanged). Full suite: 425 passing (was 381). `npm run typecheck:api` clean.
+- Live check (own dev API on port 3002, `WEB_SEARCH_ENABLED=true`, `OPENAI_WEB_MODEL=gpt-5.4-nano`, data model at its default `gpt-4o-mini` since `OPENAI_MODEL` is unset in `.env`):
+  - "Which categories are forecast to rise the most, and how much?" — mode `data`, 5.1s, **no chart drawn** (a numbered list instead), even though `category_forecast_change` was available and correctly wired (verified by the unit/integration tests above and by chart 4 below). No invented numbers: the listed percentages match `categories[].forecastChange`.
+  - "How is our spend split across categories?" — mode `data`, 5.8-9.1s (two runs), **no chart drawn** (a markdown table instead); same tool-following gap.
+  - "Steel costs are rising. How does that hit us?" — mode `web`, 11.4s, `usedWeb=true` (8 sources), `getExposure` called for `steel`: the answer is explicitly labelled "this is based on the dashboard's *assumed* category mapping, not your bill of materials", ends with a "What it means for our forecast" section, and does not offer to look it up later. No chart (expected: the catalog has no "exposure by category" chart id). No invented numbers spotted: the spend/share/change/top-parts figures all trace to `getExposure`'s own output.
+  - "How will the price of the top mover move over the next six months?" — mode `data`, 6.6s, **`part_forecast` line chart drawn** (`title: "HVAC A29 - SKODA Kodiaq (Valeo India): price history and forecast"`, `unit: currency`), the right chart for the question; the prose figures (current/forecast price, monthly forecast) matched the tool's numbers. One cosmetic issue: the reply appended a stray `![... ](url-to-chart)` markdown image tag with a placeholder URL that the model invented — harmless (Task 11b renders the real `ChartSpec`, not this markdown) but worth a prompt tweak later.
+  - Reading: the `showChart` contract itself is correct end to end (chart 4, and the unit tests, exercise the full dedupe/limit/build/summary path against real data), but the deployed default `dataModel` (`gpt-4o-mini`) inconsistently follows the "call showChart for a ranking/share answer" instruction — it charted a single-part trend but not two multi-category rankings, in 3 of 4 runs across 2 tries. Flagged as a concern below rather than fixed, since the required prompt wording is fixed by this task's brief and the fix (if any) is a model/config choice, not a code defect.
+
 ## 12. Daily briefing and usage stats
 
 The Radar screen has a "Today" area and a daily "Impact news" list: 3 to 5 developments from the last 3 days that could change auto-parts input costs (steel, aluminium, freight, import duties and trade rules, INR/EUR, geopolitical supply disruptions). It is generated with the web model and web search, stored for the day, and shown to everyone who opens Radar that day. The settings screen shows an approximate token cost per feature, from real usage. This section is the server side (Task 10a); the client is Task 10b.
@@ -434,3 +451,63 @@ Counts come from the `usage` object the API returns for each response, summed ov
 ### Cost
 
 At most `MAX_ATTEMPTS_PER_DAY` (3) generation attempts per day per deployment (one model call each, up to 4 searches, about 10k tokens measured for one successful attempt, n=1); each attempt is billed whether it succeeds or not, and once 3 have run the day stays `failed` regardless of how many people open the screen, so a persistent failure (for example a schema a model version stops accepting) cannot keep re-billing every 5 minutes. A successful day costs one attempt; opening the screen after that costs nothing. Logs carry only counts and timings (`event: 'briefing'`: date, items, searches, tokens, latency) and, on failure, only the error's name and HTTP status when present; never the error message, article text, headlines or user content.
+
+## 13. Charts and forecast-linked answers
+
+The user wants answers to show a chart whenever the content is comparative, a share of a total, or a trend, and wants every news/scenario answer to relate the news to the forecast instead of leaving that connection to the reader. Server side only (Task 11a); the client renders the `ChartSpec`s (Task 11b).
+
+**Principle:** a chart is never built from a number the model typed. `showChart` takes only a catalog id and a few filter parameters; the server looks up the real numbers from `getDashboardJson()`, `getPartsIndex()` or `getPartHistory()` and returns a fully-formed `ChartSpec`. The model only picks which chart and talks about the `summary` strings the tool hands back.
+
+### Contract
+
+`ChatResult` gains `charts: ChartSpec[]` — always an array, at most 2, `[]` when the answer drew none. Present in both the non-stream JSON body and the streamed `{"type":"result",...}` NDJSON line, unchanged.
+
+```ts
+type Unit = 'pct' | 'currency' | 'number';
+interface ChartBase { title: string; unit: Unit; currencySymbol: string; source: string } // e.g. "Dashboard data, forecast run 5 Aug 2026"
+interface LineChartSpec extends ChartBase { kind: 'line'; points: { x: string; [seriesKey: string]: string | number | null }[]; series: { key: string; label: string; style: 'solid' | 'dashed' }[]; band?: { lowerKey: string; upperKey: string; label: string } }
+interface BarChartSpec extends ChartBase { kind: 'bar'; orientation: 'horizontal' | 'vertical'; series: { key: string; label: string }[]; rows: { label: string; values: { [seriesKey: string]: number }; tone?: 'up' | 'down' | 'neutral' }[] }
+interface DonutChartSpec extends ChartBase { kind: 'donut'; slices: { label: string; value: number }[] }
+type ChartSpec = LineChartSpec | BarChartSpec | DonutChartSpec;
+```
+
+Numbers are rounded before they leave the server: percentages to 2 decimals, currency to whole units. `source` is always `Dashboard data, forecast run <d Mon YYYY>` from `meta.generatedAt`; `currencySymbol` is `meta.currencySymbol` (default `₹`).
+
+### Chart catalog (`api/_lib/charts.ts`, `buildChart({chart, ...params})`)
+
+| id | params | kind | data source |
+|---|---|---|---|
+| `mean_price_trend` | – | line (42 pts) | `priceSeries`: `actual` (solid), `forecast` (dashed), band `lower`/`upper` |
+| `basket_forecast` | – | line (6 pts) | `horizon`: single dashed series `value`, band `lower`/`upper` |
+| `part_forecast` | `partId` | line | last 12 months from `getPartHistory(partId)` as `actual` (solid) + 6-month forecast from `getPartsIndex()` as `forecast` (dashed, band `lower`/`upper`); the last actual month also carries the `forecast` value so the two lines join visually. Unknown part → `no part found with id <id>`. |
+| `top_movers` | `direction: 'up'\|'down'` (required), `n` (3-10, default 8) | bar (horizontal) | `getTopMovers` sort, one series `change` (pct), label = part name truncated to 40 chars, `tone` by sign |
+| `category_forecast_change` | – | bar (horizontal) | `categories[].forecastChange` (pct, the dashboard's `+6 month` horizon), sorted descending, `tone` by sign |
+| `spend_share` | `level: 'category'\|'vendor'\|'project'` (default `category`) | donut | category from `categories[].value`, vendor/project from `hierarchy[level][].currentSpend`; top 8 slices, the rest summed into `Other` |
+| `spend_change` | `level` as above | bar (vertical) | `hierarchy[level][]` `currentSpend`/`forecastSpend`, top 8 by current spend, two series `current`/`forecast` |
+| `scenario_impact` | `family: 'fx'\|'freight'\|'gpr'\|'duty'`, `scenario` (exact name), `level` (default `category`) | bar (horizontal) | fx: `fxAnalysis.scenarios[].byLevel[level][].changePct`; geo families: `geoAnalysis.scenarios[].byLevel[level][].priceChangePct`. Unknown family/scenario → error listing the valid scenario names for that family. |
+| `model_accuracy` | – | bar (horizontal) | `modelComparison[].mape` per model (pct, lower is better) |
+
+`showChart` (function tool, **per-request**, not in the global tool list, offered only in `data`/`web` toolsets — never `action`): a per-request collector (built fresh by every `buildToolset(mode, {onChart})` call) dedupes an identical repeated call (same chart id + params, any key order) and returns `{ok: true, note: 'already drawn'}` without redrawing it; a third *distinct* chart is refused with `{error: 'chart limit reached (2 per answer)'}`; an unknown chart id or a chart-builder error (bad `partId`, bad `scenario`) is returned as `{error}` and never added. A successful draw calls `opts.onChart(spec)` (the orchestrator's collector, which feeds `ChatResult.charts`) and returns `{ok: true, drawn: <title>, kind, summary: [<=5 "label: value" strings>]}` so the model can talk about the chart without re-typing its numbers.
+
+### Forecast-linked answers: `getExposure`
+
+`getExposure({driver})` (`api/_lib/exposure.ts`) is a normal read tool in `tools.ts` — available in `data`/`web` modes, never `action` (same rule as every other read tool; the write tools `confirmGeoAlert`/`dismissGeoAlert` stay `action`-only). `driver` enum: `steel | aluminium | copper | plastics | electronics | freight | duty | geopolitics | fx`.
+
+- **Commodity drivers** (steel/aluminium/copper/plastics/electronics) read the editable `api/_data/exposure.json` — `{ "_comment": "...", "steel": { "categories": [...], "note": "..." }, ... }`. `loadExposureMap(path?)` validates on load: any category not present in the current `getDashboardJson().categories` is dropped silently; a missing/unreadable file makes the tool return `{error: 'exposure mapping unavailable'}`. The **default mapping is a generic assumption the user is expected to edit**, not derived from a bill of materials: steel → Body Stampings, Chassis, Fasteners, Powertrain; aluminium → HVAC, Powertrain, Chassis, Body Stampings; copper → Electrical, Sensors, HVAC; plastics → Interior Trim, Lighting; electronics → Electrical, Sensors, Lighting. Result: `{ driver, basis: 'assumed category mapping, not from a bill of materials (edit api/_data/exposure.json)', categories: [{category, spend, sharePct, forecastChangePct, topParts: [{partId, partName, vendor, changePct}] /* top 3 by forecast change in that category */}], totalSpend, spendWeightedForecastChangePct }` (spend-weighted, rounded 2 decimals).
+- **Scenario drivers**: `freight`/`duty`/`geopolitics`/`fx` map to the already-modeled geo scenario families (`freight`, `duty`, `gpr`) or the fx scenarios. Result: `{ driver, basis: 'modeled scenarios (elasticity model on your data), not a forecast of the news itself', scenarios: [{name, shockPct, overallPriceChangePct, topCategories, topVendors, topProjects /* top 3 by |change| per level */}] }`, at most the 4 scenarios with the largest absolute overall change; `scenarios: []` if the family has none.
+- Unknown driver → `{error: 'unknown driver <d>; valid: <list>'}`.
+
+### System prompt (`data`/`web` only, never `action`; section 3.6)
+
+```
+Forecast impact and charts:
+- When the user asks how an external factor or news item (a commodity such as steel or aluminium, freight, duties, exchange rates, geopolitics) affects our parts or our forecast, call getExposure for that driver BEFORE answering, and end the answer with a short "What it means for our forecast" part: the affected categories, their spend and forecast change from the tool, and what to check next. State the tool's basis in one clause (for example "assumed material mapping, not your bill of materials" or "modeled scenario"). Never claim an exposure the tool did not return. Do not offer to look it up later: do it now.
+- When an answer compares or ranks three or more values, shows each item's share of a total, or shows a trend over time, call showChart with the matching chart (at most two charts per answer). The chart complements the text, so do not restate every number. Do not chart a single number or a two-value comparison.
+- Match the chart to the question: trend or "how will it move" => mean_price_trend, basket_forecast or part_forecast; ranking => top_movers, category_forecast_change or model_accuracy; "where is our spend" => spend_share or spend_change; scenario impact => scenario_impact.
+```
+
+### Limits
+
+At most 2 charts per answer (enforced by the collector, not the prompt). `showChart` and `getExposure` are unavailable in `action` mode. Charts from a web run that then fails and falls back to data mode are discarded; only the run that actually produced the answer contributes charts.
+
+Live check and follow-up notes: Task 11a log entry, section 11.

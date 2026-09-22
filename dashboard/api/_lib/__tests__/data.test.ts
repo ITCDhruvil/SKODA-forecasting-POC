@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import Papa from 'papaparse';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDashboardJson, getPartsIndex } from '../data';
+import { getDashboardJson, getPartsIndex, getPartHistory } from '../data';
 
 const FORECASTS_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'forecasts.csv');
 
@@ -56,5 +56,39 @@ describe('getPartsIndex', () => {
     const horizon1 = rec!.forecast.find((f) => f.horizon === 1);
     expect(horizon1?.prediction).toBeCloseTo(Number(rawHorizon1!.prediction), 4);
     expect(horizon1?.targetMonth).toBe(rawHorizon1!.target_month);
+  });
+});
+
+describe('getPartHistory', () => {
+  it('returns up to the last 12 months of price history, sorted ascending, as YYYY-MM points', () => {
+    const partId = getPartsIndex()[0].partId;
+    const history = getPartHistory(partId);
+    expect(history.length).toBeGreaterThan(0);
+    expect(history.length).toBeLessThanOrEqual(12);
+    for (const point of history) {
+      expect(point.month).toMatch(/^\d{4}-\d{2}$/);
+      expect(typeof point.price).toBe('number');
+      expect(Number.isNaN(point.price)).toBe(false);
+    }
+    for (let i = 1; i < history.length; i++) {
+      expect(history[i].month >= history[i - 1].month).toBe(true);
+    }
+  });
+
+  it('cross-checks the last point against an independent parse of the raw CSV', () => {
+    const partId = getPartsIndex()[0].partId;
+    const raw = fs.readFileSync(path.join(process.cwd(), 'api', '_data', 'parts_prices.csv'), 'utf-8');
+    const parsed = Papa.parse<{ part_id: string; month: string; price: string }>(raw, { header: true, skipEmptyLines: true });
+    const rows = parsed.data.filter((r) => r.part_id === partId).sort((a, b) => a.month.localeCompare(b.month));
+    const last = rows[rows.length - 1];
+
+    const history = getPartHistory(partId);
+    const lastPoint = history[history.length - 1];
+    expect(lastPoint.month).toBe(last.month.slice(0, 7));
+    expect(lastPoint.price).toBeCloseTo(Number(last.price), 4);
+  });
+
+  it('returns an empty array for an unknown part id', () => {
+    expect(getPartHistory('DOES-NOT-EXIST')).toEqual([]);
   });
 });

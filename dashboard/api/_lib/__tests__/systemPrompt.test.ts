@@ -91,6 +91,26 @@ describe('buildSystemPrompt', () => {
     expect(web.indexOf('Keep paragraphs to three lines or fewer')).toBeLessThan(web.indexOf('Live news (you have a web search tool'));
   });
 
+  it('data and web prompts carry the forecast-impact/charts section, action does not', () => {
+    for (const mode of ['data', 'web'] as const) {
+      const p = buildSystemPrompt(mode);
+      expect(p).toContain('Forecast impact and charts:');
+      expect(p).toContain('call getExposure for that driver BEFORE answering');
+      expect(p).toContain('What it means for our forecast');
+      expect(p).toContain('Do not offer to look it up later: do it now.');
+      expect(p).toContain('call showChart with the matching chart (at most two charts per answer)');
+      expect(p).toContain('Do not chart a single number or a two-value comparison.');
+      expect(p).toContain('mean_price_trend, basket_forecast or part_forecast');
+      expect(p).toContain('top_movers, category_forecast_change or model_accuracy');
+      expect(p).toContain('spend_share or spend_change');
+      expect(p).toContain('scenario impact => scenario_impact');
+    }
+    const action = buildSystemPrompt('action');
+    expect(action).not.toContain('Forecast impact and charts:');
+    expect(action).not.toContain('getExposure');
+    expect(action).not.toContain('showChart');
+  });
+
   it('only the web prompt carries the news answer structure and the no-links rule', () => {
     const web = buildSystemPrompt('web');
     expect(web).toContain('With only one development');

@@ -9,7 +9,25 @@ vi.mock('../_lib/openaiApi', () => ({ createOpenAIResponsesApi: vi.fn(() => ({ c
 const kvMock = vi.hoisted(() => ({ hincrby: vi.fn() }));
 vi.mock('../_lib/kvClient', () => ({ kv: kvMock }));
 
-const RESULT: ChatResult = { reply: 'hello', mode: 'data', usedWeb: false, sources: [] };
+const RESULT: ChatResult = { reply: 'hello', mode: 'data', usedWeb: false, sources: [], charts: [] };
+const RESULT_WITH_CHART: ChatResult = {
+  reply: 'hello',
+  mode: 'data',
+  usedWeb: false,
+  sources: [],
+  charts: [
+    {
+      kind: 'bar',
+      title: 'Forecast price change by category (+6 months)',
+      unit: 'pct',
+      currencySymbol: '₹',
+      source: 'Dashboard data, forecast run 5 Aug 2026',
+      orientation: 'horizontal',
+      series: [{ key: 'change', label: 'Forecast change' }],
+      rows: [{ label: 'Electrical', values: { change: 6.84 }, tone: 'up' }],
+    },
+  ],
+};
 const answerMock = vi.mocked(answer);
 
 interface Sent {
@@ -180,6 +198,12 @@ describe('POST /api/chat handler', () => {
     expect(sent).toMatchObject({ status: 200, body: RESULT });
   });
 
+  it('returns charts unchanged in the plain JSON body', async () => {
+    answerMock.mockResolvedValue(RESULT_WITH_CHART);
+    const sent = await call({ body: valid() });
+    expect(sent).toMatchObject({ status: 200, body: RESULT_WITH_CHART });
+  });
+
   it('a plain request does not stream: no NDJSON headers, no writes, and no onMode wired', async () => {
     const sent = await call({ body: valid() });
     expect(sent.headers['content-type']).toBeUndefined();
@@ -232,6 +256,12 @@ describe('POST /api/chat handler', () => {
       expect(lines(sent)).toEqual([{ type: 'mode', mode: 'web' }, { type: 'result', ...RESULT }]);
       expect(sent.ended).toBe(true);
       expect(sent.jsonCalled).toBe(false);
+    });
+
+    it('carries charts through the result line unchanged', async () => {
+      answerMock.mockResolvedValue(RESULT_WITH_CHART);
+      const sent = await call({ body: valid({ stream: true }) });
+      expect(lines(sent)).toEqual([{ type: 'result', ...RESULT_WITH_CHART }]);
     });
 
     it('forwards a second mode line when the orchestrator falls back', async () => {

@@ -1,16 +1,12 @@
 // dashboard/api/_lib/tools.ts
-import { getDashboardJson, getPartsIndex, type PartRecord } from './data';
+import { changePct, getDashboardJson, getPartsIndex, type PartRecord } from './data';
+import { getExposure } from './exposure';
 import { getAllStatuses, setStatus, type KvHashClient } from './hitlStatus';
 import { kv } from './kvClient';
 
 export interface ToolDefinition {
   type: 'function';
   function: { name: string; description: string; parameters: Record<string, unknown> };
-}
-
-function changePct(current: number | null, forecast: number | null): number | null {
-  if (current === null || forecast === null || current === 0) return null;
-  return ((forecast - current) / current) * 100;
 }
 
 function summarizePart(rec: PartRecord) {
@@ -201,6 +197,7 @@ export const TOOL_HANDLERS: Record<string, (args: any) => unknown> = {
   getHierarchy,
   getAlerts,
   getDataProvenance,
+  getExposure,
   getGeoHitlAlerts: () => getGeoHitlAlerts(kv),
   confirmGeoAlert: (args) => confirmGeoAlert(kv, args),
   dismissGeoAlert: (args) => dismissGeoAlert(kv, args),
@@ -343,6 +340,24 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       name: 'getDataProvenance',
       description: 'Get the provenance of every data source feeding the dashboard (macro anchor, FX, freight, etc.).',
       parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'getExposure',
+      description:
+        'Use whenever the user asks how news or an external factor affects our parts or our forecast: a commodity (steel, aluminium, copper, plastics, electronics), or a scenario driver (freight, duty, geopolitics, fx). Commodity drivers return an assumed category mapping (spend, share, forecast change, top parts per category), clearly labelled as an assumption, not a bill of materials. Scenario drivers return the matching modeled shock scenarios (freight/duty/geopolitical/FX) and their price impact by category/vendor/project.',
+      parameters: {
+        type: 'object',
+        properties: {
+          driver: {
+            type: 'string',
+            enum: ['steel', 'aluminium', 'copper', 'plastics', 'electronics', 'freight', 'duty', 'geopolitics', 'fx'],
+          },
+        },
+        required: ['driver'],
+      },
     },
   },
   {

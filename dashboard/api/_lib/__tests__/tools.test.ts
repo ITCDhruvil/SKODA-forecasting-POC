@@ -19,6 +19,8 @@ import {
   getGeoHitlAlerts,
   confirmGeoAlert,
   dismissGeoAlert,
+  TOOL_DEFINITIONS,
+  TOOL_HANDLERS,
 } from '../tools';
 import type { KvHashClient } from '../hitlStatus';
 
@@ -228,5 +230,17 @@ describe('getGeoHitlAlerts / confirmGeoAlert / dismissGeoAlert', () => {
     const client = fakeKvClient();
     const result = await confirmGeoAlert(client, { alertId: 'DOES-NOT-EXIST' });
     expect(result).toEqual({ error: 'unknown alertId' });
+  });
+});
+
+describe('getExposure tool registration', () => {
+  it('is registered in TOOL_DEFINITIONS and TOOL_HANDLERS and works end to end', () => {
+    const def = TOOL_DEFINITIONS.find((d) => d.function.name === 'getExposure');
+    expect(def).toBeDefined();
+    expect(TOOL_HANDLERS.getExposure).toBeDefined();
+
+    const result = TOOL_HANDLERS.getExposure({ driver: 'steel' }) as { driver?: string; error?: string };
+    expect(result.error).toBeUndefined();
+    expect(result.driver).toBe('steel');
   });
 });

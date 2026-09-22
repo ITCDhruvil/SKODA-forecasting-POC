@@ -57,7 +57,13 @@ const WEB_SECTION = `Live news (you have a web search tool restricted to trusted
 - For a news answer with several developments, give a one-line takeaway, then the developments as bullets each ending with (Outlet, DD Mon YYYY), then how it matters for us tied to dashboard numbers when you have them. With only one development, or nothing relevant, answer in a short paragraph instead.
 - Do not put links or URLs in the answer and do not add your own sources list: cite by outlet name and date only. The app shows the sources separately.`;
 
+const FORECAST_CHARTS_SECTION = `Forecast impact and charts:
+- When the user asks how an external factor or news item (a commodity such as steel or aluminium, freight, duties, exchange rates, geopolitics) affects our parts or our forecast, call getExposure for that driver BEFORE answering, and end the answer with a short "What it means for our forecast" part: the affected categories, their spend and forecast change from the tool, and what to check next. State the tool's basis in one clause (for example "assumed material mapping, not your bill of materials" or "modeled scenario"). Never claim an exposure the tool did not return. Do not offer to look it up later: do it now.
+- When an answer compares or ranks three or more values, shows each item's share of a total, or shows a trend over time, call showChart with the matching chart (at most two charts per answer). The chart complements the text, so do not restate every number. Do not chart a single number or a two-value comparison.
+- Match the chart to the question: trend or "how will it move" => mean_price_trend, basket_forecast or part_forecast; ranking => top_movers, category_forecast_change or model_accuracy; "where is our spend" => spend_share or spend_change; scenario impact => scenario_impact.`;
+
 export function buildSystemPrompt(mode: Mode): string {
   const section = mode === 'action' ? ACTION_SECTION : mode === 'web' ? WEB_SECTION : DATA_SECTION;
-  return `${BASE}\n\n${section}`;
+  const extra = mode === 'action' ? '' : `\n\n${FORECAST_CHARTS_SECTION}`;
+  return `${BASE}\n\n${section}${extra}`;
 }
