@@ -293,7 +293,7 @@ export default function App() {
         />
       )}
 
-      <ChatWidget open={radarOpen} onClose={closeRadar} />
+      <ChatWidget open={radarOpen} onClose={closeRadar} data={data} />
     </div>
   );
 }

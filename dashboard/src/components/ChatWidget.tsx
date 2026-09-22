@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { ChatHistoryPanel } from './ChatHistoryPanel';
-import { ChatWelcome } from './ChatWelcome';
+import { ChatOpenScreen } from './ChatOpenScreen';
+import { RadarSettings } from './RadarSettings';
 import { MessageMarkdown } from './chatMarkdown';
 import { SourceList } from './SourceList';
 import {
@@ -10,6 +11,7 @@ import {
   IconClose,
   IconCopy,
   IconEdit,
+  IconGear,
   IconGlobe,
   IconHistory,
   IconRefresh,
@@ -31,8 +33,10 @@ import {
   type Conversation,
 } from '../lib/chatHistory';
 import { readChatStream, type ChatMode } from '../lib/chatStream';
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, type RadarSettings as RadarSettingsState } from '../lib/radarSettings';
+import { buildSnapshot } from '../lib/snapshot';
 import { pickThinkingWord } from '../lib/thinkingWords';
-import { loadWebEnabled, saveWebEnabled } from '../lib/webPreference';
+import type { DashboardData } from '../types';
 
 function getStorage(): Storage | null {
   try {
@@ -258,9 +262,10 @@ function MessageRow({
 interface ChatWidgetProps {
   open: boolean;
   onClose: () => void;
+  data: DashboardData | null;
 }
 
-export function ChatWidget({ open, onClose }: ChatWidgetProps) {
+export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const storage = getStorage();
     return storage ? loadHistory(storage) : [];
@@ -274,14 +279,18 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [webEnabled, setWebEnabled] = useState<boolean>(() => {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<RadarSettingsState>(() => {
     const storage = getStorage();
-    return storage ? loadWebEnabled(storage) : true;
+    return storage ? loadSettings(storage) : DEFAULT_SETTINGS;
   });
+  const [pendingAlerts, setPendingAlerts] = useState<number | null>(null);
   const requestRef = useRef(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const deletedIdsRef = useRef(new Set<string>());
+
+  const snapshot = useMemo(() => (data ? buildSnapshot(data, pendingAlerts) : []), [data, pendingAlerts]);
 
   useEffect(() => {
     const storage = getStorage();
@@ -290,32 +299,56 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
 
   useEffect(() => {
     const storage = getStorage();
-    if (storage) saveWebEnabled(storage, webEnabled);
-  }, [webEnabled]);
+    if (storage) saveSettings(storage, settings);
+  }, [settings]);
+
+  // Today's pending-alert count is only worth fetching while the panel is open and the snapshot is shown.
+  useEffect(() => {
+    if (!open || !settings.snapshot) return;
+    let cancelled = false;
+    fetch('/api/hitl-status')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('hitl-status unavailable'))))
+      .then((body: { statuses?: Record<string, unknown> }) => {
+        if (cancelled) return;
+        const total = data?.geoAnalysis?.hitl?.alerts?.length ?? 0;
+        const decided = body.statuses ? Object.keys(body.statuses).length : 0;
+        setPendingAlerts(total - decided);
+      })
+      .catch(() => {
+        if (!cancelled) setPendingAlerts(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, settings.snapshot, data]);
 
   useEffect(() => {
     const list = listRef.current;
     if (!open || !list) return;
-    // Empty state stays at the top so the welcome hero is visible; conversations follow the latest message.
+    // Empty state stays at the top so the open screen is visible; conversations follow the latest message.
     if (messages.length === 0) list.scrollTo({ top: 0 });
     else list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
   }, [messages, loading, open]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
-    else setHistoryOpen(false);
+    else {
+      setHistoryOpen(false);
+      setSettingsOpen(false);
+    }
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape' || editingIndex !== null) return;
-      if (historyOpen) setHistoryOpen(false);
+      if (settingsOpen) setSettingsOpen(false);
+      else if (historyOpen) setHistoryOpen(false);
       else onClose();
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, historyOpen, editingIndex, onClose]);
+  }, [open, historyOpen, settingsOpen, editingIndex, onClose]);
 
   async function requestReply(base: ChatEntry[]) {
     const conversationId = activeId;
@@ -330,7 +363,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: toApiMessages(base), webEnabled, stream: true }),
+        body: JSON.stringify({ messages: toApiMessages(base), webEnabled: settings.liveNews, stream: true }),
       });
 
       let payload: ReplyPayload;
@@ -464,22 +497,12 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => setWebEnabled((v) => !v)}
-              aria-pressed={webEnabled}
-              title={
-                webEnabled
-                  ? 'Live news is on: Radar searches trusted news sources only when a question needs current information'
-                  : 'Live news is off: Radar uses dashboard data only'
-              }
-              className={clsx(
-                'mr-1 flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition',
-                webEnabled
-                  ? 'border-brand-100 bg-brand-50 text-brand-700 hover:bg-brand-100'
-                  : 'border-slate-200 text-slate-500 hover:bg-slate-50',
-              )}
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              title="Settings"
+              className={headerButton}
             >
-              <IconGlobe className="h-3.5 w-3.5" />
-              Web
+              <IconGear className="h-4 w-4" />
             </button>
             <button
               type="button"
@@ -515,7 +538,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
             className="scrollbar-hidden h-full space-y-5 overflow-y-auto px-5 pb-32 pt-4"
           >
             {messages.length === 0 && (
-              <ChatWelcome onPick={(prompt) => send(prompt)} disabled={loading} webEnabled={webEnabled} />
+              <ChatOpenScreen settings={settings} snapshot={snapshot} onPick={(q) => send(q)} disabled={loading} />
             )}
             {messages.map((m, i) => (
               <MessageRow
@@ -558,6 +581,10 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
               </button>
             </div>
           </div>
+
+          {settingsOpen && (
+            <RadarSettings settings={settings} onChange={setSettings} onClose={() => setSettingsOpen(false)} />
+          )}
         </div>
 
         <ChatHistoryPanel
