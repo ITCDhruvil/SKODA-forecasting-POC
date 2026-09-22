@@ -430,7 +430,7 @@ describe('recordUsage', () => {
     const record = vi.fn();
     let n = 0;
     const t = setup({
-      router: () => ({ ...route('data'), usage: { total_tokens: 500 } }),
+      router: () => ({ ...route('data'), usage: { total_tokens: 777 } }),
       main: () => {
         n += 1;
         if (n === 1) {

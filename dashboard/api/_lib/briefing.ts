@@ -35,6 +35,9 @@ export interface BriefingKv {
   get(key: string): Promise<unknown>;
   set(key: string, value: unknown, opts?: { ex?: number; nx?: boolean }): Promise<unknown>;
   del?(key: string): Promise<unknown>;
+  /** Per-day attempt counter (the real `kv.incr`/`kv.expire`, same shape as `KvCounterClient` in webBudget.ts). */
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<unknown>;
 }
 
 export const BRIEFING_TIMEOUT_MS = 50_000;
@@ -46,6 +49,11 @@ export const LOCK_TTL_SECONDS = 90;
 export const FAIL_BACKOFF_SECONDS = 300;
 export const POLL_INTERVAL_MS = 1_500;
 export const POLL_MAX_MS = 20_000;
+/** At most this many generation attempts per calendar day (each billed whether it succeeds or not); after that the day stays `failed`. */
+export const MAX_ATTEMPTS_PER_DAY = 3;
+export const ATTEMPTS_TTL_SECONDS = 2 * 24 * 3600;
+/** An item newer than "tomorrow" (time-zone slack) or older than this many days before today is dropped. */
+export const MAX_ITEM_AGE_DAYS = 7;
 
 const HEADLINE_MAX = 120;
 const WHY_MAX = 180;
@@ -131,6 +139,30 @@ function isRealDate(value: string): boolean {
   return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
 }
 
+/** Days from `fromISO` to `toISO` (both YYYY-MM-DD), positive when `toISO` is later. */
+function daysBetween(fromISO: string, toISO: string): number {
+  const [fy, fm, fd] = fromISO.split('-').map(Number);
+  const [ty, tm, td] = toISO.split('-').map(Number);
+  const from = Date.UTC(fy, fm - 1, fd);
+  const to = Date.UTC(ty, tm - 1, td);
+  return Math.round((to - from) / 86_400_000);
+}
+
+/** `dateISO` shifted by `deltaDays` (may be negative), formatted YYYY-MM-DD. */
+function addDays(dateISO: string, deltaDays: number): string {
+  const [y, m, d] = dateISO.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + deltaDays)).toISOString().slice(0, 10);
+}
+
+/**
+ * Keeps an item at most one day ahead of `today` (time-zone slack for "tomorrow" in another zone) and at most
+ * `MAX_ITEM_AGE_DAYS` days in the past.
+ */
+function isFresh(itemDate: string, today: string): boolean {
+  const age = daysBetween(itemDate, today); // today - itemDate, in days
+  return age >= -1 && age <= MAX_ITEM_AGE_DAYS;
+}
+
 function cleanText(value: unknown, max: number): string | null {
   if (typeof value !== 'string') return null;
   const text = value.replace(/\s+/g, ' ').trim();
@@ -156,17 +188,21 @@ function parseJsonLeniently(text: string): unknown {
 }
 
 export interface ParseOptions {
+  /** Calendar date (YYYY-MM-DD) the briefing is being generated for; required so freshness filtering is deterministic. */
+  today: string;
   /** Allow-list used to normalise the model-supplied urls. Defaults to ALLOWED_DOMAINS. */
   allowedDomains?: readonly string[];
 }
 
 /**
- * Validates the model output. An item survives only when every field is present, the date is a real YYYY-MM-DD and
- * its url normalises to one of the URLs the search actually returned (`verified`); `url` and `domain` then come
- * from that verified source. Unknown `impact` becomes `watch` and unknown `area` becomes `other`. Throws when the
- * text is not JSON or no item survives.
+ * Validates the model output. An item survives only when every field is present, the date is a real YYYY-MM-DD not
+ * older than `MAX_ITEM_AGE_DAYS` days (and not more than a day ahead of `opts.today`), and its url normalises to
+ * one of the URLs the search actually returned (`verified`); `url` and `domain` then come from that verified
+ * source. Unknown `impact` becomes `watch` and unknown `area` becomes `other`. Surviving items are sorted newest
+ * first and capped at `MAX_BRIEFING_ITEMS`. Throws when the text is not JSON or no item survives (including when
+ * every item is stale: that counts as a failed generation, see `getOrCreateBriefing`).
  */
-export function parseBriefing(text: string, verified: Map<string, WebSource>, opts: ParseOptions = {}): BriefingItem[] {
+export function parseBriefing(text: string, verified: Map<string, WebSource>, opts: ParseOptions): BriefingItem[] {
   const domains = opts.allowedDomains ?? ALLOWED_DOMAINS;
   const parsed = parseJsonLeniently(text);
   const rawItems = Array.isArray(parsed) ? parsed : (parsed as { items?: unknown } | null)?.items;
@@ -174,7 +210,6 @@ export function parseBriefing(text: string, verified: Map<string, WebSource>, op
   const seen = new Set<string>();
   if (Array.isArray(rawItems)) {
     for (const raw of rawItems) {
-      if (items.length >= MAX_BRIEFING_ITEMS) break;
       if (!raw || typeof raw !== 'object') continue;
       const r = raw as Record<string, unknown>;
       const headline = cleanText(r.headline, HEADLINE_MAX);
@@ -182,6 +217,7 @@ export function parseBriefing(text: string, verified: Map<string, WebSource>, op
       const outlet = cleanText(r.outlet, OUTLET_MAX);
       const date = typeof r.date === 'string' ? r.date.trim() : '';
       if (!headline || !why || !outlet || !isRealDate(date) || typeof r.url !== 'string') continue;
+      if (!isFresh(date, opts.today)) continue;
       const normalised = toWebSource(r.url.trim(), undefined, domains);
       const source = normalised ? verified.get(matchKey(normalised.url)) : undefined;
       if (!source || seen.has(source.url)) continue;
@@ -198,8 +234,10 @@ export function parseBriefing(text: string, verified: Map<string, WebSource>, op
       });
     }
   }
-  if (items.length === 0) throw new Error('briefing has no valid items');
-  return items;
+  items.sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? 1 : -1));
+  const kept = items.slice(0, MAX_BRIEFING_ITEMS);
+  if (kept.length === 0) throw new Error('briefing has no valid items');
+  return kept;
 }
 
 export interface GenerateDeps {
@@ -207,16 +245,28 @@ export interface GenerateDeps {
   config: ChatConfig;
   now: () => Date;
   timeZone: string;
+  /**
+   * The calendar date (YYYY-MM-DD) this generation is for. Callers that already computed it (`getOrCreateBriefing`)
+   * pass it through so a run straddling local midnight cannot store the briefing under the wrong day's key;
+   * defaults to `todayKey(now(), timeZone)`.
+   */
+  date?: string;
 }
 
 /** One Responses call with the web model, the forced allow-listed search tool and a JSON schema. Throws on any failure. */
 export async function generateBriefing(deps: GenerateDeps): Promise<Briefing> {
   const { api, config, now, timeZone } = deps;
-  const date = todayKey(now(), timeZone);
+  const date = deps.date ?? todayKey(now(), timeZone);
+  const cutoff = addDays(date, -3);
   const body: Record<string, unknown> = {
     model: config.webModel,
     instructions: buildBriefingPrompt(),
-    input: [{ role: 'user', content: `Today is ${date}. Produce the daily impact briefing.` }],
+    input: [
+      {
+        role: 'user',
+        content: `Today is ${date}. Produce the daily impact briefing. Only include items published on or after ${cutoff}; if fewer exist return fewer.`,
+      },
+    ],
     tools: [{ type: 'web_search', filters: { allowed_domains: ALLOWED_DOMAINS } }],
     tool_choice: { type: 'web_search' },
     max_tool_calls: MAX_BRIEFING_SEARCHES,
@@ -231,7 +281,7 @@ export async function generateBriefing(deps: GenerateDeps): Promise<Briefing> {
 
   const collected = collectSources(response, ALLOWED_DOMAINS);
   const verified = buildVerifiedMap(dedupeSources([...collected.cited, ...collected.consulted]));
-  const items = parseBriefing(extractOutputText(response), verified);
+  const items = parseBriefing(extractOutputText(response), verified, { today: date });
   const used = usageOf(response);
   return {
     date,
@@ -280,9 +330,14 @@ export interface BriefingDeps extends GenerateDeps {
   sleep?: (ms: number) => Promise<void>;
 }
 
+/**
+ * A log-safe summary of an error: its name and, when present, an HTTP status. Never the message — SDK/provider
+ * errors can carry response or article text, which must not reach the logs (spec section 12).
+ */
 function errorSummary(err: unknown): string {
   if (!(err instanceof Error)) return 'unknown error';
-  return `${err.name}: ${err.message}`.slice(0, 300);
+  const status = (err as { status?: unknown }).status;
+  return typeof status === 'number' ? `${err.name} (status ${status})` : err.name;
 }
 
 async function readStored(kv: BriefingKv, key: string): Promise<Briefing | null> {
@@ -308,7 +363,9 @@ async function readFlag(kv: BriefingKv, key: string): Promise<boolean> {
 /**
  * The daily briefing, generated lazily by the first request of the day and stored for the day. The first request
  * takes a 90 s lock (SET NX EX) and generates; concurrent requests poll the store for up to 20 s and then report
- * `pending`. A failed generation sets a 5 minute marker so the model is not called again straight away. Never throws.
+ * `pending`. A failed generation sets a 5 minute marker so the model is not called again straight away, and counts
+ * against `MAX_ATTEMPTS_PER_DAY`: once that many attempts have run today, later openers get `failed` with no model
+ * call, however long ago the last attempt was. Never throws.
  */
 export async function getOrCreateBriefing(deps: BriefingDeps): Promise<BriefingOutcome> {
   const { kv, config, now, timeZone } = deps;
@@ -319,6 +376,7 @@ export async function getOrCreateBriefing(deps: BriefingDeps): Promise<BriefingO
   const key = `radar-briefing:${date}`;
   const lockKey = `radar-briefing-lock:${date}`;
   const failKey = `radar-briefing-fail:${date}`;
+  const attemptsKey = `radar-briefing-attempts:${date}`;
 
   const stored = await readStored(kv, key);
   if (stored) return { status: 'ready', briefing: stored };
@@ -343,10 +401,41 @@ export async function getOrCreateBriefing(deps: BriefingDeps): Promise<BriefingO
     return { status: 'pending' };
   }
 
+  const releaseLock = async () => {
+    try {
+      await kv.del?.(lockKey);
+    } catch {
+      // The lock expires on its own after 90 s.
+    }
+  };
+
+  // Count this attempt before spending a model call, and fail closed if the counter itself cannot be trusted:
+  // without it the per-day cap could not be enforced, and a persistent failure would re-bill every 5 minutes.
+  let attempt: number;
+  try {
+    attempt = await kv.incr(attemptsKey);
+    if (!Number.isFinite(attempt)) throw new Error('attempt counter did not return a number');
+  } catch (err) {
+    console.error('briefing: could not check the attempt count, not generating:', errorSummary(err));
+    await releaseLock();
+    return { status: 'failed' };
+  }
+  if (attempt === 1) {
+    try {
+      await kv.expire(attemptsKey, ATTEMPTS_TTL_SECONDS);
+    } catch (err) {
+      console.error('briefing: could not set the attempt counter ttl:', errorSummary(err));
+    }
+  }
+  if (attempt > MAX_ATTEMPTS_PER_DAY) {
+    await releaseLock();
+    return { status: 'failed' };
+  }
+
   const started = Date.now();
   let briefing: Briefing;
   try {
-    briefing = await generateBriefing({ api: deps.api, config, now, timeZone });
+    briefing = await generateBriefing({ api: deps.api, config, now, timeZone, date });
   } catch (err) {
     console.error('briefing: generation failed:', errorSummary(err));
     try {
@@ -354,11 +443,7 @@ export async function getOrCreateBriefing(deps: BriefingDeps): Promise<BriefingO
     } catch (setErr) {
       console.error('briefing: could not set the failure marker:', errorSummary(setErr));
     }
-    try {
-      await kv.del?.(lockKey);
-    } catch {
-      // The lock expires on its own after 90 s.
-    }
+    await releaseLock();
     return { status: 'failed' };
   }
 

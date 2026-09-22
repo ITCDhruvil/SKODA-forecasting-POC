@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { LATEST_BRIEFING_KEY, USAGE_HASH_KEY, readUsage, recordUsage, type UsageKv } from '../usageStats';
 
 function fakeKv(initial: { hash?: Record<string, unknown> | null; values?: Record<string, unknown> } = {}) {
@@ -19,6 +19,10 @@ function fakeKv(initial: { hash?: Record<string, unknown> | null; values?: Recor
 
 beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe('recordUsage', () => {
@@ -49,6 +53,10 @@ describe('recordUsage', () => {
     };
     await expect(recordUsage(kv, 'action', 100)).resolves.toBeUndefined();
     expect(console.error).toHaveBeenCalledTimes(1);
+    const args = vi.mocked(console.error).mock.calls[0];
+    expect(args.some((a) => a instanceof Error)).toBe(false);
+    expect(JSON.stringify(args)).not.toContain('redis down');
+    expect(args.join(' ').length).toBeLessThan(120);
   });
 });
 
