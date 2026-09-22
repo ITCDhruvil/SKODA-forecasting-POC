@@ -40,6 +40,25 @@ function formatByUnit(value: number, unit: ChartUnit, currencySymbol: string): s
   }
 }
 
+/** Compact axis-tick currency, mirroring `formatAxisCurrency` in lib/format.ts (K/M suffix) but self-contained on the chart's own currencySymbol. */
+function formatChartAxisCurrency(value: number, currencySymbol: string): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${currencySymbol}${(value / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${currencySymbol}${Math.round(value / 1_000)}K`;
+  return `${currencySymbol}${Math.round(value)}`;
+}
+
+function formatAxisByUnit(value: number, unit: ChartUnit, currencySymbol: string): string {
+  switch (unit) {
+    case 'currency':
+      return formatChartAxisCurrency(value, currencySymbol);
+    case 'pct':
+      return formatByUnit(value, unit, currencySymbol);
+    default:
+      return formatByUnit(value, unit, currencySymbol);
+  }
+}
+
 const AXIS_TICK = { fontSize: 11, fill: '#64748b' };
 
 /** Up to two series' worth of line colors — the catalog never sends more. */
@@ -75,8 +94,8 @@ function LineChartBody({ chart }: { chart: LineChartSpec }) {
           tick={AXIS_TICK}
           tickLine={false}
           axisLine={false}
-          width={40}
-          tickFormatter={(v: number) => formatByUnit(v, unit, currencySymbol)}
+          width={48}
+          tickFormatter={(v: number) => formatAxisByUnit(v, unit, currencySymbol)}
         />
         <Tooltip
           contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 11 }}
@@ -140,8 +159,8 @@ function BarChartBody({ chart }: { chart: BarChartSpec }) {
       tick={AXIS_TICK}
       tickLine={false}
       axisLine={false}
-      width={40}
-      tickFormatter={(v: number) => formatByUnit(v, unit, currencySymbol)}
+      width={48}
+      tickFormatter={(v: number) => formatAxisByUnit(v, unit, currencySymbol)}
     />
   );
 
@@ -160,7 +179,7 @@ function BarChartBody({ chart }: { chart: BarChartSpec }) {
               tick={AXIS_TICK}
               tickLine={false}
               axisLine={{ stroke: '#e2e8f0' }}
-              tickFormatter={(v: number) => formatByUnit(v, unit, currencySymbol)}
+              tickFormatter={(v: number) => formatAxisByUnit(v, unit, currencySymbol)}
             />
             <YAxis
               type="category"
