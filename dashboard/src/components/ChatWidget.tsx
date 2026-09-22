@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import clsx from 'clsx';
+import { ChartCard } from './ChartCard';
 import { ChatHistoryPanel } from './ChatHistoryPanel';
 import { ChatOpenScreen } from './ChatOpenScreen';
 import { RadarSettings } from './RadarSettings';
@@ -23,6 +24,7 @@ import {
   deleteConversation,
   loadHistory,
   saveHistory,
+  sanitizeCharts,
   sanitizeSources,
   togglePin,
   toApiMessages,
@@ -30,6 +32,7 @@ import {
   truncateForRegenerate,
   upsertConversation,
   upsertUnlessDeleted,
+  type ChartSpec,
   type ChatEntry,
   type Conversation,
 } from '../lib/chatHistory';
@@ -51,6 +54,7 @@ interface ReplyPayload {
   reply?: unknown;
   usedWeb?: unknown;
   sources?: unknown;
+  charts?: unknown;
 }
 
 /** Builds the stored assistant entry from a chat reply payload (streamed result or plain JSON body). */
@@ -60,6 +64,8 @@ function entryFromPayload(payload: ReplyPayload): ChatEntry {
     entry.usedWeb = true;
     entry.sources = sanitizeSources(payload.sources);
   }
+  const charts: ChartSpec[] = sanitizeCharts(payload.charts);
+  if (charts.length > 0) entry.charts = charts;
   return entry;
 }
 
@@ -233,6 +239,9 @@ function MessageRow({
         ) : (
           <div aria-label="Radar" className="space-y-2 rounded-2xl bg-slate-100 px-4 py-2.5">
             <MessageMarkdown content={message.content} />
+            {(message.charts ?? []).map((chart, i) => (
+              <ChartCard key={i} chart={chart} />
+            ))}
             <SourceList sources={message.sources ?? []} usedWeb={message.usedWeb === true} />
           </div>
         )}
