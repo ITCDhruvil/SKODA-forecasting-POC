@@ -89,6 +89,20 @@ export function upsertConversation(
   return capConversations(next);
 }
 
+/**
+ * Like `upsertConversation`, but a no-op when `update.id` was deleted while the request that produced it was in
+ * flight (so a late reply cannot re-create a conversation the user removed from History).
+ */
+export function upsertUnlessDeleted(
+  list: Conversation[],
+  update: { id: string; messages: ChatEntry[] },
+  deletedIds: ReadonlySet<string>,
+  now: number = Date.now(),
+): Conversation[] {
+  if (deletedIds.has(update.id)) return list;
+  return upsertConversation(list, update, now);
+}
+
 export function togglePin(list: Conversation[], id: string): Conversation[] {
   return list.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c));
 }

@@ -4,10 +4,12 @@ import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { isDomainLabel } from '../lib/markdownLinks';
 
-/** Plain text of a link's children (strings and arrays of strings); anything richer yields ''. */
+/** Plain text of a link's children; any non-string child (e.g. `**bold**`) means the link is not a bare label. */
 function plainText(children: ReactNode): string {
   if (typeof children === 'string') return children;
-  if (Array.isArray(children)) return children.map((c) => (typeof c === 'string' ? c : '')).join('');
+  if (Array.isArray(children)) {
+    return children.every((c) => typeof c === 'string') ? children.join('') : '';
+  }
   return '';
 }
 
@@ -26,14 +28,16 @@ export const markdownComponents: Components = {
             ? 'inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 align-baseline text-[11px] font-medium text-slate-600 no-underline transition hover:bg-brand-50 hover:text-brand-700'
             : 'text-brand-600 underline hover:text-brand-700'
         }
+        {...props}
         target="_blank"
         rel="noopener noreferrer"
-        {...props}
+        title={pill ? props.href : undefined}
       >
         {children}
       </a>
     );
   },
+  img: () => null,
   ul: ({ node, ...props }) => <ul className={`list-disc marker:text-slate-400 ${listClasses}`} {...props} />,
   ol: ({ node, ...props }) => (
     <ol className={`list-decimal marker:font-semibold marker:text-brand-600 ${listClasses}`} {...props} />

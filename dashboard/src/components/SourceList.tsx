@@ -35,7 +35,7 @@ export function SourceList({ sources, usedWeb }: { sources: ChatSource[]; usedWe
       {open && (
         <ul id={listId} className="mt-2 flex flex-wrap gap-1.5">
           {sources.map((s, i) => (
-            <li key={s.url} className="max-w-full">
+            <li key={`${i}-${s.url}`} className="max-w-full">
               <a
                 href={s.url}
                 target="_blank"
@@ -44,7 +44,7 @@ export function SourceList({ sources, usedWeb }: { sources: ChatSource[]; usedWe
                 className="flex max-w-full min-w-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-500 transition hover:border-brand-500/40 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
               >
                 <span className="font-semibold text-slate-400">{i + 1}</span>
-                <span className="min-w-0 max-w-[9rem] truncate font-medium text-slate-700">{s.domain}</span>
+                <span className="shrink-0 max-w-[9rem] truncate font-medium text-slate-700">{s.domain}</span>
                 <span className="min-w-0 truncate">{s.title}</span>
               </a>
             </li>

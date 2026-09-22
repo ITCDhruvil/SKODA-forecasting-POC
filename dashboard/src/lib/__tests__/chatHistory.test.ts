@@ -14,6 +14,7 @@ import {
   truncateForEdit,
   truncateForRegenerate,
   upsertConversation,
+  upsertUnlessDeleted,
   type ChatEntry,
   type Conversation,
 } from '../chatHistory';
@@ -81,6 +82,30 @@ describe('upsertConversation', () => {
     expect(list.some((c) => c.id === 'pinned')).toBe(true);
     expect(list.some((c) => c.id === 'c0')).toBe(false);
     expect(list.some((c) => c.id === `c${MAX_CONVERSATIONS + 4}`)).toBe(true);
+  });
+});
+
+describe('upsertUnlessDeleted', () => {
+  it('leaves the list unchanged when the id was deleted', () => {
+    const start = [conv('a')];
+    const deleted = new Set(['b']);
+    const list = upsertUnlessDeleted(start, { id: 'b', messages: [u('late reply')] }, deleted, 500);
+    expect(list).toEqual(start);
+  });
+
+  it('upserts ids that were not deleted', () => {
+    const start = [conv('a')];
+    const deleted = new Set(['x']);
+    const list = upsertUnlessDeleted(start, { id: 'b', messages: [u('hello')] }, deleted, 500);
+    expect(list.map((c) => c.id)).toEqual(['b', 'a']);
+  });
+
+  it('behaves like upsertConversation when the deleted set is empty', () => {
+    const start = [conv('a')];
+    const empty = new Set<string>();
+    const viaHelper = upsertUnlessDeleted(start, { id: 'a', messages: [u('q'), a('r')] }, empty, 900);
+    const viaDirect = upsertConversation(start, { id: 'a', messages: [u('q'), a('r')] }, 900);
+    expect(viaHelper).toEqual(viaDirect);
   });
 });
 

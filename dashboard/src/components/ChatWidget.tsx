@@ -26,6 +26,7 @@ import {
   truncateForEdit,
   truncateForRegenerate,
   upsertConversation,
+  upsertUnlessDeleted,
   type ChatEntry,
   type Conversation,
 } from '../lib/chatHistory';
@@ -280,6 +281,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   const requestRef = useRef(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const deletedIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
     const storage = getStorage();
@@ -359,7 +361,9 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
       }
 
       const withReply: ChatEntry[] = [...base, entryFromPayload(payload)];
-      setConversations((prev) => upsertConversation(prev, { id: conversationId, messages: withReply }));
+      setConversations((prev) =>
+        upsertUnlessDeleted(prev, { id: conversationId, messages: withReply }, deletedIdsRef.current),
+      );
       if (requestRef.current === token) setMessages(withReply);
     } catch {
       if (requestRef.current === token) setError('chat unavailable, try again');
@@ -417,6 +421,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
   }
 
   function removeConversation(id: string) {
+    deletedIdsRef.current.add(id);
     setConversations((prev) => deleteConversation(prev, id));
     if (id === activeId) startFreshChat();
   }
@@ -514,7 +519,7 @@ export function ChatWidget({ open, onClose }: ChatWidgetProps) {
             )}
             {messages.map((m, i) => (
               <MessageRow
-                key={i}
+                key={`${activeId}-${i}`}
                 message={m}
                 isLast={i === messages.length - 1}
                 copied={copiedIndex === i}

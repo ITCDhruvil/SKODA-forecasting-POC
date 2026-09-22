@@ -17,4 +17,14 @@ describe('isDomainLabel', () => {
     expect(isDomainLabel('12.5')).toBe(false);
     expect(isDomainLabel('')).toBe(false);
   });
+
+  it('rejects dotted product names that look like file extensions', () => {
+    expect(isDomainLabel('Node.js')).toBe(false);
+    expect(isDomainLabel('Next.js')).toBe(false);
+  });
+
+  it('accepts uppercase and whitespace-padded domains', () => {
+    expect(isDomainLabel('SPGLOBAL.COM')).toBe(true);
+    expect(isDomainLabel('  spglobal.com  ')).toBe(true);
+  });
 });
