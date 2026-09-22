@@ -214,7 +214,7 @@ function MessageRow({
 
   return (
     <div className={clsx('flex', isUser ? 'justify-end' : 'justify-start')}>
-      <div className={clsx('flex max-w-[85%] flex-col gap-1', isUser && 'items-end')}>
+      <div className={clsx('group flex flex-col gap-1', isUser ? 'max-w-[85%] items-end' : 'w-full')}>
         {isUser && editing ? (
           <EditBox initial={message.content} onCancel={onCancelEdit} onSubmit={onSubmitEdit} />
         ) : isUser ? (
@@ -232,7 +232,12 @@ function MessageRow({
         )}
 
         {!(isUser && editing) && (
-          <div className="mt-0.5 flex items-center gap-0.5">
+          <div
+            className={clsx(
+              'mt-0.5 flex items-center gap-0.5',
+              isUser && 'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',
+            )}
+          >
             <ActionButton label={copied ? 'Copied' : 'Copy'} onClick={onCopy}>
               {copyIcon}
             </ActionButton>
