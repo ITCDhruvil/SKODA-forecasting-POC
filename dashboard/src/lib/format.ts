@@ -14,13 +14,12 @@ export function setCurrencySymbol(symbol: string): void {
   if (symbol) currencySymbol = symbol;
 }
 
-/** Compact currency: ₹2.45M, ₹128.4K, ₹1,284.00. */
+/** Currency: ₹17,60,000 (compact/headline) or ₹1,284.00 (precise), always Indian digit grouping. */
 export function formatCurrency(value: number | null, compact = true): string {
   if (value === null || Number.isNaN(value)) return '--';
   const s = currencySymbol;
-  if (compact && Math.abs(value) >= 1_000_000) return `${s}${(value / 1_000_000).toFixed(2)}M`;
-  if (compact && Math.abs(value) >= 10_000) return `${s}${(value / 1_000).toFixed(1)}K`;
-  return `${s}${value.toLocaleString('en-US', {
+  if (compact) return `${s}${Math.round(value).toLocaleString('en-IN')}`;
+  return `${s}${value.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
