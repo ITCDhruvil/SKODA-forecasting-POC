@@ -10,6 +10,10 @@
     "api/briefing.ts": {
       "includeFiles": "api/_data/**",
       "maxDuration": 60
+    },
+    "api/export.ts": {
+      "includeFiles": "api/_data/**",
+      "maxDuration": 60
     }
   }
 }
