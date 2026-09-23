@@ -44,9 +44,8 @@ The single source of truth for exported data. No model, no formatting.
 
 ```ts
 export const EXPORT_IDS = [
-  'parts_search', 'top_movers', 'part_forecast', 'category_breakdown',
-  'hierarchy', 'alerts', 'fx_scenarios', 'geo_scenarios',
-  'model_comparison', 'validation_summary',
+  'parts_search', 'top_movers', 'category_breakdown',
+  'hierarchy', 'alerts', 'scenarios',
 ] as const;
 export type ExportId = (typeof EXPORT_IDS)[number];
 
@@ -60,11 +59,10 @@ export interface ExportData {
 
 export interface BuildExportArgs {
   export: ExportId;
-  partId?: string;                              // part_forecast
   direction?: 'up' | 'down';                    // top_movers
   n?: number;                                   // top_movers
-  level?: 'category' | 'vendor' | 'project';    // hierarchy
-  family?: 'fx' | 'freight' | 'gpr' | 'duty';   // geo_scenarios
+  level?: HierarchyLevel;                       // hierarchy
+  family?: ScenarioFamily;                      // scenarios — reused from charts.ts
   query?: string; category?: string; vendor?: string; project?: string;  // parts_search
 }
 
@@ -72,6 +70,10 @@ export function buildExportData(args: BuildExportArgs): ExportData | { error: st
 ```
 
 Each id is a thin wrapper over a function that already exists in `tools.ts` or `data.ts`, flattened into columns and rows. Charts cap at a handful of values because a chart must stay readable; an export does not, so the catalog is separate rather than reusing `CHART_IDS`.
+
+The catalog covers six ids, not the fourteen read tools, because an id earns its place only by being row-shaped and worth sending to another person. `scenarios` takes a `family` parameter rather than splitting into an FX id and a geopolitical id, following the precedent already set by the `scenario_impact` chart, and reuses `ScenarioFamily` from `charts.ts`.
+
+Three read tools are deliberately excluded. A single part's forecast is a curve, which is chart territory. Model comparison is three models and a few metrics. Validation is a paragraph of statistics. None of them is a spreadsheet. Nothing is lost by excluding them: a Word export with `dataRef: null` still writes a document about any of them from the conversation, which is what the null case exists for. Only the Excel button disappears, and only from things nobody wants in Excel.
 
 `MAX_EXPORT_ROWS = 5000`. Past that the rows are truncated and `truncated` is set — a serverless function must not become a memory bomb over a cell count nobody will read.
 
@@ -92,7 +94,9 @@ export function offerExportDefinition(): ToolDefinition;
 export function buildOfferExportHandler(onExport?: (o: ExportOffer) => void): (args: any) => unknown;
 ```
 
-Parameters are flat, matching `showChart`: `format`, `label`, `export`, plus the same optional `partId` / `direction` / `n` / `level` / `family` that the catalog entries need. The handler assembles `dataRef` from them.
+Parameters are flat, matching `showChart`: `format`, `label`, `export`, plus the optional `direction` / `n` / `level` / `family` / `query` / `category` / `vendor` / `project` that the catalog entries need. The handler assembles `dataRef` from them.
+
+The cap is one offer per answer, where charts allow two. Two charts can answer two different questions — a trend and a ranking. Two export cards would be the same content in two wrappers, which is a format picker in disguise, and the single card already carries the other format as a link. An answer holding two genuinely separate exportables is rare, and the user can ask for the second one.
 
 `dataRef` may be `null` for a pure narrative document. **`format: 'xlsx'` requires a `dataRef`** — a spreadsheet of nothing is an error, not an empty file.
 
