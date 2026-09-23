@@ -106,7 +106,8 @@ function buildTopMovers(args: BuildExportArgs): ExportData | { error: string } {
   if (args.direction !== 'up' && args.direction !== 'down') {
     return { error: "top_movers needs direction 'up' or 'down'" };
   }
-  const n = Math.max(1, Math.min(args.n ?? DEFAULT_TOP_MOVERS, MAX_EXPORT_ROWS));
+  const nVal = typeof args.n !== 'number' || Number.isNaN(args.n) ? DEFAULT_TOP_MOVERS : args.n;
+  const n = Math.max(1, Math.min(nVal, MAX_EXPORT_ROWS));
   const scored: { rec: PartRecord; change: number }[] = [];
   for (const rec of getPartsIndex()) {
     const change = changePct(rec.currentPrice, rec.forecast.find((f) => f.horizon === 1)?.prediction ?? null);

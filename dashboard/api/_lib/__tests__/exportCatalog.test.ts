@@ -84,4 +84,14 @@ describe('buildExportData', () => {
     const filtered = ok(buildExportData({ export: 'scenarios', family: one }));
     for (const row of filtered.rows) expect(row.family).toBe(one);
   });
+
+  it('top_movers guards against NaN in n, falling back to DEFAULT_TOP_MOVERS', () => {
+    const data = ok(buildExportData({ export: 'top_movers', direction: 'up', n: NaN }));
+    expect(data.rows).toHaveLength(20);
+  });
+
+  it('top_movers guards against non-numeric n, falling back to DEFAULT_TOP_MOVERS', () => {
+    const data = ok(buildExportData({ export: 'top_movers', direction: 'up', n: 'abc' as never }));
+    expect(data.rows).toHaveLength(20);
+  });
 });
