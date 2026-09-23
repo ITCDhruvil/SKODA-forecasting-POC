@@ -1,3 +1,4 @@
+import { callKey } from './callKey';
 import { buildChart, CHART_IDS, type BarChartSpec, type ChartSpec, type DonutChartSpec, type LineChartSpec, type Unit } from './charts';
 import type { Mode } from './router';
 import { TOOL_DEFINITIONS, TOOL_HANDLERS, type ToolDefinition } from './tools';
@@ -48,17 +49,6 @@ function summarizeChart(spec: ChartSpec): string[] {
   return withValue
     .slice(-5)
     .map((p) => `${p.x}: ${formatValue(spec.unit, p[primaryKey] as number, spec.currencySymbol)}`);
-}
-
-/** A stable key for deduping identical calls: same chart id, same params, in any key order. */
-function callKey(args: Record<string, unknown>): string {
-  const sorted = Object.keys(args)
-    .sort()
-    .reduce<Record<string, unknown>>((acc, k) => {
-      if (args[k] !== undefined) acc[k] = args[k];
-      return acc;
-    }, {});
-  return JSON.stringify(sorted);
 }
 
 function showChartDefinition(): ToolDefinition {
