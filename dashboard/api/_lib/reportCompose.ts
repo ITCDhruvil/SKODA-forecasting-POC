@@ -82,7 +82,7 @@ export async function composeReport(deps: ComposeDeps, input: ComposeInput): Pro
     input: [
       {
         role: 'user',
-        content: `<document_label>${stripTags(input.label)}</document_label>\n<conversation>\n${transcript}`,
+        content: `<document_label>${stripTags(input.label)}</document_label>\n<conversation>\n${transcript}\n</conversation>`,
       },
     ],
     text: {
