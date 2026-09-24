@@ -72,6 +72,18 @@ describe('POST /api/export', () => {
     expect(r.statusCode).toBe(400);
   });
 
+  it('rejects a params value that is not a string or number', async () => {
+    const r = res();
+    await handler(
+      req({
+        format: 'xlsx',
+        offer: { format: 'xlsx', label: 'x', dataRef: { export: 'parts_search', params: { category: { x: 1 } } } },
+      }),
+      r,
+    );
+    expect(r.statusCode).toBe(400);
+  });
+
   it('builds a workbook and sends it as an attachment', async () => {
     const r = res();
     await handler(req({ format: 'xlsx', offer: XLSX_OFFER }), r);

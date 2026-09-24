@@ -47,6 +47,10 @@ export function isValidExportBody(raw: unknown): raw is ExportBody {
     const r = ref as Record<string, unknown>;
     if (typeof r.export !== 'string' || !(EXPORT_IDS as readonly string[]).includes(r.export)) return false;
     if (!r.params || typeof r.params !== 'object' || Array.isArray(r.params)) return false;
+    const params = r.params as Record<string, unknown>;
+    for (const v of Object.values(params)) {
+      if (typeof v !== 'string' && typeof v !== 'number') return false;
+    }
   }
 
   // A spreadsheet of nothing is an error, not an empty file.
@@ -87,17 +91,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = req.body as ExportBody;
   const { offer, format } = body;
 
-  let table: ExportData | null = null;
-  if (offer.dataRef) {
-    const built = buildExportData({ export: offer.dataRef.export, ...offer.dataRef.params } as BuildExportArgs);
-    if ('error' in built) {
-      res.status(400).json({ error: built.error });
-      return;
-    }
-    table = built;
-  }
-
   try {
+    let table: ExportData | null = null;
+    if (offer.dataRef) {
+      const built = buildExportData({ export: offer.dataRef.export, ...offer.dataRef.params } as BuildExportArgs);
+      if ('error' in built) {
+        res.status(400).json({ error: built.error });
+        return;
+      }
+      table = built;
+    }
+
     if (format === 'xlsx') {
       const buffer = await buildXlsx(table as ExportData);
       // Filenames are always derived server-side; a client-supplied filename is ignored.
