@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { ChartCard } from './ChartCard';
 import { ChatHistoryPanel } from './ChatHistoryPanel';
 import { ChatOpenScreen } from './ChatOpenScreen';
+import { ExportCard } from './ExportCard';
 import { RadarSettings } from './RadarSettings';
 import { MessageMarkdown } from './chatMarkdown';
 import { SourceList } from './SourceList';
@@ -25,6 +26,7 @@ import {
   loadHistory,
   saveHistory,
   sanitizeCharts,
+  sanitizeExports,
   sanitizeSources,
   togglePin,
   toApiMessages,
@@ -55,6 +57,7 @@ interface ReplyPayload {
   usedWeb?: unknown;
   sources?: unknown;
   charts?: unknown;
+  exports?: unknown;
 }
 
 /** Builds the stored assistant entry from a chat reply payload (streamed result or plain JSON body). */
@@ -66,6 +69,8 @@ function entryFromPayload(payload: ReplyPayload): ChatEntry {
   }
   const charts: ChartSpec[] = sanitizeCharts(payload.charts);
   if (charts.length > 0) entry.charts = charts;
+  const exports = sanitizeExports(payload.exports);
+  if (exports.length > 0) entry.exports = exports;
   return entry;
 }
 
@@ -194,6 +199,7 @@ function EditBox({
 
 function MessageRow({
   message,
+  conversation,
   isLast,
   copied,
   editing,
@@ -205,6 +211,7 @@ function MessageRow({
   onSubmitEdit,
 }: {
   message: ChatEntry;
+  conversation: ChatEntry[];
   isLast: boolean;
   copied: boolean;
   editing: boolean;
@@ -241,6 +248,9 @@ function MessageRow({
             <MessageMarkdown content={message.content} />
             {(message.charts ?? []).map((chart, i) => (
               <ChartCard key={i} chart={chart} />
+            ))}
+            {(message.exports ?? []).map((offer, i) => (
+              <ExportCard key={i} offer={offer} messages={conversation} />
             ))}
             <SourceList sources={message.sources ?? []} usedWeb={message.usedWeb === true} />
           </div>
@@ -586,6 +596,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
               <MessageRow
                 key={`${activeId}-${i}`}
                 message={m}
+                conversation={messages}
                 isLast={i === messages.length - 1}
                 copied={copiedIndex === i}
                 editing={editingIndex === i}

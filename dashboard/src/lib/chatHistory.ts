@@ -56,6 +56,22 @@ export interface DonutChartSpec extends ChartBase {
 }
 export type ChartSpec = LineChartSpec | BarChartSpec | DonutChartSpec;
 
+export const EXPORT_IDS = [
+  'parts_search',
+  'top_movers',
+  'category_breakdown',
+  'hierarchy',
+  'alerts',
+  'scenarios',
+] as const;
+export type ExportId = (typeof EXPORT_IDS)[number];
+
+export interface ExportOffer {
+  format: 'xlsx' | 'docx';
+  label: string;
+  dataRef: { export: ExportId; params: Record<string, string | number> } | null;
+}
+
 export interface ChatEntry {
   role: 'user' | 'assistant';
   content: string;
@@ -64,6 +80,8 @@ export interface ChatEntry {
   usedWeb?: boolean;
   /** Present on assistant replies that include server-rendered charts. */
   charts?: ChartSpec[];
+  /** Present on assistant replies that offer a downloadable file. */
+  exports?: ExportOffer[];
 }
 
 export interface Conversation {
@@ -83,6 +101,7 @@ const MAX_CHARTS = 2;
 const MAX_BAR_ROWS = 20;
 const MAX_DONUT_SLICES = 12;
 const MAX_CHART_TEXT_LENGTH = 200;
+const MAX_EXPORTS = 1;
 
 /** Validates untrusted source data (server payload or localStorage): http(s) urls only, string fields only. */
 export function sanitizeSources(raw: unknown): ChatSource[] {
@@ -256,6 +275,47 @@ export function sanitizeCharts(raw: unknown): ChartSpec[] {
   return out;
 }
 
+function sanitizeExport(raw: unknown): ExportOffer | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+
+  if (o.format !== 'xlsx' && o.format !== 'docx') return null;
+  const label = typeof o.label === 'string' ? o.label.trim() : '';
+  if (!label) return null;
+
+  let dataRef: ExportOffer['dataRef'] = null;
+  if (o.dataRef !== null && o.dataRef !== undefined) {
+    if (typeof o.dataRef !== 'object') return null;
+    const r = o.dataRef as Record<string, unknown>;
+    if (typeof r.export !== 'string' || !(EXPORT_IDS as readonly string[]).includes(r.export)) return null;
+    const params: Record<string, string | number> = {};
+    if (r.params && typeof r.params === 'object' && !Array.isArray(r.params)) {
+      for (const [k, v] of Object.entries(r.params as Record<string, unknown>)) {
+        if (typeof v === 'string' || typeof v === 'number') params[k] = v;
+      }
+    }
+    dataRef = { export: r.export as ExportId, params };
+  }
+
+  // A spreadsheet of nothing is not a valid offer.
+  if (o.format === 'xlsx' && dataRef === null) return null;
+
+  return { format: o.format, label, dataRef };
+}
+
+/** Validates untrusted offers (server payload or localStorage) the same way `sanitizeCharts` does. */
+export function sanitizeExports(raw: unknown): ExportOffer[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ExportOffer[] = [];
+  for (const item of raw) {
+    const offer = sanitizeExport(item);
+    if (!offer) continue;
+    out.push(offer);
+    if (out.length === MAX_EXPORTS) break;
+  }
+  return out;
+}
+
 /** What is sent to /api/chat: role and content only (sources and flags stay on the client). */
 export function toApiMessages(entries: ChatEntry[]): { role: 'user' | 'assistant'; content: string }[] {
   return entries.map(({ role, content }) => ({ role, content }));
@@ -356,12 +416,14 @@ function normalizeConversation(raw: unknown): Conversation[] {
     if ((entry.role !== 'user' && entry.role !== 'assistant') || typeof entry.content !== 'string') return [];
     const sources = sanitizeSources(entry.sources);
     const charts = sanitizeCharts(entry.charts);
+    const exports = sanitizeExports(entry.exports);
     messages.push({
       role: entry.role,
       content: entry.content,
       ...(sources.length > 0 ? { sources } : {}),
       ...(entry.usedWeb === true ? { usedWeb: true } : {}),
       ...(charts.length > 0 ? { charts } : {}),
+      ...(exports.length > 0 ? { exports } : {}),
     });
   }
   if (messages.length === 0) return [];

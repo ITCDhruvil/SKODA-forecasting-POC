@@ -7,6 +7,7 @@ import {
   formatRelativeTime,
   loadHistory,
   sanitizeCharts,
+  sanitizeExports,
   sanitizeSources,
   saveHistory,
   splitForDisplay,
@@ -470,5 +471,47 @@ describe('normalizeConversation with charts', () => {
     expect(loaded).toHaveLength(2);
     expect(loaded[0].messages[1].charts).toBeUndefined();
     expect(loaded[1].messages[1]).toEqual({ role: 'assistant', content: 'r' });
+  });
+});
+
+describe('sanitizeExports', () => {
+  it('accepts a well-formed xlsx offer', () => {
+    const out = sanitizeExports([
+      { format: 'xlsx', label: 'Alerts', dataRef: { export: 'alerts', params: {} } },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].dataRef?.export).toBe('alerts');
+  });
+
+  it('accepts a docx offer with a null dataRef', () => {
+    const out = sanitizeExports([{ format: 'docx', label: 'Write-up', dataRef: null }]);
+    expect(out[0].dataRef).toBeNull();
+  });
+
+  it('drops an unknown format, an unknown export id and a missing label', () => {
+    expect(sanitizeExports([{ format: 'pdf', label: 'x', dataRef: null }])).toEqual([]);
+    expect(sanitizeExports([{ format: 'xlsx', label: 'x', dataRef: { export: 'evil', params: {} } }])).toEqual([]);
+    expect(sanitizeExports([{ format: 'docx', label: '  ', dataRef: null }])).toEqual([]);
+  });
+
+  it('drops an xlsx offer with no dataRef', () => {
+    expect(sanitizeExports([{ format: 'xlsx', label: 'x', dataRef: null }])).toEqual([]);
+  });
+
+  it('drops non-scalar params', () => {
+    const out = sanitizeExports([
+      { format: 'xlsx', label: 'x', dataRef: { export: 'alerts', params: { n: 5, bad: { a: 1 } } } },
+    ]);
+    expect(out[0].dataRef?.params).toEqual({ n: 5 });
+  });
+
+  it('returns an empty array for anything that is not an array', () => {
+    expect(sanitizeExports(null)).toEqual([]);
+    expect(sanitizeExports('nope')).toEqual([]);
+  });
+
+  it('keeps at most one offer', () => {
+    const one = { format: 'xlsx', label: 'a', dataRef: { export: 'alerts', params: {} } };
+    expect(sanitizeExports([one, { ...one, label: 'b' }])).toHaveLength(1);
   });
 });

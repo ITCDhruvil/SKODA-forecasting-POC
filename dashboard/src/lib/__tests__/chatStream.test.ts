@@ -40,6 +40,7 @@ describe('parseChatEvent', () => {
       usedWeb: true,
       sources: [{ title: 'T', url: 'https://a.com/x', domain: 'a.com' }],
       charts: [],
+      exports: [],
     });
   });
 
@@ -126,6 +127,23 @@ describe('parseChatEvent', () => {
     expect(parseChatEvent('{"type":"result","reply":"r","mode":"nope","usedWeb":false,"sources":[]}')).toBeNull();
     expect(parseChatEvent('{"type":"error","error":5}')).toBeNull();
   });
+
+  it('parses exports on a result event', () => {
+    const event = parseChatEvent(
+      JSON.stringify({
+        type: 'result',
+        reply: 'here you go',
+        mode: 'data',
+        exports: [{ format: 'xlsx', label: 'Alerts', dataRef: { export: 'alerts', params: {} } }],
+      }),
+    );
+    expect(event).toMatchObject({ type: 'result', exports: [{ format: 'xlsx', label: 'Alerts' }] });
+  });
+
+  it('defaults exports to an empty array when the field is absent', () => {
+    const event = parseChatEvent(JSON.stringify({ type: 'result', reply: 'hi', mode: 'data' }));
+    expect(event).toMatchObject({ exports: [] });
+  });
 });
 
 describe('splitLines', () => {
@@ -153,7 +171,7 @@ describe('readChatStream', () => {
     expect(events).toEqual([
       { type: 'mode', mode: 'web' },
       { type: 'mode', mode: 'data' },
-      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [] },
+      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [], exports: [] },
     ]);
   });
 
@@ -172,7 +190,7 @@ describe('readChatStream', () => {
     const events = await collect([enc.encode(full)]);
     expect(events).toEqual([
       { type: 'mode', mode: 'data' },
-      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [chart] },
+      { type: 'result', reply: 'hi', mode: 'data', usedWeb: false, sources: [], charts: [chart], exports: [] },
     ]);
   });
 
