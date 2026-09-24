@@ -302,6 +302,13 @@ function PartRow({ part }: { part: TreePart }) {
       : null;
 
   const [reasonOpen, setReasonOpen] = useState(false);
+  const [showAllDrivers, setShowAllDrivers] = useState(false);
+
+  const sortedDrivers = part.reason?.drivers
+    ? [...part.reason.drivers].sort((a, b) => b.magnitude - a.magnitude)
+    : [];
+  const shownDrivers = showAllDrivers ? sortedDrivers : sortedDrivers.slice(0, 2);
+  const hiddenDriverCount = sortedDrivers.length - shownDrivers.length;
 
   return (
     <>
@@ -364,71 +371,71 @@ function PartRow({ part }: { part: TreePart }) {
 
       {reasonOpen && part.reason?.available && (
         <div
-          className="ml-0 mr-5 mt-1 rounded-lg border border-slate-200 bg-slate-50 px-5 py-3 text-[12px] text-slate-700"
+          className="mr-5 mt-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700"
           style={{ paddingLeft: 20 + 2 * 44 }}
         >
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            AI explanation — simple language
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+              AI
+            </span>
+            <p className="text-[13px] font-medium leading-snug text-slate-900">
+              {part.reason.summary}
+            </p>
           </div>
-          <p className="mt-1 text-[14px] font-medium leading-snug text-slate-900">
-            {part.reason.summary}
-          </p>
-          {part.reason.story && (
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-700">{part.reason.story}</p>
+
+          {shownDrivers.length > 0 && (
+            <div className="mt-3 divide-y divide-slate-200 border-t border-slate-200">
+              {shownDrivers.map((d) => (
+                <div key={d.id} className="flex gap-2.5 py-2">
+                  <span
+                    className={clsx(
+                      'mt-1 h-2 w-2 shrink-0 rounded-full',
+                      d.direction === 'up'
+                        ? 'bg-red-500'
+                        : d.direction === 'down'
+                          ? 'bg-emerald-500'
+                          : 'bg-slate-300',
+                    )}
+                  />
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[12px] font-medium text-slate-800">{d.label}</span>
+                      <span className="text-[11px] text-slate-400">
+                        {d.direction === 'up' ? 'up' : d.direction === 'down' ? 'down' : 'flat'}
+                      </span>
+                      {!d.isReal && (
+                        <span className="pill bg-amber-100 text-[9px] text-amber-700">
+                          backup data
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] leading-relaxed text-slate-500">{d.evidence}</div>
+                  </div>
+                </div>
+              ))}
+              {hiddenDriverCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllDrivers(true)}
+                  className="py-2 text-[11px] font-medium text-slate-500 hover:text-slate-800"
+                >
+                  +{hiddenDriverCount} more
+                </button>
+              )}
+            </div>
           )}
+
           {part.reason.tip && (
-            <p className="mt-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-600">
-              <span className="font-semibold text-slate-800">What to do: </span>
+            <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
+              <span className="font-semibold text-slate-700">Do: </span>
               {part.reason.tip}
             </p>
           )}
 
-          {part.reason.drivers.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Main reasons
-              </div>
-              {part.reason.drivers.slice(0, 4).map((d) => (
-                <div key={d.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="font-medium text-slate-800">{d.label}</div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={clsx(
-                          'pill text-[10px]',
-                          d.direction === 'up'
-                            ? 'bg-red-100 text-red-800'
-                            : d.direction === 'down'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-slate-100 text-slate-600',
-                        )}
-                      >
-                        {d.direction === 'up'
-                          ? 'pushes price up'
-                          : d.direction === 'down'
-                            ? 'pulls price down'
-                            : 'little effect'}
-                      </span>
-                      <span
-                        className={clsx(
-                          'pill text-[10px]',
-                          d.isReal ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700',
-                        )}
-                      >
-                        {d.isReal ? 'source checked' : 'backup data'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-1 text-[12px] leading-relaxed text-slate-600">
-                    {d.evidence}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
           {part.reason.causalityNote && (
-            <p className="mt-3 text-[11px] text-slate-500">{part.reason.causalityNote}</p>
+            <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+              {part.reason.causalityNote}
+            </p>
           )}
         </div>
       )}

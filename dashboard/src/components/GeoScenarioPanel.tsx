@@ -161,8 +161,8 @@ export function GeoScenarioPanel({ geo }: { geo?: GeoAnalysis }) {
                       width={40}
                     />
                     <Tooltip
-                      formatter={(v: number | string) =>
-                        typeof v === 'number' ? `${v.toFixed(2)}%` : v
+                      formatter={(v) =>
+                        typeof v === 'number' ? `${v.toFixed(2)}%` : String(v ?? '')
                       }
                       labelFormatter={(l) => `t${Number(l) >= 0 ? '+' : ''}${l}`}
                     />
@@ -216,8 +216,8 @@ export function GeoScenarioPanel({ geo }: { geo?: GeoAnalysis }) {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={50} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} />
                 <Tooltip
-                  formatter={(v: number | string) =>
-                    typeof v === 'number' ? formatSigned(v) + '%' : v
+                  formatter={(v) =>
+                    typeof v === 'number' ? formatSigned(v) + '%' : String(v ?? '')
                   }
                 />
                 <ReferenceLine y={0} stroke="#cbd5e1" />
