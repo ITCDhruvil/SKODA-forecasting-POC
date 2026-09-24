@@ -9,12 +9,13 @@ vi.mock('../_lib/openaiApi', () => ({ createOpenAIResponsesApi: vi.fn(() => ({ c
 const kvMock = vi.hoisted(() => ({ hincrby: vi.fn() }));
 vi.mock('../_lib/kvClient', () => ({ kv: kvMock }));
 
-const RESULT: ChatResult = { reply: 'hello', mode: 'data', usedWeb: false, sources: [], charts: [] };
+const RESULT: ChatResult = { reply: 'hello', mode: 'data', usedWeb: false, sources: [], charts: [], exports: [] };
 const RESULT_WITH_CHART: ChatResult = {
   reply: 'hello',
   mode: 'data',
   usedWeb: false,
   sources: [],
+  exports: [],
   charts: [
     {
       kind: 'bar',

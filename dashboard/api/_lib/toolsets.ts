@@ -1,5 +1,6 @@
 import { callKey } from './callKey';
 import { buildChart, CHART_IDS, type BarChartSpec, type ChartSpec, type DonutChartSpec, type LineChartSpec, type Unit } from './charts';
+import { buildOfferExportHandler, offerExportDefinition, type ExportOffer } from './exportOffer';
 import type { Mode } from './router';
 import { TOOL_DEFINITIONS, TOOL_HANDLERS, type ToolDefinition } from './tools';
 
@@ -17,6 +18,8 @@ export interface Toolset {
 export interface BuildToolsetOptions {
   /** Called once for every distinct chart the model successfully draws this request. */
   onChart?: (chart: ChartSpec) => void;
+  /** Called once for the export the model offers this request, if any. */
+  onExport?: (offer: ExportOffer) => void;
 }
 
 function pick(names: (name: string) => boolean): Pick<Toolset, 'definitions' | 'handlers'> {
@@ -113,17 +116,22 @@ function buildShowChartHandler(onChart?: (chart: ChartSpec) => void): (args: any
 /**
  * Tools available for one request. Write tools are included only in `action` mode, and
  * because handlers are copied per mode, a `web` request cannot resolve them even if the
- * model hallucinates a call to one. `showChart` is built fresh per call (a per-request
- * collector) and offered only in `data`/`web` modes; `opts.onChart` receives every
- * distinct chart the model successfully draws.
+ * model hallucinates a call to one. `showChart` and `offerExport` are each built fresh per
+ * call (a per-request collector) and offered only in `data`/`web` modes; `opts.onChart`
+ * receives every distinct chart the model successfully draws, and `opts.onExport` receives
+ * the export the model offers, if any.
  */
 export function buildToolset(mode: Mode, opts: BuildToolsetOptions = {}): Toolset {
   if (mode === 'action') return { ...pick((n) => ACTION_TOOL_NAMES.includes(n)), webSearch: false };
 
   const read = pick((n) => !(WRITE_TOOL_NAMES as readonly string[]).includes(n));
   return {
-    definitions: [...read.definitions, showChartDefinition()],
-    handlers: { ...read.handlers, showChart: buildShowChartHandler(opts.onChart) },
+    definitions: [...read.definitions, showChartDefinition(), offerExportDefinition()],
+    handlers: {
+      ...read.handlers,
+      showChart: buildShowChartHandler(opts.onChart),
+      offerExport: buildOfferExportHandler(opts.onExport),
+    },
     webSearch: mode === 'web',
   };
 }

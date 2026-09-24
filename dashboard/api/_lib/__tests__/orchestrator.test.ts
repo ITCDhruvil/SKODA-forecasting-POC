@@ -66,7 +66,7 @@ describe('answer', () => {
     const t = setup({ router: () => route('data'), main: () => text('the answer') });
     const result = await answer(ask('Which parts moved most?'), t.deps);
 
-    expect(result).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [] });
+    expect(result).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [], exports: [] });
     const names = t.toolNames(t.mainCalls()[0]);
     expect(names).not.toContain('web_search');
     expect(names).not.toContain('confirmGeoAlert');
@@ -135,7 +135,7 @@ describe('answer', () => {
     };
     const t = setup({ router: () => route('web'), main: () => uncited });
     const result = await answer(ask('Any news on steel tariffs?'), t.deps);
-    expect(result).toEqual({ reply: 'I could not verify this.', mode: 'web', usedWeb: false, sources: [], charts: [] });
+    expect(result).toEqual({ reply: 'I could not verify this.', mode: 'web', usedWeb: false, sources: [], charts: [], exports: [] });
 
     const noAnnotations: ResponseLike = {
       id: 'r',
@@ -148,6 +148,7 @@ describe('answer', () => {
       usedWeb: false,
       sources: [],
       charts: [],
+      exports: [],
     });
   });
 
@@ -191,6 +192,7 @@ describe('answer', () => {
       usedWeb: false,
       sources: [],
       charts: [],
+      exports: [],
     });
   });
 
@@ -406,6 +408,52 @@ describe('answer charts', () => {
   });
 });
 
+describe('export offers', () => {
+  it('returns an empty exports array when the model never calls offerExport', async () => {
+    const t = setup({ router: () => route('data'), main: () => text('the answer') });
+    const result = await answer(ask('What is the basket price?'), t.deps);
+    expect(result.exports).toEqual([]);
+  });
+
+  it('carries an offer made during the run into the result', async () => {
+    let call = 0;
+    const t = setup({
+      router: () => route('data'),
+      main: () => {
+        call += 1;
+        if (call === 1) {
+          return {
+            id: 'r',
+            output: [
+              {
+                type: 'function_call',
+                call_id: 'c1',
+                name: 'offerExport',
+                arguments: JSON.stringify({ format: 'xlsx', label: 'Alerts', export: 'alerts' }),
+              },
+            ],
+          } as ResponseLike;
+        }
+        return text('Here are the alerts. Want them as a spreadsheet?');
+      },
+    });
+
+    const result = await answer(ask('List every flagged part'), t.deps);
+    expect(result.exports).toHaveLength(1);
+    expect(result.exports[0]).toEqual({
+      format: 'xlsx',
+      label: 'Alerts',
+      dataRef: { export: 'alerts', params: {} },
+    });
+  });
+
+  it('offers the offerExport tool to the model in data mode', async () => {
+    const t = setup({ router: () => route('data'), main: () => text('ok') });
+    await answer(ask('anything'), t.deps);
+    expect(t.toolNames(t.mainCalls()[0])).toContain('offerExport');
+  });
+});
+
 describe('answer onMode', () => {
   it('reports data once for a data route', async () => {
     const onMode = vi.fn();
@@ -455,7 +503,7 @@ describe('answer onMode', () => {
     });
     const t = setup({ router: () => route('data'), main: () => text('the answer'), onMode });
     const result = await answer(ask('Which parts moved most?'), t.deps);
-    expect(result).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [] });
+    expect(result).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [], exports: [] });
     expect(onMode).toHaveBeenCalledTimes(1);
   });
 
@@ -548,10 +596,10 @@ describe('recordUsage', () => {
       throw new Error('kv down');
     });
     const t1 = setup({ router: () => route('data'), main: () => withUsage('the answer', 50), recordUsage: thrower });
-    expect(await answer(ask('hi'), t1.deps)).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [] });
+    expect(await answer(ask('hi'), t1.deps)).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [], exports: [] });
     const rejecter = vi.fn().mockRejectedValue(new Error('kv down'));
     const t2 = setup({ router: () => route('data'), main: () => withUsage('the answer', 50), recordUsage: rejecter });
-    expect(await answer(ask('hi'), t2.deps)).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [] });
+    expect(await answer(ask('hi'), t2.deps)).toEqual({ reply: 'the answer', mode: 'data', usedWeb: false, sources: [], charts: [], exports: [] });
     expect(thrower).toHaveBeenCalledTimes(1);
     expect(rejecter).toHaveBeenCalledTimes(1);
   });

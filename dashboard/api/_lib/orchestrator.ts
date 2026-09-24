@@ -1,6 +1,7 @@
 import type { ChartSpec } from './charts';
 import type { ChatConfig } from './config';
 import { runChatLoop, type ChatMessage } from './chatLoop';
+import type { ExportOffer } from './exportOffer';
 import { ResponsesChatClient, type ResponsesApi } from './responsesClient';
 import { routeMessage, stubOf, type Mode } from './router';
 import { buildSystemPrompt } from './systemPrompt';
@@ -25,6 +26,8 @@ export interface ChatResult {
   sources: WebSource[];
   /** Charts drawn by the model this answer (server-built from dashboard data), max 2, [] when none. */
   charts: ChartSpec[];
+  /** The export offered this answer (server-built intent, never a file), max 1, [] when none. */
+  exports: ExportOffer[];
 }
 
 export interface OrchestratorDeps {
@@ -56,6 +59,7 @@ interface RunResult {
   sources: WebSource[];
   searches: number;
   charts: ChartSpec[];
+  exports: ExportOffer[];
 }
 
 /** Calls recordUsage and waits for it for at most RECORD_USAGE_GRACE_MS. Never throws. */
@@ -109,10 +113,11 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
   // Every client created for this request, so the usage of a failed web run is counted too.
   const clients: ResponsesChatClient[] = [];
   const run = async (m: Mode): Promise<RunResult> => {
-    // Fresh per run, so a failed web attempt's charts are discarded and never mixed into a
-    // later data fallback's charts.
+    // Fresh per run, so a failed web attempt's charts/offer are discarded and never mixed into
+    // a later data fallback's charts/offer.
     const charts: ChartSpec[] = [];
-    const toolset = buildToolset(m, { onChart: (c) => charts.push(c) });
+    const exports: ExportOffer[] = [];
+    const toolset = buildToolset(m, { onChart: (c) => charts.push(c), onExport: (e) => exports.push(e) });
     const isWeb = m === 'web';
     const client = new ResponsesChatClient({
       api,
@@ -128,7 +133,7 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     clients.push(client);
     const messages: ChatMessage[] = [{ role: 'system', content: buildSystemPrompt(m) }, ...req.messages];
     const reply = await runChatLoop(client, toolset.handlers, messages);
-    return { reply, sources: client.getSources(), searches: client.getSearchCount(), charts };
+    return { reply, sources: client.getSources(), searches: client.getSearchCount(), charts, exports };
   };
 
   let result: RunResult;
@@ -173,5 +178,6 @@ export async function answer(req: ChatRequest, deps: OrchestratorDeps): Promise<
     usedWeb,
     sources: usedWeb ? result.sources : [],
     charts: result.charts,
+    exports: result.exports,
   };
 }

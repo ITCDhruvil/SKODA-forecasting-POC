@@ -5,11 +5,12 @@ import type { ChartSpec } from '../charts';
 const names = (defs: { function: { name: string } }[]) => defs.map((d) => d.function.name).sort();
 
 describe('buildToolset', () => {
-  it('data mode: the 16 read-only tools plus the per-request showChart tool, no web, no write tools', () => {
+  it('data mode: the 16 read-only tools plus the per-request showChart and offerExport tools, no web, no write tools', () => {
     const t = buildToolset('data');
-    expect(t.definitions).toHaveLength(17);
+    expect(t.definitions).toHaveLength(18);
     expect(names(t.definitions)).toContain('getExposure');
     expect(names(t.definitions)).toContain('showChart');
+    expect(names(t.definitions)).toContain('offerExport');
     expect(t.webSearch).toBe(false);
     for (const w of WRITE_TOOL_NAMES) {
       expect(names(t.definitions)).not.toContain(w);
@@ -116,6 +117,37 @@ describe('buildToolset', () => {
       const t = buildToolset('web');
       const result = t.handlers.showChart({ chart: 'model_accuracy' }) as { ok: boolean };
       expect(result.ok).toBe(true);
+    });
+  });
+
+  describe('buildToolset export wiring', () => {
+    it('offers offerExport in data and web mode', () => {
+      for (const mode of ['data', 'web'] as const) {
+        const names = buildToolset(mode).definitions.map((d) => d.function.name);
+        expect(names, mode).toContain('offerExport');
+      }
+    });
+
+    it('withholds offerExport in action mode', () => {
+      const toolset = buildToolset('action');
+      expect(toolset.definitions.map((d) => d.function.name)).not.toContain('offerExport');
+      expect(toolset.handlers.offerExport).toBeUndefined();
+    });
+
+    it('routes a successful offerExport call to onExport', () => {
+      const offers: unknown[] = [];
+      const toolset = buildToolset('data', { onExport: (o) => offers.push(o) });
+      toolset.handlers.offerExport({ format: 'xlsx', label: 'Alerts', export: 'alerts' });
+      expect(offers).toHaveLength(1);
+    });
+
+    it('builds a fresh offer collector per call, so two toolsets do not share state', () => {
+      const a: unknown[] = [];
+      const b: unknown[] = [];
+      buildToolset('data', { onExport: (o) => a.push(o) }).handlers.offerExport({ format: 'xlsx', label: 'A', export: 'alerts' });
+      buildToolset('data', { onExport: (o) => b.push(o) }).handlers.offerExport({ format: 'xlsx', label: 'B', export: 'alerts' });
+      expect(a).toHaveLength(1);
+      expect(b).toHaveLength(1);
     });
   });
 });
