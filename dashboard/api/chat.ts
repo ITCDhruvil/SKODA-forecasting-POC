@@ -1,58 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import OpenAI from 'openai';
-import { runChatLoop, type ChatClient, type ChatMessage } from './_lib/chatLoop';
+import { loadChatConfig } from './_lib/config';
+import { kv } from './_lib/kvClient';
+import { createOpenAIResponsesApi } from './_lib/openaiApi';
+import { answer, type IncomingMessage } from './_lib/orchestrator';
 import { checkRateLimit } from './_lib/rateLimit';
-import { TOOL_DEFINITIONS, TOOL_HANDLERS } from './_lib/tools';
-import { SYSTEM_PROMPT } from './_lib/systemPrompt';
+import type { Mode } from './_lib/router';
+import { recordUsage } from './_lib/usageStats';
+import { checkWebBudget } from './_lib/webBudget';
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 4000;
-const OPENAI_TIMEOUT_MS = 25_000;
 
-function toOpenAIMessage(m: ChatMessage): OpenAI.Chat.ChatCompletionMessageParam {
-  if (m.role === 'tool') {
-    return { role: 'tool', tool_call_id: m.tool_call_id!, content: m.content ?? '' };
-  }
-  if (m.role === 'assistant') {
-    return {
-      role: 'assistant',
-      content: m.content,
-      tool_calls: m.tool_calls?.map((tc) => ({
-        id: tc.id,
-        type: 'function',
-        function: { name: tc.name, arguments: tc.arguments },
-      })),
-    };
-  }
-  return { role: m.role, content: m.content ?? '' };
-}
-
-class OpenAIChatClient implements ChatClient {
-  private openai: OpenAI;
-  private model: string;
-
-  constructor(openai: OpenAI, model: string) {
-    this.openai = openai;
-    this.model = model;
-  }
-
-  async createCompletion(messages: ChatMessage[]) {
-    const completion = await this.openai.chat.completions.create({
-      model: this.model,
-      messages: messages.map(toOpenAIMessage),
-      tools: TOOL_DEFINITIONS,
-      tool_choice: 'auto',
-    });
-    const choice = completion.choices[0].message;
-    const toolCalls = (choice.tool_calls ?? [])
-      .filter((tc): tc is OpenAI.Chat.ChatCompletionMessageToolCall & { type: 'function' } => tc.type === 'function')
-      .map((tc) => ({ id: tc.id, name: tc.function.name, arguments: tc.function.arguments }));
-    return { content: choice.content, toolCalls };
-  }
-}
-
-function isValidIncomingMessage(m: unknown): m is { role: 'user' | 'assistant'; content: string } {
+function isValidIncomingMessage(m: unknown): m is IncomingMessage {
   if (!m || typeof m !== 'object') return false;
   const obj = m as Record<string, unknown>;
   return (obj.role === 'user' || obj.role === 'assistant') && typeof obj.content === 'string';
@@ -76,8 +35,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const body = req.body as { messages?: unknown } | undefined;
-  if (!body || !Array.isArray(body.messages) || !body.messages.every(isValidIncomingMessage)) {
+  const body = req.body as { messages?: unknown; webEnabled?: unknown; stream?: unknown } | undefined;
+  if (
+    !body ||
+    !Array.isArray(body.messages) ||
+    !body.messages.every(isValidIncomingMessage) ||
+    (body.webEnabled !== undefined && typeof body.webEnabled !== 'boolean') ||
+    (body.stream !== undefined && typeof body.stream !== 'boolean')
+  ) {
+    res.status(400).json({ error: 'invalid request body' });
+    return;
+  }
+
+  // The conversation must be non-empty and end with the user's question.
+  if (body.messages.length === 0 || body.messages[body.messages.length - 1].role !== 'user') {
     res.status(400).json({ error: 'invalid request body' });
     return;
   }
@@ -91,23 +62,56 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     res.status(502).json({ error: 'chat temporarily unavailable' });
     return;
   }
 
-  const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    ...(body.messages as { role: 'user' | 'assistant'; content: string }[]),
-  ];
+  // With stream: true the response is NDJSON: a "mode" line as soon as the mode is known (possibly twice when web
+  // mode falls back to data), then one "result" line, or one "error" line if the run fails. Everything above this
+  // point (405, 429, validation, missing key) is still a plain JSON error with its status code.
+  const streaming = body.stream === true;
+  const writeLine = (event: Record<string, unknown>) => {
+    res.write(`${JSON.stringify(event)}\n`);
+  };
+  if (streaming) {
+    res.status(200);
+    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+  }
 
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: OPENAI_TIMEOUT_MS });
-    const client = new OpenAIChatClient(openai, MODEL);
-    const reply = await runChatLoop(client, TOOL_HANDLERS, messages);
-    res.status(200).json({ reply });
+    const result = await answer(
+      {
+        // Only role and content are forwarded; any extra client fields are dropped.
+        messages: (body.messages as IncomingMessage[]).map(({ role, content }) => ({ role, content })),
+        webEnabled: body.webEnabled ?? true,
+        ip,
+      },
+      {
+        api: createOpenAIResponsesApi(apiKey),
+        config: loadChatConfig(),
+        checkBudget: (clientIp) => checkWebBudget(kv, clientIp),
+        recordUsage: (kind, tokens) => recordUsage(kv, kind, tokens),
+        ...(streaming ? { onMode: (mode: Mode) => writeLine({ type: 'mode', mode }) } : {}),
+      },
+    );
+    if (streaming) {
+      writeLine({ type: 'result', ...result });
+      res.end();
+    } else {
+      res.status(200).json(result);
+    }
   } catch (err) {
     console.error('chat endpoint error', err);
-    res.status(502).json({ error: 'chat temporarily unavailable' });
+    if (streaming) {
+      writeLine({ type: 'error', error: 'chat temporarily unavailable' });
+      res.end();
+    } else {
+      res.status(502).json({ error: 'chat temporarily unavailable' });
+    }
   }
 }

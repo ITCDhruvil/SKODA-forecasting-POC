@@ -47,7 +47,7 @@ export async function runChatLoop(
       } else {
         try {
           const args = call.arguments ? JSON.parse(call.arguments) : {};
-          result = handler(args);
+          result = await handler(args);
         } catch (err) {
           console.error(`tool ${call.name} failed:`, err);
           result = { error: `data unavailable: ${call.name}` };

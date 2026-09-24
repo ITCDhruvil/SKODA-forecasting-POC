@@ -11,15 +11,25 @@
     "sync-data": "node scripts/sync-part-data.mjs",
     "predev": "npm run sync-data",
     "test": "vitest run",
-    "typecheck:api": "tsc -b tsconfig.api.json"
+    "typecheck:api": "tsc -b tsconfig.api.json",
+    "preflight:openai": "tsx scripts/openai-preflight.ts",
+    "eval:router": "tsx scripts/router-eval.ts",
+    "eval:export": "tsx scripts/export-eval.ts"
   },
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "clsx": "^2.1.1",
-    "openai": "^4.77.0",
+    "docx": "^9.7.1",
+    "exceljs": "^4.4.0",
+    "motion": "^12.43.0",
+    "openai": "^7.20.0",
     "papaparse": "^5.4.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "recharts": "^3.10.1"
+    "react-markdown": "^9.0.1",
+    "recharts": "^3.10.1",
+    "remark-gfm": "^4.0.0",
+    "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

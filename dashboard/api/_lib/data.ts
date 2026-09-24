@@ -120,3 +120,35 @@ export function getPartsIndex(): PartRecord[] {
   partsIndexCache = Array.from(byPart.values()).sort((a, b) => a.partId.localeCompare(b.partId));
   return partsIndexCache;
 }
+
+export interface PartHistoryPoint {
+  month: string;
+  price: number;
+}
+
+let partHistoryCache: Map<string, PartHistoryPoint[]> | null = null;
+
+function buildPartHistoryCache(): Map<string, PartHistoryPoint[]> {
+  const priceRows = parseCsv<RawPriceRow>(PARTS_PRICES_CSV_PATH);
+  const byPart = new Map<string, PartHistoryPoint[]>();
+  for (const row of priceRows) {
+    const arr = byPart.get(row.part_id) ?? [];
+    arr.push({ month: row.month.slice(0, 7), price: Number(row.price) });
+    byPart.set(row.part_id, arr);
+  }
+  for (const arr of byPart.values()) arr.sort((a, b) => a.month.localeCompare(b.month));
+  return byPart;
+}
+
+/** Up to the last 12 months of price history for one part, sorted ascending. Empty for an unknown part id. */
+export function getPartHistory(partId: string): PartHistoryPoint[] {
+  if (!partHistoryCache) partHistoryCache = buildPartHistoryCache();
+  const rows = partHistoryCache.get(partId) ?? [];
+  return rows.slice(-12);
+}
+
+/** Percent change from current to forecast price, or null if either is missing or current is zero. */
+export function changePct(current: number | null, forecast: number | null): number | null {
+  if (current === null || forecast === null || current === 0) return null;
+  return ((forecast - current) / current) * 100;
+}

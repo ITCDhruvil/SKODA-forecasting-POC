@@ -16,6 +16,7 @@ import {
   IconGlobe,
   IconHelp,
 } from './Icons';
+import { AskRadarButton } from './AskRadarButton';
 import type { Insight } from '../types';
 
 export type View =
@@ -57,6 +58,8 @@ interface Props {
   onViewInsight: () => void;
   collapsed: boolean;
   onToggle: () => void;
+  onAskRadar: () => void;
+  radarOpen: boolean;
 }
 
 /**
@@ -72,6 +75,8 @@ export function Sidebar({
   onViewInsight,
   collapsed,
   onToggle,
+  onAskRadar,
+  radarOpen,
 }: Props) {
   const [insightOpen, setInsightOpen] = useState(false);
 
@@ -169,6 +174,10 @@ export function Sidebar({
       </nav>
 
       <div className="mt-auto overflow-y-auto">
+        <div className={clsx('pt-3', collapsed ? 'flex justify-center px-2' : 'px-3')}>
+          <AskRadarButton collapsed={collapsed} open={radarOpen} onClick={onAskRadar} />
+        </div>
+
         {!collapsed && (
           <div className="p-3">
             <div className={clsx('rounded-xl border', toneClasses)}>

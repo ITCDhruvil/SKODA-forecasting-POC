@@ -1,0 +1,23 @@
+{
+  "_comment": "Assumed mapping from a commodity/news driver to the part categories it affects. This is a generic assumption, not derived from a bill of materials — edit the category lists below to match your actual material composition.",
+  "steel": {
+    "categories": ["Body Stampings", "Chassis", "Fasteners", "Powertrain"],
+    "note": "Structural and stamped steel parts."
+  },
+  "aluminium": {
+    "categories": ["HVAC", "Powertrain", "Chassis", "Body Stampings"],
+    "note": "Lightweight and heat-exchange components."
+  },
+  "copper": {
+    "categories": ["Electrical", "Sensors", "HVAC"],
+    "note": "Wiring, connectors and heat-exchange components."
+  },
+  "plastics": {
+    "categories": ["Interior Trim", "Lighting"],
+    "note": "Moulded interior and lighting housings."
+  },
+  "electronics": {
+    "categories": ["Electrical", "Sensors", "Lighting"],
+    "note": "Electronic control units, sensors and lighting electronics."
+  }
+}

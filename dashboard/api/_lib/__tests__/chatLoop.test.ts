@@ -71,6 +71,40 @@ describe('runChatLoop', () => {
     expect(toolMessage?.content).not.toContain('/var/task');
   });
 
+  it('awaits an async handler and serializes its resolved value (regression: un-awaited handler used to serialize to "{}")', async () => {
+    const handler = vi.fn().mockResolvedValue({ alerts: [{ alertId: 'x', status: 'pending' }] });
+    const client = fakeClient([
+      { content: null, toolCalls: [{ id: 'call_1', name: 'getGeoHitlAlerts', arguments: '{}' }] },
+      { content: 'here are the alerts', toolCalls: [] },
+    ]);
+
+    const result = await runChatLoop(client, { getGeoHitlAlerts: handler }, baseMessages);
+
+    expect(result).toBe('here are the alerts');
+    const secondCallMessages = (client.createCompletion as any).mock.calls[1][0] as ChatMessage[];
+    const toolMessage = secondCallMessages.find((m) => m.role === 'tool');
+    expect(toolMessage?.content).not.toBe('{}');
+    expect(JSON.parse(toolMessage!.content as string)).toEqual({
+      alerts: [{ alertId: 'x', status: 'pending' }],
+    });
+  });
+
+  it('sanitizes a rejected async handler into a generic error instead of leaking the raw message', async () => {
+    const handler = vi.fn().mockRejectedValue(new Error('kv down'));
+    const client = fakeClient([
+      { content: null, toolCalls: [{ id: 'call_1', name: 'confirmGeoAlert', arguments: '{}' }] },
+      { content: 'ok', toolCalls: [] },
+    ]);
+
+    const result = await runChatLoop(client, { confirmGeoAlert: handler }, baseMessages);
+
+    expect(result).toBe('ok');
+    const secondCallMessages = (client.createCompletion as any).mock.calls[1][0] as ChatMessage[];
+    const toolMessage = secondCallMessages.find((m) => m.role === 'tool');
+    expect(toolMessage?.content).toBe(JSON.stringify({ error: 'data unavailable: confirmGeoAlert' }));
+    expect(toolMessage?.content).not.toContain('kv down');
+  });
+
   it('stops after MAX_ITERATIONS and returns a fallback message', async () => {
     const client: ChatClient = {
       createCompletion: vi
