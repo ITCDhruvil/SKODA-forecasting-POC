@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 import type { MaterialCost, MaterialPartRow, MaterialWalkId } from '../types';
 import { formatSigned, formatSpend } from '../lib/format';
@@ -16,6 +16,8 @@ import {
 
 interface Props {
   materialCost?: MaterialCost;
+  /** When set from the main forecast chart, open this walk and driver. */
+  focus?: { walk: MaterialWalkId; bridge: string | null } | null;
 }
 
 const KPI_HELP = {
@@ -52,11 +54,17 @@ const WALK_META: Record<
 /**
  * Material Cost Dashboard — price tracker, aligned cost walks, part drill-down.
  */
-export function MaterialCostPanel({ materialCost }: Props) {
-  const [bridgeFilter, setBridgeFilter] = useState<string | null>(null);
+export function MaterialCostPanel({ materialCost, focus }: Props) {
+  const [bridgeFilter, setBridgeFilter] = useState<string | null>(focus?.bridge ?? null);
   const [filters, setFilters] = useState<HierarchyFilterState>(EMPTY_HIERARCHY_FILTERS);
-  const [walk, setWalk] = useState<MaterialWalkId>('bg_to_fc');
+  const [walk, setWalk] = useState<MaterialWalkId>(focus?.walk ?? 'bg_to_fc');
   const [selectedPart, setSelectedPart] = useState<MaterialPartRow | null>(null);
+
+  useEffect(() => {
+    if (!focus) return;
+    setWalk(focus.walk);
+    setBridgeFilter(focus.bridge);
+  }, [focus]);
 
   const view = useMemo(() => {
     if (!materialCost?.available) return null;

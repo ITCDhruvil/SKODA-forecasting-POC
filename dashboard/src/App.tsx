@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { DashboardData } from './types';
+import type { DashboardData, MaterialPartRow, MaterialWalkId } from './types';
 import {
   Sidebar,
   SIDEBAR_WIDTH,
@@ -12,6 +12,7 @@ import { CategoryDonut } from './components/CategoryDonut';
 import { TopPartsTable } from './components/TopPartsTable';
 import { HorizonChart } from './components/HorizonChart';
 import { AlertsStrip } from './components/AlertsStrip';
+import { BuyerBrief } from './components/BuyerBrief';
 import { ValidationPanel } from './components/ValidationPanel';
 import { FutureTestPanel } from './components/FutureTestPanel';
 import { HierarchyPanel } from './components/HierarchyPanel';
@@ -26,7 +27,7 @@ import { ModelComparison } from './components/ModelComparison';
 import { MacroChart } from './components/MacroChart';
 import { OpsStrip } from './components/OpsStrip';
 import { ChatWidget } from './components/ChatWidget';
-import { MaterialCostPanel } from './material-cost';
+import { CostWalkWaterfall, MaterialCostPanel, PartDetailDrawer } from './material-cost';
 import { DateRangeControl } from './components/DateRangeControl';
 import { IconExport } from './components/Icons';
 import { setCurrencySymbol } from './lib/format';
@@ -98,6 +99,11 @@ export default function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>('dashboard');
+  const [materialFocus, setMaterialFocus] = useState<{
+    walk: MaterialWalkId;
+    bridge: string | null;
+  } | null>(null);
+  const [selectedMaterialPart, setSelectedMaterialPart] = useState<MaterialPartRow | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [parametersOpen, setParametersOpen] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
@@ -156,6 +162,11 @@ export default function App() {
   }
 
   const { title, subtitle } = TITLES[view];
+
+  const openMaterialPart = (partId: string) => {
+    const part = data.materialCost?.parts?.find((row) => row.partId === partId) ?? null;
+    setSelectedMaterialPart(part);
+  };
 
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
 
@@ -225,22 +236,54 @@ export default function App() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
-                <PriceForecastChart
-                  series={filtered.priceSeries}
-                  horizonMonths={data.meta.forecastHorizon}
+              {data.materialCost?.parts && data.materialCost.milestones?.forecast.label && (
+                <BuyerBrief
+                  parts={data.materialCost.parts}
+                  forecastLabel={data.materialCost.milestones.forecast.label}
+                  sopSpend={data.materialCost.summary?.sopSpend}
+                  forecastSpend={data.materialCost.summary?.forecastSpend}
+                  onOpenPart={openMaterialPart}
                 />
-                <CategoryDonut categories={data.categories} />
-              </div>
+              )}
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
-                <TopPartsTable parts={data.topParts} limit={7} />
-                <HorizonChart horizon={filtered.horizon} />
+                <div className="flex flex-col gap-4">
+                  <PriceForecastChart
+                    series={filtered.priceSeries}
+                    horizonMonths={data.meta.forecastHorizon}
+                    materialCost={data.materialCost}
+                    unitBasket={data.kpis.find((k) => k.id === 'forecast')?.value}
+                  />
+                  {data.materialCost?.waterfallSopToFc && (
+                    <CostWalkWaterfall
+                      steps={data.materialCost.waterfallSopToFc}
+                      activeId={null}
+                      onSelect={(id) => {
+                        setMaterialFocus({ walk: 'sop_to_fc', bridge: id });
+                        setView('material');
+                      }}
+                      title="Why the forecast moved"
+                      subtitle="SOP to the forecast month. Click a reason to see those parts."
+                    />
+                  )}
+                </div>
+                <div className="flex h-full min-h-0 flex-col gap-4">
+                  <CategoryDonut categories={data.categories} />
+                  <div className="min-h-0 flex-1">
+                    <HorizonChart horizon={filtered.horizon} fill />
+                  </div>
+                </div>
               </div>
+
+              <TopPartsTable parts={data.topParts} limit={7} onSelect={openMaterialPart} />
 
               <RiskStrip risk={data.riskConcentration} />
 
-              <AlertsStrip alerts={data.alerts} onSeeAll={() => setView('alerts')} />
+              <AlertsStrip
+                alerts={data.alerts}
+                onSeeAll={() => setView('alerts')}
+                onOpenPart={openMaterialPart}
+              />
             </>
           )}
 
@@ -250,6 +293,8 @@ export default function App() {
               <PriceForecastChart
                 series={filtered.priceSeries}
                 horizonMonths={data.meta.forecastHorizon}
+                materialCost={data.materialCost}
+                unitBasket={data.kpis.find((k) => k.id === 'forecast')?.value}
               />
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <HorizonChart horizon={filtered.horizon} />
@@ -268,6 +313,7 @@ export default function App() {
               <DrillDownTree
                 tree={data.tree}
                 horizonMonths={data.meta.forecastHorizon}
+                onOpenPart={openMaterialPart}
               />
               <HierarchyPanel
                 hierarchy={data.hierarchy ?? data.fxAnalysis?.rollups}
@@ -277,7 +323,9 @@ export default function App() {
           )}
 
           {/* ---- Material Cost ------------------------------------------- */}
-          {view === 'material' && <MaterialCostPanel materialCost={filtered.materialCost} />}
+          {view === 'material' && (
+            <MaterialCostPanel materialCost={filtered.materialCost} focus={materialFocus} />
+          )}
 
           {/* ---- Technical FAQ ------------------------------------------- */}
           {view === 'faq' && <FaqPanel data={data} />}
@@ -289,7 +337,7 @@ export default function App() {
           {view === 'geo' && <GeoScenarioPanel geo={data.geoAnalysis} />}
 
           {/* ---- Parts --------------------------------------------------- */}
-          {view === 'parts' && <TopPartsTable parts={data.topParts} />}
+          {view === 'parts' && <TopPartsTable parts={data.topParts} onSelect={openMaterialPart} />}
 
           {/* ---- Simulated-future test ----------------------------------- */}
           {view === 'futuretest' && <FutureTestPanel futureTest={data.futureTest} />}
@@ -306,7 +354,9 @@ export default function App() {
           )}
 
           {/* ---- Alerts -------------------------------------------------- */}
-          {view === 'alerts' && <AlertsStrip alerts={data.alerts} />}
+          {view === 'alerts' && (
+            <AlertsStrip alerts={data.alerts} onOpenPart={openMaterialPart} />
+          )}
 
           {/* ---- Data source --------------------------------------------- */}
           {view === 'data' && <DataSourcePanel data={data} />}
@@ -317,6 +367,13 @@ export default function App() {
         <ParametersModal
           catalogue={data.parameterCatalogue}
           onClose={() => setParametersOpen(false)}
+        />
+      )}
+
+      {selectedMaterialPart && (
+        <PartDetailDrawer
+          part={selectedMaterialPart}
+          onClose={() => setSelectedMaterialPart(null)}
         />
       )}
 

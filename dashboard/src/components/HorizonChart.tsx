@@ -19,7 +19,14 @@ import { formatAxisCurrency, formatCurrency } from '../lib/format';
  * visible rather than implied. A bar chart of point forecasts alone would
  * suggest more precision than the model has.
  */
-export function HorizonChart({ horizon }: { horizon: HorizonBar[] }) {
+export function HorizonChart({
+  horizon,
+  fill = false,
+}: {
+  horizon: HorizonBar[];
+  /** Stretch the chart so the card can match a taller neighbour. */
+  fill?: boolean;
+}) {
   if (horizon.length === 0) {
     return (
       <div className="card p-6">
@@ -41,7 +48,7 @@ export function HorizonChart({ horizon }: { horizon: HorizonBar[] }) {
   }));
 
   return (
-    <div className="card">
+    <div className={fill ? 'card flex h-full min-h-0 flex-col' : 'card'}>
       <div className="card-header">
         <div>
           <h3 className="card-title">Forecast by Time Horizon</h3>
@@ -51,8 +58,8 @@ export function HorizonChart({ horizon }: { horizon: HorizonBar[] }) {
         </div>
       </div>
 
-      <div className="px-2 pb-4">
-        <ResponsiveContainer width="100%" height={264}>
+      <div className={fill ? 'min-h-[264px] flex-1 px-2 pb-4' : 'px-2 pb-4'}>
+        <ResponsiveContainer width="100%" height={fill ? '100%' : 264}>
           <BarChart data={data} margin={{ top: 18, right: 16, left: 4, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
             <XAxis

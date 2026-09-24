@@ -23,9 +23,11 @@ import { IconChevronRight, IconAlert } from './Icons';
 export function DrillDownTree({
   tree,
   horizonMonths,
+  onOpenPart,
 }: {
   tree?: TreeProject[];
   horizonMonths: number;
+  onOpenPart?: (partId: string) => void;
 }) {
   const [openProjects, setOpenProjects] = useState<Set<string>>(new Set());
   const [openVendors, setOpenVendors] = useState<Set<string>>(new Set());
@@ -114,9 +116,8 @@ export function DrillDownTree({
               Project &rarr; Vendor &rarr; Category &rarr; Part &rarr; Material
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Click any row to expand. Material rows use Material Cost figures
-              (Budget → Forecast), which differ from the part&apos;s SOP → horizon
-              prices.
+              Click a row to expand. Click a part name for its price path and forecast
+              spend drivers.
             </p>
           </div>
         </div>
@@ -206,6 +207,11 @@ export function DrillDownTree({
                                           open={partOpen}
                                           onToggle={() =>
                                             toggle(openParts, partKey, setOpenParts)
+                                          }
+                                          onOpen={
+                                            onOpenPart
+                                              ? () => onOpenPart(part.partId)
+                                              : undefined
                                           }
                                         />
                                       );
@@ -322,10 +328,12 @@ function PartRow({
   part,
   open,
   onToggle,
+  onOpen,
 }: {
   part: TreePart;
   open: boolean;
   onToggle: () => void;
+  onOpen?: () => void;
 }) {
   const band =
     part.lower !== null && part.upper !== null
@@ -352,23 +360,19 @@ function PartRow({
         )}
         style={{ paddingLeft: 88 }}
       >
-        <button
-          type="button"
-          onClick={expandable ? onToggle : undefined}
-          className={clsx(
-            'flex min-w-0 flex-col text-left',
-            expandable ? 'cursor-pointer' : 'cursor-default',
-          )}
-          disabled={!expandable}
-        >
+        <div className="flex min-w-0 flex-col text-left">
           <span className="flex items-center gap-2">
             {expandable ? (
-              <IconChevronRight
-                className={clsx(
-                  'h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform',
-                  open && 'rotate-90',
-                )}
-              />
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label={open ? 'Collapse part' : 'Expand part'}
+                className="shrink-0 text-slate-400"
+              >
+                <IconChevronRight
+                  className={clsx('h-3.5 w-3.5 transition-transform', open && 'rotate-90')}
+                />
+              </button>
             ) : (
               <span className="w-3.5 shrink-0" />
             )}
@@ -390,11 +394,24 @@ function PartRow({
               </span>
             )}
           </span>
-          <span className="truncate pl-[22px] text-slate-600">{part.partName}</span>
+          {onOpen ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpen();
+              }}
+              className="truncate pl-[22px] text-left text-slate-700 underline-offset-2 hover:text-slate-900 hover:underline"
+            >
+              {part.partName}
+            </button>
+          ) : (
+            <span className="truncate pl-[22px] text-slate-600">{part.partName}</span>
+          )}
           {band && (
             <span className="pl-[22px] text-[10px] text-slate-400">80% interval: {band}</span>
           )}
-        </button>
+        </div>
         <span className="w-24 text-right tabular-nums text-slate-600">
           {formatCurrency(part.currentPrice, false)}
         </span>

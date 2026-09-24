@@ -10,19 +10,32 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { PricePoint } from '../types';
-import { formatAxisCurrency, formatCurrency } from '../lib/format';
+import type { MaterialCost, PricePoint } from '../types';
+import { formatAxisCurrency, formatCurrency, formatSpend } from '../lib/format';
 
 interface Props {
   series: PricePoint[];
   horizonMonths: number;
+  materialCost?: MaterialCost;
+  /** Pipeline forecast basket (sum of unit prices). Stays the basket even when the chart is a mean. */
+  unitBasket?: number | null;
 }
 
 /**
  * Mean basket price: observed history, the model's fit over the held-out
  * window, and the forward forecast (no prediction band).
  */
-export function PriceForecastChart({ series, horizonMonths }: Props) {
+export function PriceForecastChart({ series, horizonMonths, materialCost, unitBasket }: Props) {
+  const milestones = materialCost?.milestones;
+  const summary = materialCost?.summary;
+
+  const labelFor = (month?: string) =>
+    month ? series.find((p) => p.month === month)?.label : undefined;
+
+  const nominationLabel = labelFor(milestones?.nomination.month);
+  const sopLabel = labelFor(milestones?.sop.month);
+  const forecastLabel = labelFor(milestones?.forecast.month) ?? milestones?.forecast.label;
+
   const lastActual = useMemo(
     () => [...series].reverse().find((p) => p.actual !== null)?.label,
     [series],
@@ -52,12 +65,28 @@ export function PriceForecastChart({ series, horizonMonths }: Props) {
     <div className="card">
       <div className="card-header">
         <div>
-          <h3 className="card-title">Mean Price: Actual vs Forecast</h3>
+          <h3 className="card-title">Price forecast</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Across all parts &middot; {horizonMonths}-month forward forecast
+            Mean unit price · Nomination and SOP are history · the forecast is the next{' '}
+            {horizonMonths} months
           </p>
         </div>
       </div>
+      {forecastLabel && (unitBasket != null || summary?.forecastSpend != null) && (
+        <div className="flex flex-wrap gap-x-8 gap-y-1 px-5 pb-2 text-[13px]">
+          <span className="text-slate-500">
+            Forecast · {forecastLabel}
+          </span>
+          <span className="tabular-nums text-slate-900">
+            {unitBasket != null ? formatSpend(unitBasket) : '--'}
+            <span className="ml-1.5 font-normal text-slate-400">unit basket</span>
+          </span>
+          <span className="tabular-nums text-slate-900">
+            {summary?.forecastSpend != null ? formatSpend(summary.forecastSpend) : '--'}
+            <span className="ml-1.5 font-normal text-slate-400">spend</span>
+          </span>
+        </div>
+      )}
 
       <div className="px-2 pb-4">
         <ResponsiveContainer width="100%" height={278}>
@@ -94,17 +123,41 @@ export function PriceForecastChart({ series, horizonMonths }: Props) {
             />
             <Legend iconType="line" wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
 
+            {nominationLabel && (
+              <ReferenceLine
+                x={nominationLabel}
+                stroke="#94a3b8"
+                strokeDasharray="3 3"
+                label={{ value: 'Nomination', position: 'insideTopLeft', fontSize: 10, fill: '#64748b' }}
+              />
+            )}
+            {sopLabel && sopLabel !== lastActual && (
+              <ReferenceLine
+                x={sopLabel}
+                stroke="#64748b"
+                strokeDasharray="3 3"
+                label={{ value: 'SOP', position: 'insideTop', fontSize: 10, fill: '#64748b' }}
+              />
+            )}
             {lastActual && (
               <ReferenceLine
                 x={lastActual}
                 stroke="#94a3b8"
                 strokeDasharray="3 3"
                 label={{
-                  value: 'today',
+                  value: sopLabel === lastActual ? 'SOP' : 'today',
                   position: 'insideTopRight',
                   fontSize: 10,
-                  fill: '#94a3b8',
+                  fill: '#64748b',
                 }}
+              />
+            )}
+            {forecastLabel && series.some((p) => p.label === forecastLabel) && (
+              <ReferenceLine
+                x={forecastLabel}
+                stroke="#d97706"
+                strokeDasharray="3 3"
+                label={{ value: 'Forecast', position: 'insideBottomRight', fontSize: 10, fill: '#b45309' }}
               />
             )}
 

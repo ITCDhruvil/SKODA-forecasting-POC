@@ -10,7 +10,15 @@ const SEVERITY: Record<AlertRow['severity'], string> = {
 
 const PREVIEW_COUNT = 3;
 
-export function AlertsStrip({ alerts, onSeeAll }: { alerts: AlertRow[]; onSeeAll?: () => void }) {
+export function AlertsStrip({
+  alerts,
+  onSeeAll,
+  onOpenPart,
+}: {
+  alerts: AlertRow[];
+  onSeeAll?: () => void;
+  onOpenPart?: (partId: string) => void;
+}) {
   const isPreview = Boolean(onSeeAll);
   const visible = isPreview ? alerts.slice(0, PREVIEW_COUNT) : alerts;
   const remaining = Math.max(0, alerts.length - PREVIEW_COUNT);
@@ -31,7 +39,7 @@ export function AlertsStrip({ alerts, onSeeAll }: { alerts: AlertRow[]; onSeeAll
             <AlertCell
               key={`${alert.partId}-${alert.message}`}
               alert={alert}
-              onView={onSeeAll}
+              onOpen={onOpenPart ? () => onOpenPart(alert.partId) : undefined}
               className="sm:flex-1"
             />
           ))}
@@ -58,7 +66,11 @@ export function AlertsStrip({ alerts, onSeeAll }: { alerts: AlertRow[]; onSeeAll
       ) : (
         <div className="divide-y divide-slate-200 border-t border-slate-200">
           {visible.map((alert) => (
-            <AlertCell key={`${alert.partId}-${alert.message}`} alert={alert} />
+            <AlertCell
+              key={`${alert.partId}-${alert.message}`}
+              alert={alert}
+              onOpen={onOpenPart ? () => onOpenPart(alert.partId) : undefined}
+            />
           ))}
         </div>
       )}
@@ -68,11 +80,11 @@ export function AlertsStrip({ alerts, onSeeAll }: { alerts: AlertRow[]; onSeeAll
 
 function AlertCell({
   alert,
-  onView,
+  onOpen,
   className,
 }: {
   alert: AlertRow;
-  onView?: () => void;
+  onOpen?: () => void;
   className?: string;
 }) {
   return (
@@ -86,13 +98,23 @@ function AlertCell({
         <IconAlert className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-semibold text-slate-900">{alert.title}</div>
+        {onOpen ? (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="truncate text-left text-[13px] font-semibold text-slate-900 hover:underline"
+          >
+            {alert.title}
+          </button>
+        ) : (
+          <div className="truncate text-[13px] font-semibold text-slate-900">{alert.title}</div>
+        )}
         <p className="mt-0.5 truncate text-[12px] text-slate-500">{alert.message}</p>
       </div>
-      {onView && (
+      {onOpen && (
         <button
           type="button"
-          onClick={onView}
+          onClick={onOpen}
           className="shrink-0 text-[12px] font-medium text-brand-600 hover:underline"
         >
           View

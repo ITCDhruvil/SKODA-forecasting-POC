@@ -51,6 +51,7 @@ export function TopPartsTable({ parts, limit, onSelect }: Props) {
           <h3 className="card-title">Largest Forecast Price Moves</h3>
           <p className="mt-0.5 text-xs text-slate-500">
             Ranked by absolute change over the forecast horizon
+            {onSelect ? ' · click a row for the price path' : ''}
           </p>
         </div>
       </div>
