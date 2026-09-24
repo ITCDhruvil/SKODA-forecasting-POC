@@ -106,6 +106,20 @@ sku:
   purchase_orders_filename: purchase_orders.csv
   panel_filename: parts_prices.csv
 
+# --- Material Cost Dashboard -----------------------------------------------
+# Commercial baselines (optional): drop data/raw/commercial_baselines.csv
+# (see commercial_baselines.example.csv). When matched, baselineMode becomes
+# "file" and the demo banner soft-gates.
+# Spend basis MUST match the main dashboard (basket / hierarchy / tree):
+# sum of unit prices. Set volume_weight to annual_part_volume only when you
+# intentionally want qty x price annual spend (will not match KPI basket).
+material_cost:
+  commercial_filename: commercial_baselines.csv
+  nomination_month: null          # optional YYYY-MM override; else panel min / file
+  sop_month: null                 # optional YYYY-MM override; else panel max / file
+  volume_weight: none             # none | annual_part_volume | project_volume
+  require_commercial: false
+
 # --- Synthetic SKU panel (used when sku.mode is synthetic / auto without PO) -
 generation:
   # 6 projects x 10 categories = 60 combinations; ~8 parts each. Enough that a

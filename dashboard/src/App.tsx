@@ -24,11 +24,18 @@ import { ParametersModal, ParametersButton } from './components/ParametersModal'
 import { RiskStrip } from './components/RiskStrip';
 import { ModelComparison } from './components/ModelComparison';
 import { MacroChart } from './components/MacroChart';
-import { ProvenanceBanner } from './components/ProvenanceBanner';
 import { OpsStrip } from './components/OpsStrip';
 import { ChatWidget } from './components/ChatWidget';
-import { IconCalendar, IconExport } from './components/Icons';
-import { monthLabel, setCurrencySymbol } from './lib/format';
+import { MaterialCostPanel } from './material-cost';
+import { DateRangeControl } from './components/DateRangeControl';
+import { IconExport } from './components/Icons';
+import { setCurrencySymbol } from './lib/format';
+import {
+  availableMonthExtent,
+  dateRangeToMonthKeys,
+  filterDashboardData,
+  type MonthRange,
+} from './lib/filterDashboardData';
 
 const TITLES: Record<View, { title: string; subtitle: string }> = {
   dashboard: {
@@ -43,6 +50,11 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
     title: 'Hierarchy Drill-down',
     subtitle:
       'Project → vendor → category → part. Expand any row to see current price, forecast, and how much to trust it.',
+  },
+  material: {
+    title: 'Material Cost Dashboard',
+    subtitle:
+      'Track part price from Nomination to SOP, and walk Budget (BG) to Forecast (FC) with drill-down.',
   },
   faq: {
     title: 'Technical FAQ',
@@ -89,6 +101,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [parametersOpen, setParametersOpen] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
+  const [monthRange, setMonthRange] = useState<MonthRange | null>(null);
   const closeRadar = useCallback(() => setRadarOpen(false), []);
 
   useEffect(() => {
@@ -101,6 +114,8 @@ export default function App() {
         // Symbol must be set before any component formats a value.
         setCurrencySymbol(payload.meta?.currencySymbol ?? '₹');
         setData(payload);
+        const [start, end] = availableMonthExtent(payload);
+        setMonthRange({ start, end });
       })
       .catch((err: Error) =>
         setError(
@@ -109,11 +124,17 @@ export default function App() {
       );
   }, []);
 
-  const historyLabel = useMemo(() => {
-    if (!data) return '';
-    const [from, to] = data.meta.historyRange;
-    return `${monthLabel(from)} - ${monthLabel(to)}`;
-  }, [data]);
+  const availableRange = useMemo(
+    () => (data ? availableMonthExtent(data) : (['', ''] as [string, string])),
+    [data],
+  );
+
+  const filtered = useMemo(() => {
+    if (!data || !monthRange) return data;
+    const [availStart, availEnd] = availableRange;
+    if (monthRange.start === availStart && monthRange.end === availEnd) return data;
+    return filterDashboardData(data, monthRange);
+  }, [data, monthRange, availableRange]);
 
   if (error) {
     return (
@@ -126,7 +147,7 @@ export default function App() {
     );
   }
 
-  if (!data) {
+  if (!data || !filtered) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-sm text-slate-500">Loading forecast data...</div>
@@ -143,10 +164,8 @@ export default function App() {
       <Sidebar
         view={view}
         onChange={setView}
-        insight={data.insight}
         alertCount={data.alerts.length}
         geoAlertCount={data.geoAnalysis?.hitl?.alerts?.length ?? 0}
-        onViewInsight={() => setView('validation')}
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((c) => !c)}
         onAskRadar={() => setRadarOpen((open) => !open)}
@@ -167,10 +186,13 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-700">
-              <IconCalendar className="h-4 w-4 text-slate-400" />
-              {historyLabel}
-            </div>
+            <DateRangeControl
+              historyRange={availableRange}
+              onRangeChange={(range) => {
+                const keys = dateRangeToMonthKeys(range);
+                if (keys) setMonthRange(keys);
+              }}
+            />
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-700">
               {data.meta.nParts} parts
             </div>
@@ -190,7 +212,6 @@ export default function App() {
         </header>
 
         <div className="flex flex-col gap-4 px-8 pb-10">
-          <ProvenanceBanner data={data} />
           <div className="mt-3">
             <OpsStrip data={data} />
           </div>
@@ -199,14 +220,14 @@ export default function App() {
           {view === 'dashboard' && (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {data.kpis.map((kpi) => (
+                {filtered.kpis.map((kpi) => (
                   <KpiCard key={kpi.id} kpi={kpi} />
                 ))}
               </div>
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
                 <PriceForecastChart
-                  series={data.priceSeries}
+                  series={filtered.priceSeries}
                   horizonMonths={data.meta.forecastHorizon}
                 />
                 <CategoryDonut categories={data.categories} />
@@ -214,7 +235,7 @@ export default function App() {
 
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.55fr_1fr]">
                 <TopPartsTable parts={data.topParts} limit={7} />
-                <HorizonChart horizon={data.horizon} />
+                <HorizonChart horizon={filtered.horizon} />
               </div>
 
               <RiskStrip risk={data.riskConcentration} />
@@ -227,11 +248,11 @@ export default function App() {
           {view === 'forecast' && (
             <>
               <PriceForecastChart
-                series={data.priceSeries}
+                series={filtered.priceSeries}
                 horizonMonths={data.meta.forecastHorizon}
               />
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <HorizonChart horizon={data.horizon} />
+                <HorizonChart horizon={filtered.horizon} />
                 <CategoryDonut categories={data.categories} />
               </div>
               <ModelComparison
@@ -255,6 +276,9 @@ export default function App() {
             </>
           )}
 
+          {/* ---- Material Cost ------------------------------------------- */}
+          {view === 'material' && <MaterialCostPanel materialCost={filtered.materialCost} />}
+
           {/* ---- Technical FAQ ------------------------------------------- */}
           {view === 'faq' && <FaqPanel data={data} />}
 
@@ -274,7 +298,10 @@ export default function App() {
           {view === 'validation' && (
             <>
               <ValidationPanel validation={data.validation} />
-              <MacroChart series={data.macroSeries} seriesId={data.provenance.macroSeriesId} />
+              <MacroChart
+                series={filtered.macroSeries}
+                seriesId={data.provenance.macroSeriesId}
+              />
             </>
           )}
 

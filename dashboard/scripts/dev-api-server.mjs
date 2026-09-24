@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './load-env.mjs';
 import http from 'node:http';
 
 const PORT = process.env.API_PORT || 3001;

@@ -1,5 +1,4 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
 import clsx from 'clsx';
 import {
   IconGrid,
@@ -15,14 +14,15 @@ import {
   IconCurrency,
   IconGlobe,
   IconHelp,
+  IconWaterfall,
 } from './Icons';
 import { AskRadarButton } from './AskRadarButton';
-import type { Insight } from '../types';
 
 export type View =
   | 'dashboard'
   | 'forecast'
   | 'hierarchy'
+  | 'material'
   | 'fx'
   | 'geo'
   | 'parts'
@@ -39,6 +39,7 @@ const NAV: { id: View; label: string; icon: (p: { className?: string }) => React
   { id: 'dashboard', label: 'Dashboard', icon: IconGrid },
   { id: 'forecast', label: 'Forecast', icon: IconChart },
   { id: 'hierarchy', label: 'Hierarchy', icon: IconLayers },
+  { id: 'material', label: 'Material Cost', icon: IconWaterfall },
   { id: 'fx', label: 'FX Impact', icon: IconCurrency },
   { id: 'geo', label: 'Geo Risk', icon: IconGlobe },
   { id: 'parts', label: 'Parts', icon: IconPackage },
@@ -52,10 +53,8 @@ const NAV: { id: View; label: string; icon: (p: { className?: string }) => React
 interface Props {
   view: View;
   onChange: (view: View) => void;
-  insight: Insight;
   alertCount: number;
   geoAlertCount?: number;
-  onViewInsight: () => void;
   collapsed: boolean;
   onToggle: () => void;
   onAskRadar: () => void;
@@ -69,31 +68,13 @@ interface Props {
 export function Sidebar({
   view,
   onChange,
-  insight,
   alertCount,
   geoAlertCount = 0,
-  onViewInsight,
   collapsed,
   onToggle,
   onAskRadar,
   radarOpen,
 }: Props) {
-  const [insightOpen, setInsightOpen] = useState(false);
-
-  const toneClasses =
-    insight.tone === 'warning'
-      ? 'border-amber-200 bg-amber-50'
-      : insight.tone === 'positive'
-        ? 'border-emerald-200 bg-emerald-50'
-        : 'border-slate-200 bg-slate-50';
-
-  const toneText =
-    insight.tone === 'warning'
-      ? 'text-amber-900'
-      : insight.tone === 'positive'
-        ? 'text-emerald-900'
-        : 'text-slate-800';
-
   return (
     <aside
       className={clsx(
@@ -174,47 +155,9 @@ export function Sidebar({
       </nav>
 
       <div className="mt-auto overflow-y-auto">
-        <div className={clsx('pt-3', collapsed ? 'flex justify-center px-2' : 'px-3')}>
+        <div className={clsx('pt-3 pb-3', collapsed ? 'flex justify-center px-2' : 'px-3')}>
           <AskRadarButton collapsed={collapsed} open={radarOpen} onClick={onAskRadar} />
         </div>
-
-        {!collapsed && (
-          <div className="p-3">
-            <div className={clsx('rounded-xl border', toneClasses)}>
-              <button
-                type="button"
-                onClick={() => setInsightOpen((open) => !open)}
-                className={clsx(
-                  'flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold',
-                  toneText,
-                )}
-                aria-expanded={insightOpen}
-              >
-                <IconTarget className="h-3.5 w-3.5 shrink-0" />
-                <span className="min-w-0 flex-1 truncate">Real-Data Finding</span>
-                {insightOpen ? (
-                  <IconChevronLeft className="h-3.5 w-3.5 shrink-0 -rotate-90" />
-                ) : (
-                  <IconChevronRight className="h-3.5 w-3.5 shrink-0 rotate-90" />
-                )}
-              </button>
-              {insightOpen && (
-                <div className="border-t border-black/5 px-3 pb-2.5 pt-2">
-                  <p className={clsx('text-[12px] font-semibold leading-snug', toneText)}>
-                    {insight.headline}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onViewInsight}
-                    className={clsx('mt-1.5 text-[11px] font-semibold hover:underline', toneText)}
-                  >
-                    View evidence &rarr;
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         <div
           className={clsx(

@@ -11,7 +11,7 @@ from __future__ import annotations
 import dataclasses
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -234,6 +234,17 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
+class MaterialCostConfig:
+    """Material Cost Dashboard baselines and spend basis."""
+
+    commercial_filename: str
+    nomination_month: Optional[str]
+    sop_month: Optional[str]
+    volume_weight: str  # annual_part_volume | project_volume | none
+    require_commercial: bool
+
+
+@dataclass(frozen=True)
 class Config:
     """Root configuration object handed to every pipeline stage."""
 
@@ -250,6 +261,7 @@ class Config:
     ops: OpsConfig
     visualization: VisualizationConfig
     logging: LoggingConfig
+    material_cost: MaterialCostConfig
     raw: Dict[str, Any] = field(default_factory=dict, repr=False)
 
 
@@ -330,6 +342,34 @@ def load_config(path: str | Path) -> Config:
     )
     ops_raw["feature_selection"] = fs_cfg
 
+    mc_defaults = {
+        "commercial_filename": "commercial_baselines.csv",
+        "nomination_month": None,
+        "sop_month": None,
+        "volume_weight": "none",
+        "require_commercial": False,
+    }
+    mc_raw = dict(mc_defaults)
+    mc_raw.update(raw.get("material_cost") or {})
+    # YAML null → None; blank string → None for months
+    for month_key in ("nomination_month", "sop_month"):
+        val = mc_raw.get(month_key)
+        if val is None or (isinstance(val, str) and not val.strip()):
+            mc_raw[month_key] = None
+        else:
+            mc_raw[month_key] = str(val).strip()
+    mc_raw["require_commercial"] = bool(mc_raw.get("require_commercial", False))
+    mc_raw["volume_weight"] = str(mc_raw.get("volume_weight") or "none")
+    mc_raw["commercial_filename"] = str(
+        mc_raw.get("commercial_filename") or "commercial_baselines.csv"
+    )
+    unknown_mc = set(mc_raw) - {f.name for f in dataclasses.fields(MaterialCostConfig)}
+    if unknown_mc:
+        raise ConfigError(
+            f"config.yaml section 'material_cost' has unknown key(s): {sorted(unknown_mc)}"
+        )
+    material_cost_cfg = MaterialCostConfig(**mc_raw)
+
     config = Config(
         project=_build(ProjectConfig, _require(raw, "project"), "project"),
         paths=paths,
@@ -348,6 +388,7 @@ def load_config(path: str | Path) -> Config:
             VisualizationConfig, _require(raw, "visualization"), "visualization"
         ),
         logging=_build(LoggingConfig, _require(raw, "logging"), "logging"),
+        material_cost=material_cost_cfg,
         raw=raw,
     )
 
@@ -428,6 +469,18 @@ def _validate(config: Config) -> None:
         raise ConfigError(
             f"modeling.xgboost_target_mode must be 'level' or 'log_return', "
             f"got '{mod.xgboost_target_mode}'"
+        )
+
+    mc = config.material_cost
+    if mc.volume_weight not in (
+        "annual_part_volume",
+        "project_volume",
+        "none",
+        "unit",
+    ):
+        raise ConfigError(
+            "material_cost.volume_weight must be one of "
+            "annual_part_volume | project_volume | none"
         )
 
     if not 0.0 < config.evaluation.prediction_interval < 1.0:

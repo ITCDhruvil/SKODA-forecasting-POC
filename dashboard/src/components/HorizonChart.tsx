@@ -20,6 +20,17 @@ import { formatAxisCurrency, formatCurrency } from '../lib/format';
  * suggest more precision than the model has.
  */
 export function HorizonChart({ horizon }: { horizon: HorizonBar[] }) {
+  if (horizon.length === 0) {
+    return (
+      <div className="card p-6">
+        <h3 className="card-title">Forecast by Time Horizon</h3>
+        <p className="mt-2 text-sm text-slate-500">
+          No forecast months fall inside the selected date range.
+        </p>
+      </div>
+    );
+  }
+
   const axisMax = Math.max(...horizon.map((bar) => bar.upper ?? bar.value), 0);
   const data = horizon.map((bar) => ({
     ...bar,

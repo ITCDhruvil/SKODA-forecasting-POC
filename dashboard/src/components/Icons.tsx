@@ -129,6 +129,19 @@ export const IconChevronRight = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const IconChevronDown = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+export const IconSearch = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+
 export const IconInfo = ({ className = base }: IconProps) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="9" />
@@ -163,6 +176,17 @@ export const IconHelp = ({ className = base }: IconProps) => (
     <circle cx="12" cy="12" r="9" />
     <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.9-.9 1.5v.4" />
     <path d="M12 17h.01" />
+  </svg>
+);
+
+/** Waterfall / cost-walk glyph for Material Cost. */
+export const IconWaterfall = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M4 20V10" />
+    <path d="M9 20V6" />
+    <path d="M14 20v-7" />
+    <path d="M19 20V4" />
+    <path d="M4 10h5M9 6h5M14 13h5" strokeLinecap="round" />
   </svg>
 );
 

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatCurrency } from '../format';
+import { formatAxisCurrency, formatCurrency, formatSpend } from '../format';
 
 describe('formatCurrency', () => {
-  it('renders compact/headline values with Indian digit grouping and no M/K suffix', () => {
-    expect(formatCurrency(1760000)).toBe('₹17,60,000');
+  it('uses Lakh short form for compact headline values', () => {
+    expect(formatCurrency(1760000)).toBe('₹17.6 L');
   });
 
-  it('renders a lakh-level compact value correctly', () => {
-    expect(formatCurrency(282800)).toBe('₹2,82,800');
+  it('uses Lakh short form around a few lakhs', () => {
+    expect(formatCurrency(282800)).toBe('₹2.8 L');
   });
 
   it('keeps precise 2-decimal formatting when compact is false', () => {
@@ -26,11 +26,24 @@ describe('formatCurrency', () => {
     expect(formatCurrency(NaN)).toBe('--');
   });
 
-  it('applies crore-level Indian digit grouping, not just lakh-level', () => {
-    expect(formatCurrency(12345678)).toBe('₹1,23,45,678');
+  it('uses Crore short form above 1 Cr', () => {
+    expect(formatCurrency(12345678)).toBe('₹1.23 Cr');
   });
 
-  it('rounds compact values to the nearest whole rupee', () => {
-    expect(formatCurrency(1760000.6)).toBe('₹17,60,001');
+  it('rounds compact lakh values', () => {
+    expect(formatCurrency(1760000.6)).toBe('₹17.6 L');
+  });
+});
+
+describe('formatSpend', () => {
+  it('supports signed amounts', () => {
+    expect(formatSpend(218020, true)).toBe('+₹2.2 L');
+    expect(formatSpend(-50000)).toBe('₹50,000');
+  });
+});
+
+describe('formatAxisCurrency', () => {
+  it('uses Lakh ticks when the scale is in lakhs', () => {
+    expect(formatAxisCurrency(1750000, 2000000)).toBe('₹17.5 L');
   });
 });

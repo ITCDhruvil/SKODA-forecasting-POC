@@ -25,6 +25,7 @@ from .data_sourcing import MacroSeries
 from .geo_schema import CATEGORY_MATERIAL_INTENSITY, MATERIAL_COMMODITY
 from .evaluation import compare_on_common_parts, metrics_by
 from .forecast_explain import explain_part_forecast
+from .material_cost import build_material_cost
 from .parameters import build_parameter_catalogue
 from .logging_utils import get_logger
 
@@ -507,14 +508,22 @@ def _build_tree(
     forecasts: pd.DataFrame,
     future_test: Optional[Dict[str, object]],
     geo_analysis: Optional[Dict[str, object]] = None,
+    material_cost_parts: Optional[List[Dict[str, object]]] = None,
 ) -> List[Dict[str, object]]:
-    """Nested project -> vendor -> category -> part forecasts.
+    """Nested project -> vendor -> category -> part -> material forecasts.
 
     Built as a real tree rather than three flat roll-ups so the UI can drill
     down and show the thing a buyer actually needs to see: that a single vendor
     supplies several categories on one programme, and what each of those lines
-    is forecast to do.
+    is forecast to do. Material leaves use the Material Cost block (BG → FC),
+    not a copy of the part's SOP → horizon prices.
     """
+    mc_by_part: Dict[str, Dict[str, object]] = {}
+    for row in material_cost_parts or []:
+        pid = str(row.get("partId") or "")
+        if pid:
+            mc_by_part[pid] = row
+
     latest_month = panel["month"].max()
     latest = panel[panel["month"] == latest_month]
 
@@ -733,6 +742,33 @@ def _build_tree(
                 ):
                     change = (row["prediction"] - row["price"]) / row["price"] * 100
                     confidence = _confidence_for(change, expected_error)
+                    materials: List[Dict[str, object]] = []
+                    mc = mc_by_part.get(str(row["part_id"]))
+                    if mc and str(mc.get("material") or "").strip():
+                        # Material Cost dashboard figures: Current = Budget (BG),
+                        # Forecast = FC, Change = BG→FC variance (not SOP→horizon).
+                        bridges = mc.get("bridges") if isinstance(mc.get("bridges"), dict) else {}
+                        materials.append(
+                            {
+                                "name": str(mc["material"]).strip(),
+                                "currentPrice": mc.get("bgPrice"),
+                                "forecastPrice": mc.get("fcPrice"),
+                                "changePct": mc.get("changePct"),
+                                "changeAbs": mc.get("changeAbs"),
+                                "sopPrice": mc.get("sopPrice"),
+                                "bridges": {
+                                    "fx": bridges.get("fx"),
+                                    "commodity": bridges.get("commodity"),
+                                    "freight": bridges.get("freight"),
+                                    "vendorReprice": bridges.get("vendorReprice"),
+                                    "mix": bridges.get("mix"),
+                                    "seasonality": bridges.get("seasonality"),
+                                    "unexplained": bridges.get("unexplained"),
+                                    "other": bridges.get("other"),
+                                },
+                                "basis": "bg_to_fc",
+                            }
+                        )
                     parts.append(
                         {
                             "partId": row["part_id"],
@@ -747,6 +783,7 @@ def _build_tree(
                             "anomalyType": str(row["anomaly_type"] or ""),
                             "confidence": confidence,
                             "reason": _reason_for_part(row, change, confidence),
+                            "materials": materials,
                         }
                     )
                 categories.append(
@@ -1032,6 +1069,26 @@ def build_dashboard_payload(
             "on the synthetic panel do not."
         )
 
+    material_cost = build_material_cost(
+        panel,
+        forecasts,
+        geo_analysis=geo_analysis,
+        commercial_path=config.paths.data_raw / config.material_cost.commercial_filename,
+        nomination_month=config.material_cost.nomination_month,
+        sop_month=config.material_cost.sop_month,
+        volume_weight=config.material_cost.volume_weight,
+        require_commercial=config.material_cost.require_commercial,
+    )
+    tree = _build_tree(
+        panel,
+        forecasts,
+        future_test,
+        geo_analysis=geo_analysis,
+        material_cost_parts=(
+            material_cost.get("parts") if isinstance(material_cost, dict) else None
+        ),
+    )
+
     return {
         "meta": {
             "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -1089,7 +1146,8 @@ def build_dashboard_payload(
         "geoAnalysis": geo_analysis or {"available": False},
         "hierarchy": _build_hierarchy(panel, forecasts),
         "riskConcentration": _build_risk_concentration(panel, forecasts),
-        "tree": _build_tree(panel, forecasts, future_test, geo_analysis=geo_analysis),
+        "tree": tree,
+        "materialCost": material_cost,
         "dataSources": _build_data_sources(
             config, macro, panel, future_test, po_ingest=po_ingest
         ),

@@ -1,11 +1,18 @@
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
-import type { Confidence, TreeCategory, TreePart, TreeProject, TreeVendor } from '../types';
+import type {
+  Confidence,
+  TreeCategory,
+  TreeMaterial,
+  TreePart,
+  TreeProject,
+  TreeVendor,
+} from '../types';
 import { formatCurrency, formatSigned } from '../lib/format';
 import { IconChevronRight, IconAlert } from './Icons';
 
 /**
- * Project → vendor → category → part, expandable.
+ * Project → vendor → category → part → material, expandable.
  *
  * Roll-up bar charts answer "which programme is getting more expensive". They
  * cannot answer "which vendor, on which programme, across which categories" —
@@ -23,6 +30,7 @@ export function DrillDownTree({
   const [openProjects, setOpenProjects] = useState<Set<string>>(new Set());
   const [openVendors, setOpenVendors] = useState<Set<string>>(new Set());
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [openParts, setOpenParts] = useState<Set<string>>(new Set());
   const [minConfidence, setMinConfidence] = useState<'all' | 'medium' | 'high'>('all');
 
   const totals = useMemo(() => {
@@ -102,9 +110,13 @@ export function DrillDownTree({
       <div className="card overflow-hidden">
         <div className="card-header">
           <div>
-            <h3 className="card-title">Project &rarr; Vendor &rarr; Category &rarr; Part</h3>
+            <h3 className="card-title">
+              Project &rarr; Vendor &rarr; Category &rarr; Part &rarr; Material
+            </h3>
             <p className="mt-0.5 text-xs text-slate-500">
-              Click any row to expand. Vendors supplying several categories show all of them.
+              Click any row to expand. Material rows use Material Cost figures
+              (Budget → Forecast), which differ from the part&apos;s SOP → horizon
+              prices.
             </p>
           </div>
         </div>
@@ -184,9 +196,20 @@ export function DrillDownTree({
                                       No parts meet the selected confidence filter.
                                     </div>
                                   ) : (
-                                    visibleParts.map((part: TreePart) => (
-                                      <PartRow key={part.partId} part={part} />
-                                    ))
+                                    visibleParts.map((part: TreePart) => {
+                                      const partKey = `${catKey}|${part.partId}`;
+                                      const partOpen = openParts.has(partKey);
+                                      return (
+                                        <PartRow
+                                          key={part.partId}
+                                          part={part}
+                                          open={partOpen}
+                                          onToggle={() =>
+                                            toggle(openParts, partKey, setOpenParts)
+                                          }
+                                        />
+                                      );
+                                    })
                                   ))}
                               </div>
                             );
@@ -295,12 +318,22 @@ const CONFIDENCE_STYLE: Record<Confidence['level'], string> = {
   low: 'bg-slate-100 text-slate-500',
 };
 
-function PartRow({ part }: { part: TreePart }) {
+function PartRow({
+  part,
+  open,
+  onToggle,
+}: {
+  part: TreePart;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const band =
     part.lower !== null && part.upper !== null
       ? `${formatCurrency(part.lower, false)} – ${formatCurrency(part.upper, false)}`
       : null;
 
+  const materials = part.materials ?? [];
+  const expandable = materials.length > 0;
   const [reasonOpen, setReasonOpen] = useState(false);
   const [showAllDrivers, setShowAllDrivers] = useState(false);
 
@@ -313,14 +346,33 @@ function PartRow({ part }: { part: TreePart }) {
   return (
     <>
       <div
-        className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-4 border-l-2 border-slate-200 bg-white py-2 pr-5 text-[12px]"
+        className={clsx(
+          'grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-4 border-l-2 border-slate-200 bg-white py-2 pr-5 text-[12px]',
+          expandable && 'hover:bg-slate-50',
+        )}
         style={{ paddingLeft: 88 }}
       >
-        <span className="flex min-w-0 flex-col">
+        <button
+          type="button"
+          onClick={expandable ? onToggle : undefined}
+          className={clsx(
+            'flex min-w-0 flex-col text-left',
+            expandable ? 'cursor-pointer' : 'cursor-default',
+          )}
+          disabled={!expandable}
+        >
           <span className="flex items-center gap-2">
-            <span className="font-mono text-[11px] text-slate-500">
-              {part.partId}
-            </span>
+            {expandable ? (
+              <IconChevronRight
+                className={clsx(
+                  'h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform',
+                  open && 'rotate-90',
+                )}
+              />
+            ) : (
+              <span className="w-3.5 shrink-0" />
+            )}
+            <span className="font-mono text-[11px] text-slate-500">{part.partId}</span>
             {part.isAnomaly && (
               <span
                 className="pill bg-red-50 text-red-700"
@@ -330,12 +382,19 @@ function PartRow({ part }: { part: TreePart }) {
                 break
               </span>
             )}
+            {expandable && (
+              <span className="shrink-0 text-[11px] text-slate-400">
+                {materials.length === 1
+                  ? materials[0].name
+                  : `${materials.length} materials`}
+              </span>
+            )}
           </span>
-          <span className="truncate text-slate-600">{part.partName}</span>
+          <span className="truncate pl-[22px] text-slate-600">{part.partName}</span>
           {band && (
-            <span className="text-[10px] text-slate-400">80% interval: {band}</span>
+            <span className="pl-[22px] text-[10px] text-slate-400">80% interval: {band}</span>
           )}
-        </span>
+        </button>
         <span className="w-24 text-right tabular-nums text-slate-600">
           {formatCurrency(part.currentPrice, false)}
         </span>
@@ -368,6 +427,11 @@ function PartRow({ part }: { part: TreePart }) {
           </button>
         </span>
       </div>
+
+      {open &&
+        materials.map((material: TreeMaterial) => (
+          <MaterialRow key={material.name} material={material} />
+        ))}
 
       {reasonOpen && part.reason?.available && (
         <div
@@ -440,6 +504,53 @@ function PartRow({ part }: { part: TreePart }) {
         </div>
       )}
     </>
+  );
+}
+
+function MaterialRow({ material }: { material: TreeMaterial }) {
+  const commodity = material.bridges?.commodity;
+  return (
+    <div
+      className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-x-4 border-l-2 border-amber-200 bg-amber-50/30 py-2 pr-5 text-[12px]"
+      style={{ paddingLeft: 110 }}
+    >
+      <span className="flex min-w-0 flex-col">
+        <span className="flex items-center gap-2">
+          <span className="w-3.5 shrink-0" />
+          <span className="truncate text-[13px] font-medium text-slate-800">
+            {material.name}
+          </span>
+          <span className="shrink-0 text-[11px] text-slate-400">material · BG → FC</span>
+        </span>
+        {commodity != null && (
+          <span className="pl-[22px] text-[10px] text-slate-400">
+            Commodity bridge {formatCurrency(commodity, false)}
+          </span>
+        )}
+      </span>
+      <span
+        className="w-24 text-right tabular-nums text-slate-600"
+        title="Budget (BG) — Material Cost baseline"
+      >
+        {formatCurrency(material.currentPrice, false)}
+      </span>
+      <span
+        className="w-24 text-right font-medium tabular-nums text-slate-900"
+        title="Forecast (FC) — Material Cost"
+      >
+        {formatCurrency(material.forecastPrice, false)}
+      </span>
+      <span
+        className={clsx(
+          'w-20 text-right font-semibold tabular-nums',
+          material.changePct >= 0 ? 'text-red-600' : 'text-emerald-600',
+        )}
+        title="BG → FC variance"
+      >
+        {formatSigned(material.changePct, 2)}
+      </span>
+      <span className="w-40" />
+    </div>
   );
 }
 

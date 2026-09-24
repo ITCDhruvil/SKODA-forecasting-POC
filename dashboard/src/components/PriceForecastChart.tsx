@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
-  Area,
   CartesianGrid,
   ComposedChart,
   Legend,
@@ -21,29 +20,33 @@ interface Props {
 
 /**
  * Mean basket price: observed history, the model's fit over the held-out
- * window, and the forward forecast with its prediction band.
- *
- * The band is drawn as a stacked pair of areas (transparent base + visible
- * range) because Recharts has no native interval mark.
+ * window, and the forward forecast (no prediction band).
  */
 export function PriceForecastChart({ series, horizonMonths }: Props) {
-  const [showBand, setShowBand] = useState(true);
-
-  const data = useMemo(
-    () =>
-      series.map((point) => ({
-        ...point,
-        bandBase: point.lower,
-        bandSpan:
-          point.lower !== null && point.upper !== null ? point.upper - point.lower : null,
-      })),
-    [series],
-  );
-
   const lastActual = useMemo(
     () => [...series].reverse().find((p) => p.actual !== null)?.label,
     [series],
   );
+
+  const yMax = useMemo(
+    () =>
+      Math.max(
+        ...series.flatMap((p) => [p.actual, p.fitted, p.forecast].filter((v): v is number => v != null)),
+        1,
+      ),
+    [series],
+  );
+
+  if (series.length === 0) {
+    return (
+      <div className="card p-6">
+        <h3 className="card-title">Mean Price: Actual vs Forecast</h3>
+        <p className="mt-2 text-sm text-slate-500">
+          No price points fall inside the selected date range.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="card">
@@ -51,23 +54,14 @@ export function PriceForecastChart({ series, horizonMonths }: Props) {
         <div>
           <h3 className="card-title">Mean Price: Actual vs Forecast</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Across all parts &middot; {horizonMonths}-month forward forecast with prediction band
+            Across all parts &middot; {horizonMonths}-month forward forecast
           </p>
         </div>
-        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-          <input
-            type="checkbox"
-            checked={showBand}
-            onChange={(e) => setShowBand(e.target.checked)}
-            className="h-3.5 w-3.5 rounded border-slate-300"
-          />
-          Prediction band
-        </label>
       </div>
 
       <div className="px-2 pb-4">
         <ResponsiveContainer width="100%" height={278}>
-          <ComposedChart data={data} margin={{ top: 6, right: 16, left: 4, bottom: 4 }}>
+          <ComposedChart data={series} margin={{ top: 6, right: 16, left: 4, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
             <XAxis
               dataKey="label"
@@ -82,7 +76,7 @@ export function PriceForecastChart({ series, horizonMonths }: Props) {
               tickLine={false}
               axisLine={false}
               width={54}
-              tickFormatter={(v: number) => formatAxisCurrency(v, v)}
+              tickFormatter={(v: number) => formatAxisCurrency(v, yMax)}
               domain={['auto', 'auto']}
             />
             <Tooltip
@@ -99,33 +93,6 @@ export function PriceForecastChart({ series, horizonMonths }: Props) {
               }
             />
             <Legend iconType="line" wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-
-            {showBand && (
-              <>
-                {/* Transparent base lifts the visible span up to `lower`;
-                    Recharts has no native interval mark. Both are hidden from
-                    the legend and tooltip so they read as one band. */}
-                <Area
-                  dataKey="bandBase"
-                  stackId="band"
-                  stroke="none"
-                  fill="transparent"
-                  isAnimationActive={false}
-                  legendType="none"
-                  tooltipType="none"
-                />
-                <Area
-                  dataKey="bandSpan"
-                  stackId="band"
-                  stroke="none"
-                  fill="#f59e0b"
-                  fillOpacity={0.16}
-                  isAnimationActive={false}
-                  legendType="none"
-                  tooltipType="none"
-                />
-              </>
-            )}
 
             {lastActual && (
               <ReferenceLine

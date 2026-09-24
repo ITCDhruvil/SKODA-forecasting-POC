@@ -543,6 +543,31 @@ export interface ForecastReason {
   causalityNote?: string;
 }
 
+/** Leaf under a part — figures from the Material Cost block (BG → FC). */
+export interface TreeMaterial {
+  name: string;
+  /** Budget (BG) unit price — Material Cost "current" baseline. */
+  currentPrice: number;
+  /** Forecast (FC) unit price. */
+  forecastPrice: number;
+  changePct: number;
+  changeAbs: number;
+  sopPrice?: number | null;
+  bridges?: {
+    fx?: number | null;
+    commodity?: number | null;
+    freight?: number | null;
+    /** @deprecated Prefer vendorReprice / mix / seasonality / unexplained. */
+    other?: number | null;
+    vendorReprice?: number | null;
+    mix?: number | null;
+    seasonality?: number | null;
+    unexplained?: number | null;
+  };
+  /** Always ``bg_to_fc`` when sourced from materialCost. */
+  basis?: 'bg_to_fc';
+}
+
 export interface TreePart {
   partId: string;
   partName: string;
@@ -556,6 +581,8 @@ export interface TreePart {
   anomalyType: string;
   confidence: Confidence;
   reason?: ForecastReason;
+  /** Dominant material(s) for this part; expand Part to show cost at this level. */
+  materials?: TreeMaterial[];
 }
 
 export interface TreeCategory {
@@ -708,6 +735,123 @@ export interface MacroPoint {
   isReal: boolean;
 }
 
+/** Material Cost Dashboard (Option A: derived BG / Nomination / SOP). */
+export type MaterialBridgeId =
+  | 'fx'
+  | 'commodity'
+  | 'freight'
+  | 'vendorReprice'
+  | 'mix'
+  | 'seasonality'
+  | 'unexplained'
+  /** Legacy residual; prefer the four named residual bridges. */
+  | 'other';
+
+/** Ordered bridge ids used in the BG → FC waterfall (excludes legacy `other`). */
+export const MATERIAL_WALK_BRIDGES: Exclude<MaterialBridgeId, 'other'>[] = [
+  'fx',
+  'commodity',
+  'freight',
+  'vendorReprice',
+  'mix',
+  'seasonality',
+  'unexplained',
+];
+
+export interface MaterialMilestone {
+  month: string;
+  label: string;
+  role: string;
+}
+
+export interface MaterialWaterfallStep {
+  id: string;
+  label: string;
+  kind: 'total' | 'bridge';
+  value: number;
+  note?: string;
+}
+
+export interface MaterialPricePoint {
+  month: string;
+  label: string;
+  actual: number | null;
+  forecast: number | null;
+  isNomination: boolean;
+  isSop: boolean;
+}
+
+export interface MaterialPartRow {
+  partId: string;
+  partName: string;
+  project: string;
+  vendor: string;
+  category: string;
+  material: string;
+  /** Volume used for spend (qty). Defaults to 1 when unit-sum mode. */
+  volume?: number;
+  volumeSource?: string;
+  bgPrice: number;
+  sopPrice: number;
+  fcPrice: number;
+  /** Volume-weighted spend (= unit price × volume). Falls back to unit price. */
+  bgSpend?: number;
+  sopSpend?: number;
+  fcSpend?: number;
+  changeAbs: number;
+  changePct: number;
+  /** Combined BG→FC driver attributions (spend space). */
+  bridges: Partial<Record<MaterialBridgeId, number>>;
+  bridgesNomToSop?: Partial<Record<MaterialBridgeId, number>>;
+  bridgesSopToFc?: Partial<Record<MaterialBridgeId, number>>;
+  pricePath?: Array<{
+    month: string;
+    label: string;
+    price: number;
+    kind: 'actual' | 'forecast';
+  }>;
+  baselineSource?: 'derived' | 'file';
+}
+
+export type MaterialWalkId = 'bg_to_fc' | 'nom_to_sop' | 'sop_to_fc';
+
+export interface MaterialCost {
+  available: boolean;
+  reason?: string;
+  baselineMode?: 'derived' | 'file';
+  spendBasis?: string;
+  volumeWeight?: string;
+  disclaimer?: string;
+  commercialNote?: string;
+  milestones?: {
+    nomination: MaterialMilestone;
+    sop: MaterialMilestone;
+    forecast: MaterialMilestone;
+  };
+  summary?: {
+    budgetSpend: number;
+    sopSpend: number;
+    forecastSpend: number;
+    varianceAbs: number;
+    variancePct: number;
+    varianceNomToSopAbs?: number;
+    varianceSopToFcAbs?: number;
+    nParts: number;
+    horizon: number;
+    totalVolume?: number;
+  };
+  waterfall?: MaterialWaterfallStep[];
+  waterfallNomToSop?: MaterialWaterfallStep[];
+  waterfallSopToFc?: MaterialWaterfallStep[];
+  priceSeries?: MaterialPricePoint[];
+  parts?: MaterialPartRow[];
+  projects?: string[];
+  fxWindow?: {
+    eurinr: { first: number; last: number; movePct: number };
+    usdinr: { first: number; last: number; movePct: number };
+  };
+}
+
 export interface DashboardData {
   meta: {
     generatedAt: string;
@@ -756,6 +900,8 @@ export interface DashboardData {
   hierarchy?: HierarchyRollup;
   riskConcentration?: RiskConcentration;
   tree?: TreeProject[];
+  /** Optional: Material Cost view (derived BG vs FC cost walk). */
+  materialCost?: MaterialCost;
   dataSources?: DataSource[];
   parameterCatalogue?: ParameterCatalogue;
   macroSeries: MacroPoint[];

@@ -18,9 +18,27 @@ import type { MacroPoint } from '../types';
  * public API caps history at ~3 years. Marking them keeps the distinction
  * between measured and reconstructed visible.
  */
-export function MacroChart({ series, seriesId }: { series: MacroPoint[]; seriesId: string }) {
-  const firstReal = series.find((p) => p.isReal);
-  const extrapolated = series.filter((p) => !p.isReal);
+export function MacroChart({
+  series,
+  seriesId,
+}: {
+  series?: MacroPoint[];
+  seriesId: string;
+}) {
+  const points = series ?? [];
+  if (points.length === 0) {
+    return (
+      <div className="card p-6">
+        <h3 className="card-title">Macro Anchor — Real BLS Index</h3>
+        <p className="mt-2 text-sm text-slate-500">
+          No macro points fall inside the selected date range.
+        </p>
+      </div>
+    );
+  }
+
+  const firstReal = points.find((p) => p.isReal);
+  const extrapolated = points.filter((p) => !p.isReal);
 
   return (
     <div className="card">
@@ -45,7 +63,7 @@ export function MacroChart({ series, seriesId }: { series: MacroPoint[]; seriesI
 
       <div className="px-2 pb-4">
         <ResponsiveContainer width="100%" height={244}>
-          <ComposedChart data={series} margin={{ top: 6, right: 18, left: 4, bottom: 4 }}>
+          <ComposedChart data={points} margin={{ top: 6, right: 18, left: 4, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
             <XAxis
               dataKey="label"
@@ -70,7 +88,7 @@ export function MacroChart({ series, seriesId }: { series: MacroPoint[]; seriesI
 
             {extrapolated.length > 0 && firstReal && (
               <ReferenceArea
-                x1={series[0].label}
+                x1={points[0].label}
                 x2={firstReal.label}
                 fill="#fed7aa"
                 fillOpacity={0.5}

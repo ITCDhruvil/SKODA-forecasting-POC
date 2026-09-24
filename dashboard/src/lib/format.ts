@@ -14,11 +14,11 @@ export function setCurrencySymbol(symbol: string): void {
   if (symbol) currencySymbol = symbol;
 }
 
-/** Currency: ₹17,60,000 (compact/headline) or ₹1,284.00 (precise), always Indian digit grouping. */
+/** Currency: short form ₹17.6 L / ₹1.2 Cr when compact; precise otherwise. */
 export function formatCurrency(value: number | null, compact = true): string {
   if (value === null || Number.isNaN(value)) return '--';
+  if (compact) return formatSpend(value, false);
   const s = currencySymbol;
-  if (compact) return `${s}${Math.round(value).toLocaleString('en-IN')}`;
   return `${s}${value.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -26,15 +26,36 @@ export function formatCurrency(value: number | null, compact = true): string {
 }
 
 /**
- * Axis ticks: always the same shape across a scale.
- *
- * `formatCurrency` switches to compact form above a threshold, which on an axis
- * produces the mixed run "$0.00, $8,500.00, $17.0K". Ticks need one consistent
- * unit, chosen from the largest value on the axis.
+ * Finance-friendly headline amounts (Indian units).
+ * Cr (≥1e7), Lakh (≥1e5), else grouped rupees.
+ */
+export function formatSpend(value: number | null, signed = false): string {
+  if (value === null || Number.isNaN(value)) return '--';
+  const s = currencySymbol;
+  const sign = signed ? (value > 0 ? '+' : value < 0 ? '−' : '') : '';
+  const abs = Math.abs(value);
+  if (abs >= 1e7) {
+    const cr = abs / 1e7;
+    const digits = cr >= 100 ? 0 : cr >= 10 ? 1 : 2;
+    return `${sign}${s}${cr.toFixed(digits)} Cr`;
+  }
+  if (abs >= 1e5) {
+    const lakh = abs / 1e5;
+    const digits = lakh >= 100 ? 0 : 1;
+    return `${sign}${s}${lakh.toFixed(digits)} L`;
+  }
+  return `${sign}${s}${Math.round(abs).toLocaleString('en-IN')}`;
+}
+
+/**
+ * Axis ticks: one consistent Indian short unit across the scale.
  */
 export function formatAxisCurrency(value: number, max: number): string {
   const s = currencySymbol;
-  if (max >= 1_000_000) return `${s}${(value / 1_000_000).toFixed(1)}M`;
+  if (max >= 1e7) return `${s}${(value / 1e7).toFixed(1)} Cr`;
+  if (max >= 1e5) return `${s}${(value / 1e5).toFixed(1)} L`;
+  // Sub-lakh ranges need a decimal so ticks do not all collapse to "₹4K".
+  if (max >= 1_000 && max < 100_000) return `${s}${(value / 1_000).toFixed(1)}K`;
   if (max >= 1_000) return `${s}${Math.round(value / 1_000)}K`;
   return `${s}${Math.round(value)}`;
 }
