@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import clsx from 'clsx';
 import { IconClose } from '../components/Icons';
-import type { MaterialBridgeId, MaterialPartRow } from '../types';
+import type { ForecastReason, MaterialBridgeId, MaterialPartRow } from '../types';
 import { formatAxisCurrency, formatCurrency, formatSigned } from '../lib/format';
 
 const DRIVER_LABELS: Record<MaterialBridgeId, string> = {
@@ -36,13 +36,15 @@ const DRIVER_ORDER: MaterialBridgeId[] = [
 
 interface Props {
   part: MaterialPartRow;
+  reason?: ForecastReason;
   onClose: () => void;
+  onAsk?: (question: string) => void;
 }
 
 /**
  * Part-level drill-down: Nomination→SOP→FC prices/spend, driver $, mini path chart.
  */
-export function PartDetailDrawer({ part, onClose }: Props) {
+export function PartDetailDrawer({ part, reason, onClose, onAsk }: Props) {
   const bgSpend = Number(part.bgSpend ?? part.bgPrice) || 0;
   const sopSpend = Number(part.sopSpend ?? part.sopPrice) || 0;
   const fcSpend = Number(part.fcSpend ?? part.fcPrice) || 0;
@@ -106,6 +108,31 @@ export function PartDetailDrawer({ part, onClose }: Props) {
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-8">
+          {(reason?.available || onAsk) && (
+            <div className="mt-5">
+              <p className="text-[12px] text-slate-400">Radar</p>
+              {reason?.available && (
+                <p className="mt-1 text-[14px] leading-relaxed text-slate-800">{reason.summary}</p>
+              )}
+              {reason?.tip && (
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-600">{reason.tip}</p>
+              )}
+              {onAsk && (
+                <button
+                  type="button"
+                  className="mt-2 text-[12px] text-slate-500 hover:text-slate-800"
+                  onClick={() =>
+                    onAsk(
+                      `Explain the forecast for ${part.partName} (${part.partId}) and what we should do about it.`,
+                    )
+                  }
+                >
+                  Ask why
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="mt-5 flex flex-wrap gap-1.5">
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[12px] text-slate-600">
               {part.category}

@@ -4,6 +4,7 @@ import { getPartsIndex } from '../data';
 import {
   searchParts,
   getPartForecast,
+  predictPartPrice,
   getTopMovers,
   getKpis,
   getCategoryBreakdown,
@@ -73,6 +74,35 @@ describe('getPartForecast', () => {
       throw new Error('expected an error, got a PartRecord');
     }
     expect(result.error).toBeDefined();
+  });
+});
+
+describe('predictPartPrice', () => {
+  it('is registered and predicts a known part with only relevant parameters', () => {
+    const def = TOOL_DEFINITIONS.find((d) => d.function.name === 'predictPartPrice');
+    expect(def).toBeDefined();
+    expect(TOOL_HANDLERS.predictPartPrice).toBeTypeOf('function');
+
+    const result = predictPartPrice({ partId: 'TGN-LGT-00351' });
+    if (!('prediction' in result)) throw new Error(`expected a prediction, got ${JSON.stringify(result)}`);
+    expect(result.model).toBe('xgboost');
+    expect(result.prediction.price).toBeGreaterThan(0);
+    expect(result.prediction.horizonMonths).toBe(6);
+    const ids = result.relevantParameters.map((p) => p.id);
+    expect(ids).toContain('part_characteristics');
+    expect(ids).not.toContain('geopolitical_risk');
+    expect(ids).not.toContain('steel');
+    expect(ids).not.toContain('container_freight');
+  });
+
+  it('returns matches when the query is ambiguous', () => {
+    const result = predictPartPrice({ query: 'Lighting' });
+    expect('matches' in result).toBe(true);
+  });
+
+  it('returns an error for an unknown part', () => {
+    const result = predictPartPrice({ partId: 'DOES-NOT-EXIST' });
+    expect('error' in result).toBe(true);
   });
 });
 

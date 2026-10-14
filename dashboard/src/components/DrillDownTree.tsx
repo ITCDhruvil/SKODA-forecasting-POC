@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import clsx from 'clsx';
 import type {
   Confidence,
+  MaterialPartRow,
   TreeCategory,
   TreeMaterial,
   TreePart,
@@ -24,10 +25,14 @@ export function DrillDownTree({
   tree,
   horizonMonths,
   onOpenPart,
+  onAsk,
+  forecastByPart,
 }: {
   tree?: TreeProject[];
   horizonMonths: number;
   onOpenPart?: (partId: string) => void;
+  onAsk?: (question: string, prompt?: string) => void;
+  forecastByPart?: Map<string, MaterialPartRow>;
 }) {
   const [openProjects, setOpenProjects] = useState<Set<string>>(new Set());
   const [openVendors, setOpenVendors] = useState<Set<string>>(new Set());
@@ -213,6 +218,8 @@ export function DrillDownTree({
                                               ? () => onOpenPart(part.partId)
                                               : undefined
                                           }
+                                          onAsk={onAsk}
+                                          forecastRow={forecastByPart?.get(part.partId)}
                                         />
                                       );
                                     })
@@ -324,16 +331,55 @@ const CONFIDENCE_STYLE: Record<Confidence['level'], string> = {
   low: 'bg-slate-100 text-slate-500',
 };
 
+const FORECAST_INPUTS = [
+  ['fx', 'Currency'],
+  ['commodity', 'Materials'],
+  ['freight', 'Shipping'],
+] as const;
+
+function whyQuestion(part: TreePart, row?: MaterialPartRow): { text: string; prompt: string } {
+  const fwd = row?.bridgesSopToFc ?? {};
+  const lines = FORECAST_INPUTS.map(([key, name]) => {
+    const amount = Number(fwd[key] ?? 0);
+    return `${name}: ${amount >= 0 ? '+' : ''}${formatCurrency(amount, false)}`;
+  });
+  const explained = FORECAST_INPUTS.reduce((sum, [key]) => sum + Number(fwd[key] ?? 0), 0);
+  const move = part.forecastPrice - part.currentPrice;
+  const rest = move - explained;
+  const material = row?.material ?? part.materials?.[0]?.name;
+  return {
+    text: `Why is ${part.partName} forecast ${part.changePct >= 0 ? 'up' : 'down'} ${Math.abs(part.changePct).toFixed(1)}%?`,
+    prompt: [
+      `Explain in simple language why ${part.partName} (${part.partId}) is forecast to change.`,
+      `Call predictPartPrice with partId ${part.partId}. Use its prediction and only its relevantParameters.`,
+      `Current price ${formatCurrency(part.currentPrice, false)}. Forecast price ${formatCurrency(part.forecastPrice, false)}. Change ${formatSigned(part.changePct, 2)}.`,
+      material ? `Part material: ${material}.` : '',
+      `Measured inputs on the forecast window for this part only:`,
+      ...lines,
+      `Amount not assigned to currency, materials, or shipping: ${rest >= 0 ? '+' : ''}${formatCurrency(rest, false)}.`,
+      'These are the only figures for this part. A zero means that input did not move this forecast.',
+      'Do not mention geopolitics, world risk, freight stories, or a supplier action unless that input has a non-zero amount above.',
+      'A few short sentences: the price change, which of the listed inputs moved it, and what to do.',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  };
+}
+
 function PartRow({
   part,
   open,
   onToggle,
   onOpen,
+  onAsk,
+  forecastRow,
 }: {
   part: TreePart;
   open: boolean;
   onToggle: () => void;
   onOpen?: () => void;
+  onAsk?: (question: string, prompt?: string) => void;
+  forecastRow?: MaterialPartRow;
 }) {
   const band =
     part.lower !== null && part.upper !== null
@@ -342,14 +388,6 @@ function PartRow({
 
   const materials = part.materials ?? [];
   const expandable = materials.length > 0;
-  const [reasonOpen, setReasonOpen] = useState(false);
-  const [showAllDrivers, setShowAllDrivers] = useState(false);
-
-  const sortedDrivers = part.reason?.drivers
-    ? [...part.reason.drivers].sort((a, b) => b.magnitude - a.magnitude)
-    : [];
-  const shownDrivers = showAllDrivers ? sortedDrivers : sortedDrivers.slice(0, 2);
-  const hiddenDriverCount = sortedDrivers.length - shownDrivers.length;
 
   return (
     <>
@@ -435,12 +473,15 @@ function PartRow({
           </span>
           <button
             type="button"
-            onClick={() => setReasonOpen((o) => !o)}
+            onClick={() => {
+              const question = whyQuestion(part, forecastRow);
+              onAsk?.(question.text, question.prompt);
+            }}
             className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!part.reason?.available}
-            title={part.reason?.available ? 'Explain in simple language' : 'No reason available'}
+            disabled={!onAsk}
+            title="Explain this part's forecast drivers"
           >
-            {reasonOpen ? 'Hide' : 'Why?'}
+            Why?
           </button>
         </span>
       </div>
@@ -449,77 +490,6 @@ function PartRow({
         materials.map((material: TreeMaterial) => (
           <MaterialRow key={material.name} material={material} />
         ))}
-
-      {reasonOpen && part.reason?.available && (
-        <div
-          className="mr-5 mt-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700"
-          style={{ paddingLeft: 20 + 2 * 44 }}
-        >
-          <div className="flex items-start gap-2">
-            <span className="mt-0.5 shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">
-              AI
-            </span>
-            <p className="text-[13px] font-medium leading-snug text-slate-900">
-              {part.reason.summary}
-            </p>
-          </div>
-
-          {shownDrivers.length > 0 && (
-            <div className="mt-3 divide-y divide-slate-200 border-t border-slate-200">
-              {shownDrivers.map((d) => (
-                <div key={d.id} className="flex gap-2.5 py-2">
-                  <span
-                    className={clsx(
-                      'mt-1 h-2 w-2 shrink-0 rounded-full',
-                      d.direction === 'up'
-                        ? 'bg-red-500'
-                        : d.direction === 'down'
-                          ? 'bg-emerald-500'
-                          : 'bg-slate-300',
-                    )}
-                  />
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[12px] font-medium text-slate-800">{d.label}</span>
-                      <span className="text-[11px] text-slate-400">
-                        {d.direction === 'up' ? 'up' : d.direction === 'down' ? 'down' : 'flat'}
-                      </span>
-                      {!d.isReal && (
-                        <span className="pill bg-amber-100 text-[9px] text-amber-700">
-                          backup data
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[11px] leading-relaxed text-slate-500">{d.evidence}</div>
-                  </div>
-                </div>
-              ))}
-              {hiddenDriverCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllDrivers(true)}
-                  className="py-2 text-[11px] font-medium text-slate-500 hover:text-slate-800"
-                >
-                  +{hiddenDriverCount} more
-                </button>
-              )}
-            </div>
-          )}
-
-          {part.reason.tip && (
-            <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-              <span className="font-semibold text-slate-700">Do: </span>
-              {part.reason.tip}
-            </p>
-          )}
-
-          {part.reason.causalityNote && (
-            <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
-              {part.reason.causalityNote}
-            </p>
-          )}
-        </div>
-      )}
     </>
   );
 }

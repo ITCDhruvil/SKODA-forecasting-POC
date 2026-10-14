@@ -7,7 +7,6 @@ import type {
   PricePoint,
 } from '../types';
 import type { DateRange } from '../components/ui/schedule-date';
-import { monthLabel } from './format';
 
 export interface MonthRange {
   /** Inclusive YYYY-MM */

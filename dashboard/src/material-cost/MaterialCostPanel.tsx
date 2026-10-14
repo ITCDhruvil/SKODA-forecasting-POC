@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
-import type { MaterialCost, MaterialPartRow, MaterialWalkId } from '../types';
+import type { ForecastReason, MaterialCost, MaterialPartRow, MaterialWalkId } from '../types';
 import { formatSigned, formatSpend } from '../lib/format';
 import { IconInfo } from '../components/Icons';
 import { CostWalkWaterfall } from './CostWalkWaterfall';
@@ -18,6 +18,8 @@ interface Props {
   materialCost?: MaterialCost;
   /** When set from the main forecast chart, open this walk and driver. */
   focus?: { walk: MaterialWalkId; bridge: string | null } | null;
+  reasonFor?: (partId: string) => ForecastReason | undefined;
+  onAsk?: (question: string) => void;
 }
 
 const KPI_HELP = {
@@ -54,7 +56,7 @@ const WALK_META: Record<
 /**
  * Material Cost Dashboard — price tracker, aligned cost walks, part drill-down.
  */
-export function MaterialCostPanel({ materialCost, focus }: Props) {
+export function MaterialCostPanel({ materialCost, focus, reasonFor, onAsk }: Props) {
   const [bridgeFilter, setBridgeFilter] = useState<string | null>(focus?.bridge ?? null);
   const [filters, setFilters] = useState<HierarchyFilterState>(EMPTY_HIERARCHY_FILTERS);
   const [walk, setWalk] = useState<MaterialWalkId>(focus?.walk ?? 'bg_to_fc');
@@ -195,7 +197,12 @@ export function MaterialCostPanel({ materialCost, focus }: Props) {
       />
 
       {selectedPart ? (
-        <PartDetailDrawer part={selectedPart} onClose={() => setSelectedPart(null)} />
+        <PartDetailDrawer
+          part={selectedPart}
+          reason={reasonFor?.(selectedPart.partId)}
+          onClose={() => setSelectedPart(null)}
+          onAsk={onAsk}
+        />
       ) : null}
     </div>
   );

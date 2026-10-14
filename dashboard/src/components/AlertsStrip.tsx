@@ -78,6 +78,13 @@ export function AlertsStrip({
   );
 }
 
+function adviceFor(change: number | null): string {
+  if (change == null) return 'Review';
+  if (change >= 5) return 'Negotiate';
+  if (change > 0) return 'Watch';
+  return 'No action';
+}
+
 function AlertCell({
   alert,
   onOpen,
@@ -109,7 +116,10 @@ function AlertCell({
         ) : (
           <div className="truncate text-[13px] font-semibold text-slate-900">{alert.title}</div>
         )}
-        <p className="mt-0.5 truncate text-[12px] text-slate-500">{alert.message}</p>
+        <p className="mt-0.5 truncate text-[12px] text-slate-500">
+          <span className="text-slate-400">Radar · {adviceFor(alert.change)} · </span>
+          {alert.message}
+        </p>
       </div>
       {onOpen && (
         <button

@@ -59,6 +59,7 @@ interface Props {
   sopSpend?: number;
   forecastSpend?: number;
   onOpenPart: (partId: string) => void;
+  onAsk: (question: string) => void;
 }
 
 /**
@@ -70,6 +71,7 @@ export function BuyerBrief({
   sopSpend,
   forecastSpend,
   onOpenPart,
+  onAsk,
 }: Props) {
   const calls = callsFor(parts);
   const gap =
@@ -81,7 +83,8 @@ export function BuyerBrief({
     <section className="card px-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="card-title">Calls to make before {forecastLabel}</h3>
+          <p className="text-[12px] text-slate-400">Radar</p>
+          <h3 className="card-title mt-1">Hold these prices before {forecastLabel}</h3>
           <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-500">
             {gap != null && gap > 0
               ? `Doing nothing adds ${formatSpend(gap)} of spend between SOP and ${forecastLabel}. These three suppliers hold the largest single-part increases.`
@@ -92,11 +95,11 @@ export function BuyerBrief({
 
       <ol className="mt-4 grid gap-3 lg:grid-cols-3">
         {calls.map((call, index) => (
-          <li key={call.vendor}>
+          <li key={call.vendor} className="flex flex-col rounded-xl bg-slate-50 px-4 py-3">
             <button
               type="button"
               onClick={() => onOpenPart(call.part.partId)}
-              className="flex h-full w-full flex-col rounded-xl bg-slate-50 px-4 py-3 text-left transition hover:bg-slate-100"
+              className="flex flex-1 flex-col text-left"
             >
               <span className="text-[12px] text-slate-400">Call {index + 1}</span>
               <span className="mt-1 text-[15px] font-medium text-slate-900">{call.vendor}</span>
@@ -104,9 +107,20 @@ export function BuyerBrief({
                 {call.part.partName} is up{' '}
                 <span className="font-medium tabular-nums text-red-600">
                   {formatSpend(call.rise)}
-                </span>{' '}
-                by {forecastLabel}, mainly from {call.driver}. Ask them to hold the SOP price.
+                </span>
+                , mainly from {call.driver}. Ask them to hold the SOP price.
               </span>
+            </button>
+            <button
+              type="button"
+              className="mt-3 self-start text-[12px] text-slate-500 hover:text-slate-800"
+              onClick={() =>
+                onAsk(
+                  `Why should we talk to ${call.vendor} about ${call.part.partName} before ${forecastLabel}? The forecast shows it up ${formatSpend(call.rise)}, mainly from ${call.driver}. What should we ask them to do?`,
+                )
+              }
+            >
+              Ask why
             </button>
           </li>
         ))}

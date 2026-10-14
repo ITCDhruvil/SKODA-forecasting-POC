@@ -1,5 +1,5 @@
 // dashboard/api/_lib/tools.ts
-import { changePct, getDashboardJson, getPartsIndex, type PartRecord } from './data';
+import { changePct, getDashboardJson, getPartsIndex, type ForecastPoint, type PartRecord } from './data';
 import { getExposure } from './exposure';
 import { getAllStatuses, setStatus, type KvHashClient } from './hitlStatus';
 import { kv } from './kvClient';
@@ -52,6 +52,127 @@ export function getPartForecast(args: { partId: string }) {
   const rec = getPartsIndex().find((r) => r.partId.toLowerCase() === args.partId?.toLowerCase());
   if (!rec) return { error: `no part found with id ${args.partId}` };
   return rec;
+}
+
+/** Material name → commodity channel. Unlisted materials have no commodity parameter. */
+const MATERIAL_COMMODITY: Record<string, 'steel' | 'aluminium' | 'copper' | 'energy'> = {
+  steel: 'steel',
+  'iron/friction': 'steel',
+  aluminium: 'aluminium',
+  'aluminium/copper': 'aluminium',
+  polymer: 'energy',
+  'copper/semiconductor': 'copper',
+  'led/polycarbonate': 'copper',
+  semiconductor: 'copper',
+};
+
+const IMPORT_DRIVER_IDS = new Set([
+  'geopolitical_risk',
+  'tariffs_duty',
+  'chokepoints',
+  'container_freight',
+]);
+
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function findPart(partId?: string, query?: string): PartRecord | { error: string } | { matches: ReturnType<typeof summarizePart>[] } {
+  const id = partId?.trim();
+  if (id) {
+    const rec = getPartsIndex().find((r) => r.partId.toLowerCase() === id.toLowerCase());
+    if (!rec) return { error: `no part found with id ${id}` };
+    return rec;
+  }
+  const q = query?.trim();
+  if (!q) return { error: 'pass partId or query' };
+  const matches = searchParts({ query: q }).results;
+  if (matches.length === 0) return { error: `no part found matching "${q}"` };
+  if (matches.length > 1) return { matches };
+  const rec = getPartsIndex().find((r) => r.partId === matches[0].partId);
+  if (!rec) return { error: `no part found matching "${q}"` };
+  return rec;
+}
+
+/**
+ * Latest model price for one part, using the scored xgboost forecast and only
+ * the implemented parameters that apply to this part.
+ */
+export function predictPartPrice(args: { partId?: string; query?: string }) {
+  const found = findPart(args.partId, args.query);
+  if ('error' in found || 'matches' in found) return found;
+  const rec = found;
+
+  const latest = rec.forecast.reduce<ForecastPoint | null>(
+    (best, point) => (!best || point.horizon > best.horizon ? point : best),
+    null,
+  );
+  if (!latest || rec.currentPrice === null) {
+    return { error: `no prediction available for ${rec.partId}` };
+  }
+
+  const materialRow = getDashboardJson().materialCost?.parts?.find((row) => row.partId === rec.partId);
+  const material = materialRow?.material ?? '';
+  const commodity = MATERIAL_COMMODITY[material.trim().toLowerCase()] ?? null;
+  const imported = rec.vendorOrigin.trim().toLowerCase() !== 'domestic';
+  const fwd = materialRow?.bridgesSopToFc ?? {};
+
+  const catalogue = getDashboardJson().parameterCatalogue?.drivers ?? [];
+  const relevantParameters = catalogue
+    .filter((driver) => driver.status === 'implemented')
+    .filter((driver) => {
+      if (driver.id === 'fx_spot') return imported || Math.abs(Number(fwd.fx ?? 0)) >= 0.01;
+      if (IMPORT_DRIVER_IDS.has(driver.id)) return imported;
+      if (driver.id === 'steel') return commodity === 'steel';
+      if (driver.id === 'aluminium_copper') return commodity === 'aluminium' || commodity === 'copper';
+      if (driver.id === 'programme_volume') return materialRow?.volume != null;
+      return true;
+    })
+    .map((driver) => ({
+      id: driver.id,
+      name: driver.name,
+      whyRelevant:
+        driver.id === 'fx_spot'
+          ? imported
+            ? `Vendor origin is ${rec.vendorOrigin}.`
+            : 'Currency moved this part on the forecast window.'
+          : driver.id === 'steel' || driver.id === 'aluminium_copper'
+            ? `Material ${material} maps to ${commodity}.`
+            : driver.id === 'part_characteristics'
+              ? `Material ${material || 'unknown'}, category ${rec.category}.`
+              : driver.id === 'vendor_profile' || driver.id === 'contract_terms'
+                ? `Vendor ${rec.vendor} (${rec.vendorOrigin}).`
+                : IMPORT_DRIVER_IDS.has(driver.id)
+                  ? `Vendor origin is ${rec.vendorOrigin}, so import and shipping inputs apply.`
+                  : driver.id === 'programme_volume'
+                    ? `Volume on file: ${materialRow?.volume}.`
+                    : 'Used by the model for every part.',
+    }));
+
+  const liveSources = (getDashboardJson().dataSources ?? [])
+    .filter((source) => source.isReal)
+    .map((source) => ({ id: source.id, name: source.name, coverage: source.coverage, status: source.status }));
+
+  return {
+    model: 'xgboost',
+    partId: rec.partId,
+    partName: rec.partName,
+    material: material || null,
+    vendorOrigin: rec.vendorOrigin,
+    latestActual: { month: rec.currentMonth, price: roundMoney(rec.currentPrice) },
+    prediction: {
+      horizonMonths: latest.horizon,
+      targetMonth: latest.targetMonth.slice(0, 7),
+      price: roundMoney(latest.prediction),
+      lower: roundMoney(latest.lower),
+      upper: roundMoney(latest.upper),
+      changePct: changePct(rec.currentPrice, latest.prediction),
+    },
+    relevantParameters,
+    omitted: 'Parameters that are not implemented, or that do not apply to this part, are excluded.',
+    liveSources,
+    basis: 'Prediction is the stored xgboost forecast from the latest history month. It is not a new model run.',
+  };
 }
 
 export function getTopMovers(args: { direction: 'up' | 'down'; n?: number }) {
@@ -185,6 +306,7 @@ export async function dismissGeoAlert(client: KvHashClient, args: { alertId: str
 export const TOOL_HANDLERS: Record<string, (args: any) => unknown> = {
   searchParts,
   getPartForecast,
+  predictPartPrice,
   getTopMovers,
   getKpis,
   getCategoryBreakdown,
@@ -216,6 +338,21 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           category: { type: 'string' },
           vendor: { type: 'string' },
           project: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'predictPartPrice',
+      description:
+        'Predict the latest price for one part from the latest history and the xgboost forecast, using only parameters that are implemented and relevant to that part. Use this when the user asks to predict a price, the latest price, or a forecast from live data and parameters. Pass partId when known, otherwise query (name or id fragment). If query matches several parts, the tool returns matches and does not predict.',
+      parameters: {
+        type: 'object',
+        properties: {
+          partId: { type: 'string', description: 'Exact part id, for example TGN-LGT-00351.' },
+          query: { type: 'string', description: 'Part name or id fragment when the exact id is unknown.' },
         },
       },
     },

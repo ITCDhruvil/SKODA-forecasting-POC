@@ -3,10 +3,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRootEnv = path.resolve(here, '../../env');
+const repoRoot = path.resolve(here, '../..');
 
-// Prefer the shared repo `env` file; allow a local dashboard/.env to override.
-dotenv.config({ path: repoRootEnv });
+// The repo key file is `.env`. An undotted `env` file is also accepted.
+// A local dashboard/.env overrides either one.
+dotenv.config({ path: path.join(repoRoot, '.env') });
+dotenv.config({ path: path.join(repoRoot, 'env') });
 dotenv.config();
 
 if (!process.env.OPENAI_API_KEY && process.env.AZURE_OPENAI_API_KEY) {

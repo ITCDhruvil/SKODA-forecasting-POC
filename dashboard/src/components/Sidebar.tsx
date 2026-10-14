@@ -15,6 +15,7 @@ import {
   IconGlobe,
   IconHelp,
   IconWaterfall,
+  IconTrending,
 } from './Icons';
 import { AskRadarButton } from './AskRadarButton';
 
@@ -23,6 +24,7 @@ export type View =
   | 'forecast'
   | 'hierarchy'
   | 'material'
+  | 'impact'
   | 'fx'
   | 'geo'
   | 'parts'
@@ -38,6 +40,7 @@ export const SIDEBAR_WIDTH_COLLAPSED = 64;
 const NAV: { id: View; label: string; icon: (p: { className?: string }) => ReactElement }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: IconGrid },
   { id: 'forecast', label: 'Forecast', icon: IconChart },
+  { id: 'impact', label: 'Cost Impact', icon: IconTrending },
   { id: 'hierarchy', label: 'Hierarchy', icon: IconLayers },
   { id: 'material', label: 'Material Cost', icon: IconWaterfall },
   { id: 'fx', label: 'FX Impact', icon: IconCurrency },

@@ -75,6 +75,8 @@ export interface ExportOffer {
 export interface ChatEntry {
   role: 'user' | 'assistant';
   content: string;
+  /** Sent to the model instead of content when the bubble should stay short. */
+  prompt?: string;
   /** Present on assistant replies that used live news. */
   sources?: ChatSource[];
   usedWeb?: boolean;
@@ -318,7 +320,7 @@ export function sanitizeExports(raw: unknown): ExportOffer[] {
 
 /** What is sent to /api/chat: role and content only (sources and flags stay on the client). */
 export function toApiMessages(entries: ChatEntry[]): { role: 'user' | 'assistant'; content: string }[] {
-  return entries.map(({ role, content }) => ({ role, content }));
+  return entries.map(({ role, content, prompt }) => ({ role, content: prompt || content }));
 }
 
 export function createId(): string {

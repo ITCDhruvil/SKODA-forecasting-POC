@@ -283,3 +283,11 @@ export const ICON_MAP: Record<string, (p: IconProps) => ReactElement> = {
   target: IconTarget,
   alert: IconAlert,
 };
+
+export const IconReport = ({ className = base }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+    <path d="M9 17v-3M12 17v-5M15 17v-2" />
+  </svg>
+);

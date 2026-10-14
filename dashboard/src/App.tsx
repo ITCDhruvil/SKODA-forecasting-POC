@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { DashboardData, MaterialPartRow, MaterialWalkId } from './types';
+import type { DashboardData, ForecastReason, MaterialPartRow, MaterialWalkId } from './types';
 import {
   Sidebar,
   SIDEBAR_WIDTH,
@@ -16,6 +16,7 @@ import { BuyerBrief } from './components/BuyerBrief';
 import { ValidationPanel } from './components/ValidationPanel';
 import { FutureTestPanel } from './components/FutureTestPanel';
 import { HierarchyPanel } from './components/HierarchyPanel';
+import { CostImpactPanel } from './components/CostImpactPanel';
 import { FxScenarioPanel } from './components/FxScenarioPanel';
 import { GeoScenarioPanel } from './components/GeoScenarioPanel';
 import { DrillDownTree } from './components/DrillDownTree';
@@ -46,6 +47,11 @@ const TITLES: Record<View, { title: string; subtitle: string }> = {
   forecast: {
     title: 'Forecast Detail',
     subtitle: 'Model comparison, backtest stability, and the forward projection.',
+  },
+  impact: {
+    title: 'Forecasting & Cost Impact',
+    subtitle:
+      'What could happen to car cost if material prices or the rupee move? Pick a scenario, compare it to the base forecast, and drill to the parts exposed.',
   },
   hierarchy: {
     title: 'Hierarchy Drill-down',
@@ -107,8 +113,13 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [parametersOpen, setParametersOpen] = useState(false);
   const [radarOpen, setRadarOpen] = useState(false);
+  const [radarSeed, setRadarSeed] = useState<{ id: string; text: string; prompt?: string } | null>(null);
   const [monthRange, setMonthRange] = useState<MonthRange | null>(null);
   const closeRadar = useCallback(() => setRadarOpen(false), []);
+  const askRadar = useCallback((text: string, prompt?: string) => {
+    setRadarSeed({ id: `${Date.now()}`, text, prompt });
+    setRadarOpen(true);
+  }, []);
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}dashboard.json`)
@@ -167,6 +178,20 @@ export default function App() {
     const part = data.materialCost?.parts?.find((row) => row.partId === partId) ?? null;
     setSelectedMaterialPart(part);
   };
+
+  const forecastByPart = new Map<string, MaterialPartRow>();
+  for (const row of data.materialCost?.parts ?? []) forecastByPart.set(row.partId, row);
+
+  const reasons = new Map<string, ForecastReason>();
+  for (const project of data.tree ?? []) {
+    for (const vendor of project.vendors) {
+      for (const category of vendor.categories) {
+        for (const part of category.parts) {
+          if (part.reason?.available) reasons.set(part.partId, part.reason);
+        }
+      }
+    }
+  }
 
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
 
@@ -243,6 +268,7 @@ export default function App() {
                   sopSpend={data.materialCost.summary?.sopSpend}
                   forecastSpend={data.materialCost.summary?.forecastSpend}
                   onOpenPart={openMaterialPart}
+                  onAsk={askRadar}
                 />
               )}
 
@@ -314,6 +340,8 @@ export default function App() {
                 tree={data.tree}
                 horizonMonths={data.meta.forecastHorizon}
                 onOpenPart={openMaterialPart}
+                onAsk={askRadar}
+                forecastByPart={forecastByPart}
               />
               <HierarchyPanel
                 hierarchy={data.hierarchy ?? data.fxAnalysis?.rollups}
@@ -322,9 +350,17 @@ export default function App() {
             </>
           )}
 
+          {/* ---- Forecasting & cost impact ------------------------------- */}
+          {view === 'impact' && <CostImpactPanel data={data} onOpenPart={openMaterialPart} />}
+
           {/* ---- Material Cost ------------------------------------------- */}
           {view === 'material' && (
-            <MaterialCostPanel materialCost={filtered.materialCost} focus={materialFocus} />
+            <MaterialCostPanel
+              materialCost={filtered.materialCost}
+              focus={materialFocus}
+              reasonFor={(partId) => reasons.get(partId)}
+              onAsk={askRadar}
+            />
           )}
 
           {/* ---- Technical FAQ ------------------------------------------- */}
@@ -373,11 +409,13 @@ export default function App() {
       {selectedMaterialPart && (
         <PartDetailDrawer
           part={selectedMaterialPart}
+          reason={reasons.get(selectedMaterialPart.partId)}
           onClose={() => setSelectedMaterialPart(null)}
+          onAsk={askRadar}
         />
       )}
 
-      <ChatWidget open={radarOpen} onClose={closeRadar} data={data} />
+      <ChatWidget open={radarOpen} onClose={closeRadar} data={data} seed={radarSeed} />
     </div>
   );
 }

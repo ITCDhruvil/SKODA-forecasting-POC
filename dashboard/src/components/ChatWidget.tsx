@@ -5,6 +5,7 @@ import { ChatHistoryPanel } from './ChatHistoryPanel';
 import { ChatOpenScreen } from './ChatOpenScreen';
 import { ExportCard } from './ExportCard';
 import { RadarSettings } from './RadarSettings';
+import { ReportMode } from './ReportMode';
 import { MessageMarkdown } from './chatMarkdown';
 import { SourceList } from './SourceList';
 import {
@@ -16,6 +17,7 @@ import {
   IconGlobe,
   IconHistory,
   IconNewChat,
+  IconReport,
   IconRefresh,
   IconSend,
   IconStop,
@@ -285,9 +287,11 @@ interface ChatWidgetProps {
   open: boolean;
   onClose: () => void;
   data: DashboardData | null;
+  /** When this id changes while the panel is open, Radar starts a chat with the text. */
+  seed?: { id: string; text: string; prompt?: string } | null;
 }
 
-export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
+export function ChatWidget({ open, onClose, data, seed }: ChatWidgetProps) {
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const storage = getStorage();
     return storage ? loadHistory(storage) : [];
@@ -302,6 +306,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [settings, setSettings] = useState<RadarSettingsState>(() => {
     const storage = getStorage();
     return storage ? loadSettings(storage) : DEFAULT_SETTINGS;
@@ -312,6 +317,8 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const deletedIdsRef = useRef(new Set<string>());
   const abortRef = useRef<AbortController | null>(null);
+  const askRef = useRef<(text: string, prompt?: string) => void>(() => {});
+  const seenSeed = useRef<string | null>(null);
 
   const snapshot = useMemo(() => (data ? buildSnapshot(data, pendingAlerts) : []), [data, pendingAlerts]);
 
@@ -354,6 +361,12 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
   }, [messages, loading, open]);
 
   useEffect(() => {
+    if (!open || !seed || seenSeed.current === seed.id) return;
+    seenSeed.current = seed.id;
+    askRef.current(seed.text, seed.prompt);
+  }, [open, seed]);
+
+  useEffect(() => {
     if (open) inputRef.current?.focus();
     else {
       setHistoryOpen(false);
@@ -373,8 +386,7 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, historyOpen, settingsOpen, editingIndex, onClose]);
 
-  async function requestReply(base: ChatEntry[]) {
-    const conversationId = activeId;
+  async function requestReply(base: ChatEntry[], conversationId = activeId) {
     const token = ++requestRef.current;
     setMessages(base);
     setConversations((prev) => upsertConversation(prev, { id: conversationId, messages: base }));
@@ -439,6 +451,22 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
       if (abortRef.current === controller) abortRef.current = null;
     }
   }
+
+  function ask(text: string, prompt?: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    abortRef.current?.abort();
+    const id = createId();
+    setActiveId(id);
+    setInput('');
+    setEditingIndex(null);
+    setHistoryOpen(false);
+    setSettingsOpen(false);
+    const entry: ChatEntry = { role: 'user', content: trimmed };
+    if (prompt?.trim()) entry.prompt = prompt.trim();
+    void requestReply([entry], id);
+  }
+  askRef.current = ask;
 
   function send(override?: string) {
     const text = (override ?? input).trim();
@@ -535,6 +563,19 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
         <div className="flex shrink-0 items-center justify-between rounded-2xl border border-slate-200 bg-white py-2.5 pl-5 pr-2 shadow-[0_8px_30px_rgba(15,23,42,0.12)]">
           <p className="text-base font-semibold text-slate-900">Radar</p>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setReportOpen(true);
+                setSettingsOpen(false);
+                setHistoryOpen(false);
+              }}
+              aria-label="Report mode"
+              title="Report mode"
+              className={headerButton}
+            >
+              <IconReport className="h-5 w-5" />
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -646,6 +687,8 @@ export function ChatWidget({ open, onClose, data }: ChatWidgetProps) {
               )}
             </div>
           </div>
+
+          {reportOpen && <ReportMode onBack={() => setReportOpen(false)} />}
 
           {settingsOpen && (
             <RadarSettings settings={settings} onChange={setSettings} onClose={() => setSettingsOpen(false)} />
