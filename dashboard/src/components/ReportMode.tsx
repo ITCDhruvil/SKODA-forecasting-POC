@@ -11,7 +11,7 @@ const FILES: Record<Format, { url: string; name: string; label: string; meta: st
     url: '/reports/Auto_Parts_Price_Outlook.pptx',
     name: 'Auto_Parts_Price_Outlook.pptx',
     label: 'presentation',
-    meta: '10 slides · 5 charts · 283 KB · 4 sources cited',
+    meta: '10 slides · 5 charts · 518 KB · 4 sources cited',
   },
   doc: {
     url: '/reports/Auto_Parts_Price_Outlook.docx',
@@ -48,7 +48,7 @@ const COMMON_STEPS: Step[] = [
 const FORMAT_STEPS: Record<Format, Step[]> = {
   ppt: [
     { label: 'Drafting the slide outline', detail: '10 slides: summary, forecast, categories, spend mix, drivers, FX, vendors, next steps.', ms: 1600 },
-    { label: 'Building slides and charts', detail: '5 native charts, 1 table, 4 stat cards.', ms: 2200 },
+    { label: 'Building slides and charts', detail: '5 charts, 1 table, 4 stat cards.', ms: 2200 },
     { label: 'Applying template and formatting', detail: 'Corporate theme, source notes on every slide.', ms: 1300 },
     { label: 'Final quality check', detail: 'Figures cross-checked against source documents.', ms: 1200 },
   ],
