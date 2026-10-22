@@ -88,7 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       {
         // Only role and content are forwarded; any extra client fields are dropped.
         messages: (body.messages as IncomingMessage[]).map(({ role, content }) => ({ role, content })),
-        webEnabled: body.webEnabled ?? true,
+        webEnabled: typeof body.webEnabled === 'boolean' ? body.webEnabled : true,
         ip,
       },
       {
