@@ -409,6 +409,8 @@ export default function App() {
       {selectedMaterialPart && (
         <PartDetailDrawer
           part={selectedMaterialPart}
+          allParts={data.materialCost?.parts ?? []}
+          nomination={data.materialCost?.milestones?.nomination}
           reason={reasons.get(selectedMaterialPart.partId)}
           onClose={() => setSelectedMaterialPart(null)}
           onAsk={askRadar}

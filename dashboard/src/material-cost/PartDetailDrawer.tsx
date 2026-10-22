@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -10,8 +11,9 @@ import {
 } from 'recharts';
 import clsx from 'clsx';
 import { IconClose } from '../components/Icons';
-import type { ForecastReason, MaterialBridgeId, MaterialPartRow } from '../types';
+import type { ForecastReason, MaterialBridgeId, MaterialMilestone, MaterialPartRow } from '../types';
 import { formatAxisCurrency, formatCurrency, formatSigned } from '../lib/format';
+import { buildPartSourcing, type PartSourcing } from './partSourcing';
 
 const DRIVER_LABELS: Record<MaterialBridgeId, string> = {
   fx: 'Currency',
@@ -36,6 +38,8 @@ const DRIVER_ORDER: MaterialBridgeId[] = [
 
 interface Props {
   part: MaterialPartRow;
+  allParts?: MaterialPartRow[];
+  nomination?: MaterialMilestone;
   reason?: ForecastReason;
   onClose: () => void;
   onAsk?: (question: string) => void;
@@ -44,7 +48,11 @@ interface Props {
 /**
  * Part-level drill-down: Nomination→SOP→FC prices/spend, driver $, mini path chart.
  */
-export function PartDetailDrawer({ part, reason, onClose, onAsk }: Props) {
+export function PartDetailDrawer({ part, allParts, nomination, reason, onClose, onAsk }: Props) {
+  const sourcing = useMemo(
+    () => (allParts && allParts.length > 0 ? buildPartSourcing(part, allParts, nomination) : null),
+    [part, allParts, nomination],
+  );
   const bgSpend = Number(part.bgSpend ?? part.bgPrice) || 0;
   const sopSpend = Number(part.sopSpend ?? part.sopPrice) || 0;
   const fcSpend = Number(part.fcSpend ?? part.fcPrice) || 0;
@@ -172,6 +180,8 @@ export function PartDetailDrawer({ part, reason, onClose, onAsk }: Props) {
               </span>
             </span>
           </div>
+
+          {sourcing ? <SourcingBlock sourcing={sourcing} /> : null}
 
           <div className="mt-8 flex min-h-[260px] flex-1 flex-col">
             <div className="flex items-baseline justify-between gap-3">
@@ -301,6 +311,140 @@ export function PartDetailDrawer({ part, reason, onClose, onAsk }: Props) {
           </div>
         </div>
       </aside>
+    </div>
+  );
+}
+
+function awardSentence(sourcing: PartSourcing): string {
+  const paid = formatCurrency(sourcing.awardedPrice, false);
+  const cheap = formatCurrency(sourcing.cheapestPrice, false);
+  if (sourcing.awardedIsCheapest) {
+    return `${sourcing.awardedVendor} was the cheapest quote at ${paid}, and that is who we awarded.`;
+  }
+  const status = sourcing.cheapestHasLeft ? 'They have left.' : 'They are still with us.';
+  return `Cheapest quote was ${sourcing.cheapestVendor} at ${cheap}. ${status} Awarded ${sourcing.awardedVendor} at ${paid}.`;
+}
+
+function SourcingBlock({ sourcing }: { sourcing: PartSourcing }) {
+  const cheapest = sourcing.quotes.find((quote) => quote.cheapest);
+  const awarded = sourcing.quotes.find((quote) => quote.awarded);
+  const others = sourcing.quotes.filter((quote) => !quote.cheapest && !quote.awarded);
+  const programmes = [
+    ...sourcing.programmes.filter((row) => row.isCurrent),
+    ...sourcing.programmes.filter((row) => !row.isCurrent),
+  ];
+  const programmeLabel =
+    sourcing.programmeCount === 1
+      ? 'This programme'
+      : `${sourcing.programmeCount} programmes`;
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-baseline justify-between gap-3">
+        <h4 className="text-[14px] font-medium text-slate-900">This award</h4>
+        <p className="text-[12px] text-slate-400">{sourcing.awardLabel}</p>
+      </div>
+      <p className="mt-2 max-w-[62ch] text-[13px] leading-relaxed text-slate-600">
+        {awardSentence(sourcing)}
+      </p>
+
+      <div
+        className={clsx(
+          'mt-4 grid gap-x-8 gap-y-5',
+          sourcing.awardedIsCheapest ? 'grid-cols-1' : 'grid-cols-1 min-[520px]:grid-cols-2',
+        )}
+      >
+        {!sourcing.awardedIsCheapest && cheapest ? (
+          <FocusQuote label="Cheapest" quote={cheapest} />
+        ) : null}
+        {awarded ? (
+          <FocusQuote
+            label={sourcing.awardedIsCheapest ? 'Awarded, cheapest quote' : 'Awarded'}
+            quote={awarded}
+          />
+        ) : null}
+      </div>
+
+      {others.length > 0 ? (
+        <ul className="mt-5">
+          {others.map((quote) => (
+            <li
+              key={quote.vendor}
+              className="flex items-baseline justify-between gap-6 border-t border-slate-100 py-2 text-[13px]"
+            >
+              <span className="min-w-0 truncate text-slate-600">
+                {quote.vendor}
+                <span className="text-slate-300"> · </span>
+                {quote.active ? 'Still with us' : 'Left'}
+              </span>
+              <span className="shrink-0 tabular-nums text-slate-600">
+                {formatCurrency(quote.price, false)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div className="mt-8 flex items-baseline justify-between gap-3">
+        <h4 className="text-[14px] font-medium text-slate-900">Where it is used</h4>
+        <p className="text-[12px] text-slate-400">{programmeLabel}</p>
+      </div>
+      <ul className="mt-2">
+        {programmes.map((row) => (
+          <li
+            key={row.partId}
+            className="flex items-baseline justify-between gap-6 border-t border-slate-100 py-2 text-[13px]"
+          >
+            <span className={clsx('min-w-0 truncate', row.isCurrent ? 'font-medium text-slate-900' : 'text-slate-600')}>
+              {row.project}
+              {row.isCurrent ? <span className="font-normal text-slate-400"> · This part</span> : null}
+              <span className="font-normal text-slate-300"> · </span>
+              <span className="font-normal text-slate-500">{row.vendor}</span>
+            </span>
+            <span
+              className={clsx(
+                'shrink-0 tabular-nums',
+                row.isCurrent ? 'font-medium text-slate-900' : 'text-slate-500',
+              )}
+            >
+              {formatCurrency(row.nominationPrice, false)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function FocusQuote({
+  label,
+  quote,
+}: {
+  label: string;
+  quote: PartSourcing['quotes'][number];
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[12px] text-slate-500">{label}</div>
+      <div className="mt-1.5 text-[15px] font-medium leading-snug text-slate-900">{quote.vendor}</div>
+      <div className="mt-1 text-[18px] font-medium tabular-nums tracking-tight text-slate-900">
+        {formatCurrency(quote.price, false)}
+      </div>
+      <div className="mt-1 text-[12px] text-slate-400">{quote.active ? 'Still with us' : 'Left'}</div>
+      {quote.contact ? (
+        <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
+          {quote.contact.desk}
+          <a
+            className="mt-0.5 block hover:text-slate-800"
+            href={`tel:${quote.contact.phone.replace(/\s/g, '')}`}
+          >
+            {quote.contact.phone}
+          </a>
+          <a className="block truncate hover:text-slate-800" href={`mailto:${quote.contact.email}`}>
+            {quote.contact.email}
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }

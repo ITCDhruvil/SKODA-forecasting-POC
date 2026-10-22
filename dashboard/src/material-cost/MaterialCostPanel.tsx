@@ -199,6 +199,8 @@ export function MaterialCostPanel({ materialCost, focus, reasonFor, onAsk }: Pro
       {selectedPart ? (
         <PartDetailDrawer
           part={selectedPart}
+          allParts={allParts}
+          nomination={materialCost.milestones?.nomination}
           reason={reasonFor?.(selectedPart.partId)}
           onClose={() => setSelectedPart(null)}
           onAsk={onAsk}
