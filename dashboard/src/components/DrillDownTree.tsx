@@ -263,7 +263,7 @@ export function DrillDownTree({
     const nodeOpen = open.has(node.key);
     const kids = node.children.map((child) => renderNode(child, depth + 1)).filter(Boolean);
     const hasChildren = node.children.length > 0;
-    const est = `est. spend ${formatCurrency(node.currentSpend)} → ${formatCurrency(node.forecastSpend)}`;
+    const monthlySpend = `Monthly spend ${formatCurrency(node.currentSpend)} → ${formatCurrency(node.forecastSpend)}`;
     const body = nodeOpen && kids;
 
     if (node.level === 'part') {
@@ -274,7 +274,7 @@ export function DrillDownTree({
             depth={depth}
             open={nodeOpen}
             expandable={hasChildren}
-            estSpend={est}
+            estSpend={monthlySpend}
             onToggle={() => toggle(node.key)}
             onOpen={onOpenPart ? () => onOpenPart(rec.partId) : undefined}
             onAsk={onAsk}
@@ -294,7 +294,8 @@ export function DrillDownTree({
             depth={depth}
             open={nodeOpen}
             expandable={hasChildren}
-            estSpend={est}
+            monthlySpend={node.currentSpend}
+            monthlyForecast={node.forecastSpend}
             onToggle={() => toggle(node.key)}
           />
           {body}
@@ -462,7 +463,8 @@ export function DrillDownTree({
   );
 }
 
-const GRID = 'grid grid-cols-[minmax(0,1fr)_120px_120px_100px_220px] items-center gap-x-4';
+const GRID_COLS = 'grid grid-cols-[minmax(0,1fr)_120px_120px_100px_220px] gap-x-4';
+const GRID = `${GRID_COLS} items-center`;
 const INDENT = 28;
 
 const ICON_PATHS: Record<Level | 'part' | 'material', string> = {
@@ -774,26 +776,62 @@ function PartRow({
   );
 }
 
+const MARKET_EFFECTS: Array<[keyof NonNullable<TreeMaterial['bridges']>, string]> = [
+  ['commodity', 'Raw material'],
+  ['fx', 'Currency'],
+  ['freight', 'Freight'],
+];
+
+function formatQuantity(quantity: number, unit: string | undefined): string {
+  const n = quantity.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+  if (unit === 'kg') return `${n} kg`;
+  if (unit === 'pc') return quantity === 1 ? '1 pc' : `${n} pc`;
+  return unit ? `${n} ${unit}` : n;
+}
+
+function formatRate(unitPrice: number, unit: string | undefined): string {
+  const per = unit === 'kg' ? '/kg' : unit === 'pc' ? '/pc' : unit ? `/${unit}` : '';
+  return `${formatCurrency(unitPrice, false)}${per}`;
+}
+
+function signedMoney(value: number): string {
+  const text = formatCurrency(Math.abs(value), false);
+  if (value > 0) return `+${text}`;
+  if (value < 0) return `−${text}`;
+  return text;
+}
+
 function MaterialRow({
   material,
   depth,
   open,
   expandable,
-  estSpend,
+  monthlySpend,
+  monthlyForecast,
   onToggle,
 }: {
   material: TreeMaterial;
   depth: number;
   open: boolean;
   expandable: boolean;
-  estSpend: string;
+  monthlySpend: number;
+  monthlyForecast: number;
   onToggle: () => void;
 }) {
-  const commodity = material.bridges?.commodity;
+  const hasBuild = material.quantity != null && material.unitPrice != null;
+  const effects = MARKET_EFFECTS.flatMap(([key, label]) => {
+    const value = material.bridges?.[key];
+    if (value == null || value === 0) return [];
+    return [{ label, value }];
+  });
+
   return (
-    <div className={clsx(GRID, 'relative bg-amber-50/30 py-2.5 pr-5 text-[13px]')} style={{ paddingLeft: 20 + depth * INDENT }}>
+    <div
+      className={clsx(GRID, 'relative bg-amber-50/40 py-2.5 pr-5 text-[13px]')}
+      style={{ paddingLeft: 20 + depth * INDENT }}
+    >
       <Guides depth={depth} />
-      <span className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-2.5">
         <button
           type="button"
           onClick={onToggle}
@@ -805,31 +843,43 @@ function MaterialRow({
         <span className={clsx('flex h-7 w-7 shrink-0 items-center justify-center rounded-md', LEVEL_TILE.material)}>
           <LevelIcon kind="material" className="h-4 w-4" />
         </span>
-        <span className="min-w-0">
-          <span className="flex items-center gap-2">
-            <span className="truncate font-medium text-slate-800">{material.name}</span>
-            <span className="rounded-md bg-amber-100/70 px-2 py-0.5 text-[11px] text-amber-700">Material</span>
-            <span className="text-[11px] text-slate-400">BG &rarr; FC</span>
-          </span>
-          {material.isSample && material.quantity != null && material.unitPrice != null && (
-            <span className="block text-[12px] text-slate-400">
-              {material.quantity} {material.unit} &times; {formatCurrency(material.unitPrice, false)}
-              {material.unit === 'kg' ? '/kg' : ''} &middot; {estSpend}
-            </span>
-          )}
-          {commodity != null && (
-            <span className="block text-[12px] text-slate-400">Commodity bridge {formatCurrency(commodity, false)}</span>
-          )}
-        </span>
-      </span>
-      <span className="text-right tabular-nums text-slate-700" title="Budget (BG) — Material Cost baseline">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-medium text-slate-900">{material.name}</span>
+            <span className="shrink-0 rounded-md bg-amber-100/70 px-2 py-0.5 text-[11px] text-amber-700">Material</span>
+          </div>
+          <div className="mt-0.5 truncate text-[12px] tabular-nums text-slate-500">
+            {hasBuild && (
+              <>
+                {formatQuantity(material.quantity as number, material.unit)}
+                <span className="mx-1 text-slate-300">×</span>
+                {formatRate(material.unitPrice as number, material.unit)}
+                <span className="mx-1.5 text-slate-300">·</span>
+              </>
+            )}
+            Monthly spend {formatCurrency(monthlySpend)} → {formatCurrency(monthlyForecast)}
+          </div>
+        </div>
+      </div>
+      <span className="text-right tabular-nums text-slate-700" title="This line's share of the part price">
         {formatCurrency(material.currentPrice, false)}
       </span>
-      <span className="text-right font-medium tabular-nums text-slate-900" title="Forecast (FC) — Material Cost">
+      <span className="text-right font-medium tabular-nums text-slate-900" title="Forecast share of the part price">
         {formatCurrency(material.forecastPrice, false)}
       </span>
       <Variance pct={material.changePct} />
-      <span className="text-slate-400">&ndash;</span>
+      <span className="text-[12px] leading-5 text-slate-600" title="Share of the part's price move attributed to each market channel">
+        {effects.length === 0 ? (
+          <span className="text-slate-300">—</span>
+        ) : (
+          effects.map((effect) => (
+            <span key={effect.label} className="block truncate">
+              <span className="text-slate-500">{effect.label}</span>{' '}
+              <span className="font-medium tabular-nums text-slate-800">{signedMoney(effect.value)}</span>
+            </span>
+          ))
+        )}
+      </span>
     </div>
   );
 }
