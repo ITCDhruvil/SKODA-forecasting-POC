@@ -566,6 +566,11 @@ export interface TreeMaterial {
   };
   /** Always ``bg_to_fc`` when sourced from materialCost. */
   basis?: 'bg_to_fc';
+  /** Illustrative bill-of-materials line: quantity and unit price are SAMPLE values. */
+  unit?: string;
+  quantity?: number;
+  unitPrice?: number;
+  isSample?: boolean;
 }
 
 export interface TreePart {
