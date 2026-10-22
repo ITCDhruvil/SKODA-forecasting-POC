@@ -13,10 +13,10 @@ import {
   type Briefing,
   type BriefingDeps,
   type BriefingKv,
-} from '../briefing';
-import type { ChatConfig } from '../config';
-import type { ResponseLike, ResponsesApi } from '../responsesClient';
-import { ALLOWED_DOMAINS, toWebSource, type WebSource } from '../webSources';
+} from '../briefing.js';
+import type { ChatConfig } from '../config.js';
+import type { ResponseLike, ResponsesApi } from '../responsesClient.js';
+import { ALLOWED_DOMAINS, toWebSource, type WebSource } from '../webSources.js';
 
 const config: ChatConfig = {
   dataModel: 'data-m',

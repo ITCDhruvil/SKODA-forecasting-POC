@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { checkRateLimit } from './_lib/rateLimit';
-import { getAllStatuses, setStatus } from './_lib/hitlStatus';
-import { kv } from './_lib/kvClient';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import { getAllStatuses, setStatus } from './_lib/hitlStatus.js';
+import { kv } from './_lib/kvClient.js';
 
 function isValidStatus(s: unknown): s is 'confirmed' | 'dismissed' {
   return s === 'confirmed' || s === 'dismissed';

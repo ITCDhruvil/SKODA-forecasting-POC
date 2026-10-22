@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildChart, CHART_IDS, type BarChartSpec, type DonutChartSpec, type LineChartSpec } from '../charts';
-import { getDashboardJson, getPartsIndex } from '../data';
+import { buildChart, CHART_IDS, type BarChartSpec, type DonutChartSpec, type LineChartSpec } from '../charts.js';
+import { getDashboardJson, getPartsIndex } from '../data.js';
 
 function assertFiniteOrNull(v: unknown) {
   if (v === null) return;

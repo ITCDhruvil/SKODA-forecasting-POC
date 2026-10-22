@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { loadChatConfig } from './_lib/config';
-import { kv } from './_lib/kvClient';
-import { createOpenAIResponsesApi } from './_lib/openaiApi';
-import { answer, type IncomingMessage } from './_lib/orchestrator';
-import { checkRateLimit } from './_lib/rateLimit';
-import type { Mode } from './_lib/router';
-import { recordUsage } from './_lib/usageStats';
-import { checkWebBudget } from './_lib/webBudget';
+import { loadChatConfig } from './_lib/config.js';
+import { kv } from './_lib/kvClient.js';
+import { createOpenAIResponsesApi } from './_lib/openaiApi.js';
+import { answer, type IncomingMessage } from './_lib/orchestrator.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import type { Mode } from './_lib/router.js';
+import { recordUsage } from './_lib/usageStats.js';
+import { checkWebBudget } from './_lib/webBudget.js';
 
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 4000;

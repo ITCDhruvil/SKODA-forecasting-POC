@@ -1,6 +1,6 @@
-import type { ChatClient, ChatMessage, ToolCall } from './chatLoop';
-import type { ToolDefinition } from './tools';
-import { dedupeSources, toWebSource, type WebSource } from './webSources';
+import type { ChatClient, ChatMessage, ToolCall } from './chatLoop.js';
+import type { ToolDefinition } from './tools.js';
+import { dedupeSources, toWebSource, type WebSource } from './webSources.js';
 
 export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
 

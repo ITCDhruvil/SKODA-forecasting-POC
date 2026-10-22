@@ -1,12 +1,12 @@
-import type { ChartSpec } from './charts';
-import type { ChatConfig } from './config';
-import { runChatLoop, type ChatMessage } from './chatLoop';
-import type { ExportOffer } from './exportOffer';
-import { ResponsesChatClient, type ResponsesApi } from './responsesClient';
-import { routeMessage, stubOf, type Mode } from './router';
-import { buildSystemPrompt } from './systemPrompt';
-import { buildToolset } from './toolsets';
-import { ALLOWED_DOMAINS, type WebSource } from './webSources';
+import type { ChartSpec } from './charts.js';
+import type { ChatConfig } from './config.js';
+import { runChatLoop, type ChatMessage } from './chatLoop.js';
+import type { ExportOffer } from './exportOffer.js';
+import { ResponsesChatClient, type ResponsesApi } from './responsesClient.js';
+import { routeMessage, stubOf, type Mode } from './router.js';
+import { buildSystemPrompt } from './systemPrompt.js';
+import { buildToolset } from './toolsets.js';
+import { ALLOWED_DOMAINS, type WebSource } from './webSources.js';
 
 export interface IncomingMessage {
   role: 'user' | 'assistant';

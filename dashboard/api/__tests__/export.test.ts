@@ -1,7 +1,7 @@
 // dashboard/api/__tests__/export.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import handler from '../export';
+import handler from '../export.js';
 
 // The endpoint's docx path calls composeReport, which (absent this mock) would construct a real
 // OpenAI client and make a live outbound HTTPS request on every test run. That is slow, flaky and

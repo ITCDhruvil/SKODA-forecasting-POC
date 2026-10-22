@@ -4,7 +4,7 @@
 // This module also owns the document model (ReportDoc); reportCompose.ts produces one.
 import ExcelJS from 'exceljs';
 import { Document, HeadingLevel, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx';
-import type { ExportData } from './exportCatalog';
+import type { ExportData } from './exportCatalog.js';
 
 export const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 export const DOCX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

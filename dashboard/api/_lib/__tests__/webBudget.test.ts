@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkWebBudget, WEB_REQUESTS_PER_HOUR, _resetWebBudgetForTests, type KvCounterClient } from '../webBudget';
+import { checkWebBudget, WEB_REQUESTS_PER_HOUR, _resetWebBudgetForTests, type KvCounterClient } from '../webBudget.js';
 
 function fakeKv() {
   const counts = new Map<string, number>();

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { looksLikeAlertAction, routeMessage, stubOf, REPLY_STUB_LENGTH } from '../router';
-import type { ResponseLike, ResponsesApi } from '../responsesClient';
+import { looksLikeAlertAction, routeMessage, stubOf, REPLY_STUB_LENGTH } from '../router.js';
+import type { ResponseLike, ResponsesApi } from '../responsesClient.js';
 
 function routerReply(text: string): ResponseLike {
   return { id: 'rt', output: [{ type: 'message', content: [{ type: 'output_text', text }] }] };

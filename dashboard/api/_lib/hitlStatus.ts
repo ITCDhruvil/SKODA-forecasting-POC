@@ -1,4 +1,4 @@
-import { getDashboardJson } from './data';
+import { getDashboardJson } from './data.js';
 
 export interface KvHashClient {
   hgetall(key: string): Promise<Record<string, string> | null>;

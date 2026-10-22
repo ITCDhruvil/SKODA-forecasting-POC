@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { getExposure, loadExposureMap } from '../exposure';
-import { changePct, getDashboardJson, getPartsIndex } from '../data';
+import { getExposure, loadExposureMap } from '../exposure.js';
+import { changePct, getDashboardJson, getPartsIndex } from '../data.js';
 
 const COMMODITY_DRIVERS = ['steel', 'aluminium', 'copper', 'plastics', 'electronics'] as const;
 const SCENARIO_DRIVERS = ['freight', 'duty', 'geopolitics', 'fx'] as const;

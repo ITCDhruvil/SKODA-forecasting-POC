@@ -7,9 +7,9 @@ import {
   type ResponseLike,
   type ResponseOutputItem,
   type ResponsesApi,
-} from '../responsesClient';
-import type { ChatMessage } from '../chatLoop';
-import type { ToolDefinition } from '../tools';
+} from '../responsesClient.js';
+import type { ChatMessage } from '../chatLoop.js';
+import type { ToolDefinition } from '../tools.js';
 
 const TOOL: ToolDefinition = {
   type: 'function',

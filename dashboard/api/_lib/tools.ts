@@ -1,8 +1,8 @@
 // dashboard/api/_lib/tools.ts
-import { changePct, getDashboardJson, getPartsIndex, type ForecastPoint, type PartRecord } from './data';
-import { getExposure } from './exposure';
-import { getAllStatuses, setStatus, type KvHashClient } from './hitlStatus';
-import { kv } from './kvClient';
+import { changePct, getDashboardJson, getPartsIndex, type ForecastPoint, type PartRecord } from './data.js';
+import { getExposure } from './exposure.js';
+import { getAllStatuses, setStatus, type KvHashClient } from './hitlStatus.js';
+import { kv } from './kvClient.js';
 
 export interface ToolDefinition {
   type: 'function';

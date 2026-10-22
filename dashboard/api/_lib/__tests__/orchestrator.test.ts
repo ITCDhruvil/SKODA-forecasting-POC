@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { answer, LIMIT_NOTE, NO_SEARCH_NOTE, RECORD_USAGE_GRACE_MS, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator';
-import type { ChatConfig } from '../config';
-import type { ResponseLike, ResponsesApi } from '../responsesClient';
-import type { Mode } from '../router';
-import { ALLOWED_DOMAINS } from '../webSources';
+import { answer, LIMIT_NOTE, NO_SEARCH_NOTE, RECORD_USAGE_GRACE_MS, UNREACHABLE_NOTE, type OrchestratorDeps } from '../orchestrator.js';
+import type { ChatConfig } from '../config.js';
+import type { ResponseLike, ResponsesApi } from '../responsesClient.js';
+import type { Mode } from '../router.js';
+import { ALLOWED_DOMAINS } from '../webSources.js';
 
 const config: ChatConfig = {
   dataModel: 'data-m',

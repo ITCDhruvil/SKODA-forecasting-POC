@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildSystemPrompt } from '../systemPrompt';
-import { getDashboardJson } from '../data';
+import { buildSystemPrompt } from '../systemPrompt.js';
+import { getDashboardJson } from '../data.js';
 
 describe('buildSystemPrompt', () => {
   it('every mode states the dashboard currency symbol and forbids other currency symbols', () => {

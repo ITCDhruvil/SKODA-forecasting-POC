@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { ResponseLike, ResponsesApi } from './responsesClient';
+import type { ResponseLike, ResponsesApi } from './responsesClient.js';
 
 /**
  * Wraps the SDK behind our minimal ResponsesApi. Retries are off on purpose: with the SDK

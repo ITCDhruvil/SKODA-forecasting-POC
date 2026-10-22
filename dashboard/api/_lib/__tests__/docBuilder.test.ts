@@ -1,8 +1,8 @@
 // dashboard/api/_lib/__tests__/docBuilder.test.ts
 import { describe, it, expect } from 'vitest';
 import ExcelJS from 'exceljs';
-import { buildDocx, buildXlsx, exportFilename, type ReportDoc } from '../docBuilder';
-import type { ExportData } from '../exportCatalog';
+import { buildDocx, buildXlsx, exportFilename, type ReportDoc } from '../docBuilder.js';
+import type { ExportData } from '../exportCatalog.js';
 
 const DATA: ExportData = {
   title: 'Top 3 rising parts',

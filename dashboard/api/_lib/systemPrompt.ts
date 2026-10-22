@@ -1,5 +1,5 @@
-import type { Mode } from './router';
-import { getDashboardJson } from './data';
+import type { Mode } from './router.js';
+import { getDashboardJson } from './data.js';
 
 function buildBase(): string {
   const meta = getDashboardJson().meta;

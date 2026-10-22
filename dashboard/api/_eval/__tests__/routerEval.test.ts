@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { GOLDEN_CASES, type GoldenCase } from '../routerGolden';
-import { passes, percentile, runRouterEval } from '../routerEval';
+import { GOLDEN_CASES, type GoldenCase } from '../routerGolden.js';
+import { passes, percentile, runRouterEval } from '../routerEval.js';
 
 const cases: GoldenCase[] = [
   { id: 'a', message: 'm1', expected: 'data' },

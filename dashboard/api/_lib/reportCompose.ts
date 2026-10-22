@@ -3,9 +3,9 @@
 // The only place a model writes document prose. It never chooses the data: ReportDoc has no
 // table reference, and the caller attaches the table from the already-validated offer.dataRef.
 // Any failure yields a deterministic fallback document, so a click always produces a file.
-import type { ReportDoc, ReportSection } from './docBuilder';
-import type { IncomingMessage } from './orchestrator';
-import { extractOutputText, type ReasoningEffort, type ResponsesApi } from './responsesClient';
+import type { ReportDoc, ReportSection } from './docBuilder.js';
+import type { IncomingMessage } from './orchestrator.js';
+import { extractOutputText, type ReasoningEffort, type ResponsesApi } from './responsesClient.js';
 
 const MAX_SECTIONS = 6;
 const MAX_PARAGRAPHS = 6;

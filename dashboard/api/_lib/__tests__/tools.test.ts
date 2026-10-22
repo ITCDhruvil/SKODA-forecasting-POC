@@ -1,6 +1,6 @@
 // dashboard/api/lib/__tests__/tools.test.ts
 import { describe, it, expect } from 'vitest';
-import { getPartsIndex } from '../data';
+import { getPartsIndex } from '../data.js';
 import {
   searchParts,
   getPartForecast,
@@ -22,8 +22,8 @@ import {
   dismissGeoAlert,
   TOOL_DEFINITIONS,
   TOOL_HANDLERS,
-} from '../tools';
-import type { KvHashClient } from '../hitlStatus';
+} from '../tools.js';
+import type { KvHashClient } from '../hitlStatus.js';
 
 function fakeKvClient(initial: Record<string, string> = {}): KvHashClient {
   const store: Record<string, string> = { ...initial };

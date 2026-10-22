@@ -1,18 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { loadChatConfig } from './_lib/config';
+import { loadChatConfig } from './_lib/config.js';
 import {
   buildDocx,
   buildXlsx,
   DOCX_CONTENT_TYPE,
   exportFilename,
   XLSX_CONTENT_TYPE,
-} from './_lib/docBuilder';
-import { buildExportData, EXPORT_IDS, type BuildExportArgs, type ExportData } from './_lib/exportCatalog';
-import type { ExportOffer } from './_lib/exportOffer';
-import { createOpenAIResponsesApi } from './_lib/openaiApi';
-import type { IncomingMessage } from './_lib/orchestrator';
-import { checkRateLimit } from './_lib/rateLimit';
-import { composeReport } from './_lib/reportCompose';
+} from './_lib/docBuilder.js';
+import { buildExportData, EXPORT_IDS, type BuildExportArgs, type ExportData } from './_lib/exportCatalog.js';
+import type { ExportOffer } from './_lib/exportOffer.js';
+import { createOpenAIResponsesApi } from './_lib/openaiApi.js';
+import type { IncomingMessage } from './_lib/orchestrator.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import { composeReport } from './_lib/reportCompose.js';
 
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_LENGTH = 4000;

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import handler from '../briefing';
-import { getOrCreateBriefing, type Briefing } from '../_lib/briefing';
-import { _resetRateLimitForTests } from '../_lib/rateLimit';
+import handler from '../briefing.js';
+import { getOrCreateBriefing, type Briefing } from '../_lib/briefing.js';
+import { _resetRateLimitForTests } from '../_lib/rateLimit.js';
 
 vi.mock('../_lib/briefing', () => ({ getOrCreateBriefing: vi.fn() }));
 vi.mock('../_lib/openaiApi', () => ({ createOpenAIResponsesApi: vi.fn(() => ({ create: vi.fn() })) }));

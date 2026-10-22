@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import handler from '../chat';
-import { answer, type ChatResult } from '../_lib/orchestrator';
-import { _resetRateLimitForTests } from '../_lib/rateLimit';
+import handler from '../chat.js';
+import { answer, type ChatResult } from '../_lib/orchestrator.js';
+import { _resetRateLimitForTests } from '../_lib/rateLimit.js';
 
 vi.mock('../_lib/orchestrator', () => ({ answer: vi.fn() }));
 vi.mock('../_lib/openaiApi', () => ({ createOpenAIResponsesApi: vi.fn(() => ({ create: vi.fn() })) }));

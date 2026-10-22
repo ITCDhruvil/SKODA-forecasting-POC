@@ -1,4 +1,4 @@
-import type { Mode } from '../_lib/router';
+import type { Mode } from '../_lib/router.js';
 
 export interface GoldenCase {
   id: string;

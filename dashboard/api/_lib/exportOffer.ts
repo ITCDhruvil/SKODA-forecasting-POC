@@ -2,9 +2,9 @@
 // The chat-turn half of export. The handler returns a small acknowledgement to the model
 // – which is what lets the model close its answer by mentioning the offer in its own words –
 // and pushes the real ExportOffer out through onExport, exactly as showChart does with onChart.
-import { callKey } from './callKey';
-import { EXPORT_IDS, type ExportId } from './exportCatalog';
-import type { ToolDefinition } from './tools';
+import { callKey } from './callKey.js';
+import { EXPORT_IDS, type ExportId } from './exportCatalog.js';
+import type { ToolDefinition } from './tools.js';
 
 export const MAX_EXPORTS_PER_ANSWER = 1;
 

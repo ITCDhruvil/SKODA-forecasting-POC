@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadChatConfig } from '../config';
+import { loadChatConfig } from '../config.js';
 
 describe('loadChatConfig', () => {
   it('defaults: data model gpt-4o-mini, router and web fall back to the data model, web search off', () => {

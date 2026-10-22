@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getDashboardJson } from '../data';
-import { getAllStatuses, setStatus, type KvHashClient } from '../hitlStatus';
+import { getDashboardJson } from '../data.js';
+import { getAllStatuses, setStatus, type KvHashClient } from '../hitlStatus.js';
 
 function fakeKvClient(initial: Record<string, string> = {}): KvHashClient {
   const store: Record<string, string> = { ...initial };

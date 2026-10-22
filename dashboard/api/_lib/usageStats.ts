@@ -1,4 +1,4 @@
-import type { Mode } from './router';
+import type { Mode } from './router.js';
 
 /** Minimal view of the Vercel KV client used for usage counters (the real `kv` satisfies it). */
 export interface UsageKv {

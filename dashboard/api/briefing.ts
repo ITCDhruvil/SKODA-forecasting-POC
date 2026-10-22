@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getOrCreateBriefing } from './_lib/briefing';
-import { loadChatConfig } from './_lib/config';
-import { kv } from './_lib/kvClient';
-import { createOpenAIResponsesApi } from './_lib/openaiApi';
-import { checkRateLimit } from './_lib/rateLimit';
+import { getOrCreateBriefing } from './_lib/briefing.js';
+import { loadChatConfig } from './_lib/config.js';
+import { kv } from './_lib/kvClient.js';
+import { createOpenAIResponsesApi } from './_lib/openaiApi.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
 
 const DEFAULT_TIMEZONE = 'Asia/Kolkata';
 

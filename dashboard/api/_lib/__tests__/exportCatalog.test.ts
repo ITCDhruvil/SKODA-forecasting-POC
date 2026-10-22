@@ -1,7 +1,7 @@
 // dashboard/api/_lib/__tests__/exportCatalog.test.ts
 import { describe, it, expect } from 'vitest';
-import { getPartsIndex } from '../data';
-import { buildExportData, EXPORT_IDS, MAX_EXPORT_ROWS, type ExportData } from '../exportCatalog';
+import { getPartsIndex } from '../data.js';
+import { buildExportData, EXPORT_IDS, MAX_EXPORT_ROWS, type ExportData } from '../exportCatalog.js';
 
 function ok(result: ExportData | { error: string }): ExportData {
   if ('error' in result) throw new Error(`expected data, got error: ${result.error}`);

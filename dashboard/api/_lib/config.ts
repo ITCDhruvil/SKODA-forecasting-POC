@@ -1,4 +1,4 @@
-import type { ReasoningEffort } from './responsesClient';
+import type { ReasoningEffort } from './responsesClient.js';
 
 export interface ChatConfig {
   dataModel: string;

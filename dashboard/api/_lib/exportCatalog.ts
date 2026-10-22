@@ -3,8 +3,8 @@
 // getDashboardJson()/getPartsIndex() – the model never types an exported number,
 // it only picks a catalog id and a few parameters. Sibling of charts.ts, kept
 // separate because a chart must stay readable and an export does not.
-import type { HierarchyLevel, ScenarioFamily } from './charts';
-import { changePct, getDashboardJson, getPartsIndex, type PartRecord } from './data';
+import type { HierarchyLevel, ScenarioFamily } from './charts.js';
+import { changePct, getDashboardJson, getPartsIndex, type PartRecord } from './data.js';
 
 export const EXPORT_IDS = [
   'parts_search',

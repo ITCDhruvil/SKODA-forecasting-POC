@@ -1,5 +1,5 @@
-import type { Mode } from '../_lib/router';
-import type { GoldenCase } from './routerGolden';
+import type { Mode } from '../_lib/router.js';
+import type { GoldenCase } from './routerGolden.js';
 
 export interface EvalResult {
   total: number;

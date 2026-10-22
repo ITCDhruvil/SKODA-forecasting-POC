@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { runChatLoop, type ChatClient, type ChatMessage } from '../chatLoop';
+import { runChatLoop, type ChatClient, type ChatMessage } from '../chatLoop.js';
 
 function fakeClient(
   responses: { content: string | null; toolCalls: { id: string; name: string; arguments: string }[] }[],

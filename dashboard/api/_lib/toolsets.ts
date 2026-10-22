@@ -1,8 +1,8 @@
-import { callKey } from './callKey';
-import { buildChart, CHART_IDS, type BarChartSpec, type ChartSpec, type DonutChartSpec, type LineChartSpec, type Unit } from './charts';
-import { buildOfferExportHandler, offerExportDefinition, type ExportOffer } from './exportOffer';
-import type { Mode } from './router';
-import { TOOL_DEFINITIONS, TOOL_HANDLERS, type ToolDefinition } from './tools';
+import { callKey } from './callKey.js';
+import { buildChart, CHART_IDS, type BarChartSpec, type ChartSpec, type DonutChartSpec, type LineChartSpec, type Unit } from './charts.js';
+import { buildOfferExportHandler, offerExportDefinition, type ExportOffer } from './exportOffer.js';
+import type { Mode } from './router.js';
+import { TOOL_DEFINITIONS, TOOL_HANDLERS, type ToolDefinition } from './tools.js';
 
 export const WRITE_TOOL_NAMES = ['confirmGeoAlert', 'dismissGeoAlert'] as const;
 const ACTION_TOOL_NAMES: readonly string[] = ['getGeoHitlAlerts', ...WRITE_TOOL_NAMES];

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import Papa from 'papaparse';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDashboardJson, getPartsIndex, getPartHistory } from '../data';
+import { getDashboardJson, getPartsIndex, getPartHistory } from '../data.js';
 
 const FORECASTS_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'forecasts.csv');
 

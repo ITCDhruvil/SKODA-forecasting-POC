@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from './_lib/kvClient';
-import { checkRateLimit } from './_lib/rateLimit';
-import { readUsage } from './_lib/usageStats';
+import { kv } from './_lib/kvClient.js';
+import { checkRateLimit } from './_lib/rateLimit.js';
+import { readUsage } from './_lib/usageStats.js';
 
 /**
  * GET /api/usage: token figures for the Radar settings screen (spec section 12). Never a 5xx: when the store

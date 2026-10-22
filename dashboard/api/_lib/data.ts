@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Papa from 'papaparse';
-import type { DashboardData } from '../../src/types';
+import type { DashboardData } from '../../src/types.js';
 
 const DASHBOARD_JSON_PATH = path.join(process.cwd(), 'api', '_data', 'dashboard.json');
 const FORECASTS_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'forecasts.csv');

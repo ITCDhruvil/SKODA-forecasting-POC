@@ -3,8 +3,8 @@
 // Server-side chart catalog. Every number in a ChartSpec is computed here from
 // getDashboardJson()/getPartsIndex()/getPartHistory() — the model never types a
 // chart number, it only picks a catalog id and a few parameters.
-import { getDashboardJson, getPartHistory, getPartsIndex } from './data';
-import { getTopMovers } from './tools';
+import { getDashboardJson, getPartHistory, getPartsIndex } from './data.js';
+import { getTopMovers } from './tools.js';
 
 export type Unit = 'pct' | 'currency' | 'number';
 

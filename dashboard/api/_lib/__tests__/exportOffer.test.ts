@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOfferExportHandler, offerExportDefinition, type ExportOffer } from '../exportOffer';
+import { buildOfferExportHandler, offerExportDefinition, type ExportOffer } from '../exportOffer.js';
 
 function collector() {
   const offers: ExportOffer[] = [];

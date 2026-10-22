@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import handler from '../usage';
-import { readUsage, type UsageStats } from '../_lib/usageStats';
-import { _resetRateLimitForTests } from '../_lib/rateLimit';
+import handler from '../usage.js';
+import { readUsage, type UsageStats } from '../_lib/usageStats.js';
+import { _resetRateLimitForTests } from '../_lib/rateLimit.js';
 
 vi.mock('../_lib/usageStats', () => ({ readUsage: vi.fn() }));
 vi.mock('../_lib/kvClient', () => ({ kv: {} }));

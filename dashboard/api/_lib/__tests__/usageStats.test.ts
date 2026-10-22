@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { LATEST_BRIEFING_KEY, USAGE_HASH_KEY, readUsage, recordUsage, type UsageKv } from '../usageStats';
+import { LATEST_BRIEFING_KEY, USAGE_HASH_KEY, readUsage, recordUsage, type UsageKv } from '../usageStats.js';
 
 function fakeKv(initial: { hash?: Record<string, unknown> | null; values?: Record<string, unknown> } = {}) {
   const hash: Record<string, unknown> = { ...(initial.hash ?? {}) };

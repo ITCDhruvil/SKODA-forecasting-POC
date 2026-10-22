@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildToolset, WRITE_TOOL_NAMES } from '../toolsets';
-import type { ChartSpec } from '../charts';
+import { buildToolset, WRITE_TOOL_NAMES } from '../toolsets.js';
+import type { ChartSpec } from '../charts.js';
 
 const names = (defs: { function: { name: string } }[]) => defs.map((d) => d.function.name).sort();
 

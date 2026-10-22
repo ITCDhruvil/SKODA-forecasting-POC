@@ -1,7 +1,7 @@
-import type { ChatConfig } from './config';
-import { collectSources, extractOutputText, usageOf, type ResponsesApi } from './responsesClient';
-import { LATEST_BRIEFING_KEY } from './usageStats';
-import { ALLOWED_DOMAINS, dedupeSources, toWebSource, type WebSource } from './webSources';
+import type { ChatConfig } from './config.js';
+import { collectSources, extractOutputText, usageOf, type ResponsesApi } from './responsesClient.js';
+import { LATEST_BRIEFING_KEY } from './usageStats.js';
+import { ALLOWED_DOMAINS, dedupeSources, toWebSource, type WebSource } from './webSources.js';
 
 export type Impact = 'cost_up' | 'cost_down' | 'watch';
 export type Area = 'steel' | 'aluminium' | 'freight' | 'duty' | 'fx' | 'geopolitics' | 'other';

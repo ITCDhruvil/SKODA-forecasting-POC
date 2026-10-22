@@ -1,4 +1,4 @@
-import { extractOutputText, type ReasoningEffort, type ResponsesApi } from './responsesClient';
+import { extractOutputText, type ReasoningEffort, type ResponsesApi } from './responsesClient.js';
 
 export type Mode = 'data' | 'web' | 'action';
 

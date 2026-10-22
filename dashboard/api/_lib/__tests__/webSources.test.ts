@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ALLOWED_DOMAINS, dedupeSources, isAllowedHost, titleFromUrl, toWebSource } from '../webSources';
+import { ALLOWED_DOMAINS, dedupeSources, isAllowedHost, titleFromUrl, toWebSource } from '../webSources.js';
 
 const DOMAINS = ['reuters.com', 'ft.com'];
 

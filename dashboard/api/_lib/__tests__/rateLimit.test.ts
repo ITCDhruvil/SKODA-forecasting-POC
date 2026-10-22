@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { checkRateLimit, _resetRateLimitForTests } from '../rateLimit';
+import { checkRateLimit, _resetRateLimitForTests } from '../rateLimit.js';
 
 const WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS = 20;

@@ -1,7 +1,7 @@
 // dashboard/api/_lib/__tests__/reportCompose.test.ts
 import { describe, it, expect, vi } from 'vitest';
-import { buildComposePrompt, composeReport, fallbackReport } from '../reportCompose';
-import type { ResponseLike, ResponsesApi } from '../responsesClient';
+import { buildComposePrompt, composeReport, fallbackReport } from '../reportCompose.js';
+import type { ResponseLike, ResponsesApi } from '../responsesClient.js';
 
 function apiReturning(text: string): { api: ResponsesApi; calls: Record<string, unknown>[] } {
   const calls: Record<string, unknown>[] = [];
