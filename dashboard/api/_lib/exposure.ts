@@ -5,9 +5,9 @@
 // scenario family (freight/duty/geopolitics/fx), the already-modeled shock scenarios.
 import fs from 'node:fs';
 import path from 'node:path';
-import { changePct, getDashboardJson, getPartsIndex, type PartRecord } from './data.js';
+import { changePct, DATA_DIR, getDashboardJson, getPartsIndex, type PartRecord } from './data.js';
 
-const EXPOSURE_MAP_PATH = path.join(process.cwd(), 'api', '_data', 'exposure.json');
+const EXPOSURE_MAP_PATH = path.join(DATA_DIR, 'exposure.json');
 
 export interface ExposureMapEntry {
   categories: string[];

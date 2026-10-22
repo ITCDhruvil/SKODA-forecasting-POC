@@ -1,11 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Papa from 'papaparse';
 import type { DashboardData } from '../../src/types.js';
 
-const DASHBOARD_JSON_PATH = path.join(process.cwd(), 'api', '_data', 'dashboard.json');
-const FORECASTS_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'forecasts.csv');
-const PARTS_PRICES_CSV_PATH = path.join(process.cwd(), 'api', '_data', 'parts_prices.csv');
+// Resolve api/_data next to this module rather than from the working directory: on Vercel
+// the function runs from /var/task while the project files sit under /var/task/dashboard.
+const MODULE_DATA_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '_data');
+export const DATA_DIR = fs.existsSync(MODULE_DATA_DIR)
+  ? MODULE_DATA_DIR
+  : path.join(process.cwd(), 'api', '_data');
+
+const DASHBOARD_JSON_PATH = path.join(DATA_DIR, 'dashboard.json');
+const FORECASTS_CSV_PATH = path.join(DATA_DIR, 'forecasts.csv');
+const PARTS_PRICES_CSV_PATH = path.join(DATA_DIR, 'parts_prices.csv');
 
 let dashboardCache: DashboardData | null = null;
 
