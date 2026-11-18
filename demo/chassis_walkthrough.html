@@ -1,0 +1,186 @@
+<title>Kushaq Chassis Price Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one case study, in the order you present it on the live dashboard. Each block = claim, evidence, say-this. */
+:root{--bg:#F5F8F6;--surface:#fff;--ink:#12211C;--ink2:#42554D;--muted:#667870;--line:#DCE5E1;--accent:#0F7A55;--accent-soft:#DDF0E8;--hist:#52627F;--up:#B4540A;--up-soft:#FBE9D8;--down:#0B6E8A;--down-soft:#D9EEF4;--font-d:"Space Grotesk",system-ui,sans-serif;--font-b:"Inter",system-ui,sans-serif}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1714;--surface:#14221D;--ink:#E8F1EE;--ink2:#A9BDB5;--muted:#86998F;--line:#25362F;--accent:#4FC795;--accent-soft:#1B3A2E;--hist:#8FA3C7;--up:#F0A25A;--up-soft:#3A2A1A;--down:#5BC0DE;--down-soft:#173440;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D1714;--surface:#14221D;--ink:#E8F1EE;--ink2:#A9BDB5;--muted:#86998F;--line:#25362F;--accent:#4FC795;--accent-soft:#1B3A2E;--hist:#8FA3C7;--up:#F0A25A;--up-soft:#3A2A1A;--down:#5BC0DE;--down-soft:#173440;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--font-b);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1000px;margin:0 auto;padding-block:40px 64px;display:grid;gap:40px}
+h1,h2,h3{font-family:var(--font-d);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4.6vw,42px);letter-spacing:-.02em}h2{font-size:clamp(22px,3vw,28px)}h3{font-size:17px}
+p{margin:0;max-width:70ch}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+section{display:grid;gap:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.tile,.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-width:0}
+.tile .k{font-size:12.5px;color:var(--muted);font-weight:500}.tile .v{font:600 28px/1.2 var(--font-d);margin-top:3px}.tile .s{font-size:13px;color:var(--ink2)}
+.say{background:var(--accent-soft);border-radius:10px;padding:13px 17px;font-size:16px}
+.say b,.watch b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.watch{background:var(--up-soft);border-radius:10px;padding:13px 17px;font-size:15px}.watch b{color:var(--up)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.real{background:var(--accent-soft);color:var(--accent)}.syn{background:var(--up-soft);color:var(--up)}
+.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-size:12px;text-align:left;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}.r{text-align:right}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block;width:100%;height:auto;overflow:visible}svg text{font:12px var(--font-b);fill:var(--muted)}
+.chart{position:relative}.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:3;display:none}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink2);margin-top:10px}.legend i{display:inline-block;width:18px;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.bar{display:grid;grid-template-columns:minmax(150px,1.2fr) 2fr 92px;gap:10px;align-items:center;font-size:14px;padding:5px 0}
+.bar .tr{height:14px;background:var(--line);border-radius:3px;position:relative}
+.bar .tr .z{position:absolute;left:50%;top:-3px;bottom:-3px;border-left:1px solid var(--muted)}
+.bar .f{position:absolute;top:0;bottom:0;border-radius:3px}.bar .d{font-weight:600;font-size:13px;white-space:nowrap;text-align:right}
+.up{color:var(--up)}.down{color:var(--down)}
+@media(max-width:560px){.bar{grid-template-columns:1fr 92px}.bar .tr{grid-column:1/-1;order:3}}
+ol.steps{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+ol.steps li::before{content:counter(s);font:600 14px var(--font-d);background:var(--accent);color:var(--bg);width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
+ol.steps b{font-family:var(--font-d)}ol.steps span{display:block;color:var(--ink2);font-size:14.5px}
+.note{font-size:13px;color:var(--muted);max-width:82ch}
+.flow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:14.5px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+.flow span.o{color:var(--accent);font-weight:700}
+</style>
+
+<div class="wrap">
+<header style="display:grid;gap:14px">
+  <div class="eyebrow">Live dashboard case · SKODA Kushaq · Bharat Forge · Chassis</div>
+  <h1>How the price of a Kushaq chassis part is forecast</h1>
+  <p>The part is <b>Chassis A39, KUS-CHS-00312</b>, supplied by Bharat Forge. It is steel, bought from a domestic vendor, and repriced by the vendor every six months. This page follows the order in which you would open it on the dashboard.</p>
+  <div class="tiles" id="tiles"></div>
+</header>
+
+<section id="a">
+  <h2>First, a note on July 2023</h2>
+  <div class="panel"><p>The data starts in <b>July 2023</b>, so that month is the first actual price (₹1,592.98), not a forecast. The dashboard calls it the <b>Nomination or Budget (BG) price</b>. No model ever predicted it. Every forecast on screen looks forward from <b>June 2026</b>, the last month of history: <b>July 2026</b> is the next-month forecast and <b>December 2026</b> is the six-month forecast.</p></div>
+  <div class="say"><b>Say this</b>July 2023 is where this part's story starts: the price SKODA budgeted when the part was nominated. The model's job is to say where it goes from here, and the dashboard shows how far it has already moved from that budget.</div>
+</section>
+
+<section id="b">
+  <h2>The price path: budget to today to forecast</h2>
+  <div class="panel"><div class="chart" id="c1"></div>
+    <div class="legend"><span><i style="color:var(--hist)"></i>Actual monthly price</span><span><i style="color:var(--accent);border-top-style:dashed"></i>Model forecast, Jul to Dec 2026</span><span><i style="color:var(--accent);opacity:.35"></i>80% range</span></div></div>
+  <div class="tiles" id="bridge"></div>
+  <div class="say"><b>Say this</b>This chassis part is up about 32% since nomination. The dashboard splits the rise into currency and vendor repricing. Vendor repricing is the bigger piece, and it is the part to raise with Bharat Forge.</div>
+  <div class="watch"><b>Watch out</b>These part-level prices are simulated, because no public source publishes real piece prices. The budget baseline is derived from the first history month, since no SKODA budget file is loaded. State both up front.</div>
+</section>
+
+<section id="c">
+  <h2>What decides this price</h2>
+  <p>The model works from a simple idea: a part's price is its starting level, moved by a handful of outside forces, each with its own delay. For this chassis:</p>
+  <div class="panel tbl"><table>
+    <thead><tr><th>Force</th><th>Why it matters to this part</th><th>Where the data comes from</th><th>Status</th></tr></thead>
+    <tbody>
+    <tr><td><b>Steel and metals</b></td><td>The part is steel. Steel is priced in US dollars on world markets even when bought locally. The part's material intensity is 0.85, meaning most of its cost follows its raw material.</td><td>World Bank Pink Sheet. It has no steel series, so <b>iron ore</b> is the steel proxy. Aluminium and copper are also read.</td><td><span class="pill real">Real</span></td></tr>
+    <tr><td><b>Rupee and dollar</b></td><td>A weaker rupee makes dollar-priced steel dearer in rupees. In the simulated data this part has a 0.21 sensitivity to USD/INR, felt after about 4 months, and the model has to rediscover it. Euro sensitivity is near zero because Bharat Forge is a domestic vendor (18% import dependency, 95% localised).</td><td>European Central Bank daily rates via Frankfurter, averaged monthly</td><td><span class="pill real">Real</span></td></tr>
+    <tr><td><b>Market-wide parts inflation</b></td><td>Auto parts as a whole drift up and down together.</td><td>US Bureau of Labor Statistics, Motor Vehicle Parts index (CUUR0000SETC)</td><td><span class="pill real">Real</span></td></tr>
+    <tr><td><b>Freight and shipping</b></td><td>Moving steel and finished parts costs more when freight spikes.</td><td>US Transportation Services Index for freight (FRED)</td><td><span class="pill real">Real</span></td></tr>
+    <tr><td><b>Geopolitics</b></td><td>Conflict and shipping disruptions move energy, metals, freight and currency together.</td><td>Geopolitical Risk index plus a calendar of events (Ukraine, Red Sea, duty changes)</td><td><span class="pill real">Real</span></td></tr>
+    <tr><td><b>Vendor behaviour</b></td><td>Bharat Forge reprices every 6 months, so prices move in steps, not smoothly.</td><td>Vendor profile</td><td><span class="pill syn">Simulated</span></td></tr>
+    <tr><td><b>Season, own drift, noise</b></td><td>Repeating yearly patterns, a slow part-specific trend, and month-to-month randomness.</td><td>Generated from the part's own history</td><td><span class="pill syn">Simulated</span></td></tr>
+    </tbody></table></div>
+  <div class="flow"><b>Price</b><span class="o">=</span> starting price <span class="o">×</span> market inflation <span class="o">×</span> rupee effect <span class="o">×</span> steel, freight and geopolitics <span class="o">×</span> season <span class="o">×</span> drift <span class="o">×</span> noise</div>
+  <p class="note">On the dashboard, open <b>Data Source</b> to show provider, coverage and caveats for each real series. The part-level price panel is flagged as synthetic.</p>
+  <div class="say"><b>Say this</b>Four of the inputs are real public data. The one that is simulated is the price of the part itself. With real SKODA purchase orders in its place, nothing else changes.</div>
+</section>
+
+<section id="d">
+  <h2>What the model actually reads for this part</h2>
+  <p>For every part, every month, the model builds about 130 clues, called features. Below are the groups, with the values this chassis had in <b>June 2026</b>, the month the forecast starts from.</p>
+  <div class="panel tbl"><table>
+    <thead><tr><th>Group</th><th>Example clues</th><th>This part in Jun 2026</th><th>Plain meaning</th></tr></thead>
+    <tbody>
+    <tr><td><b>Own price history</b></td><td>Price 1, 2, 3, 6 and 12 months ago; 3 and 6-month averages; swings; change vs last year</td><td class="num">Last month ₹2,080 · a year ago ₹1,885 · up 11.3% year on year · 6-month average ₹2,079</td><td>Where the price has been, how fast it rose, how jumpy it is</td></tr>
+    <tr><td><b>Calendar</b></td><td>Month of year, months since start</td><td class="num">June · month 35</td><td>Repeating seasonal patterns</td></tr>
+    <tr><td><b>Rupee and dollar</b></td><td>USD/INR and EUR/INR moves over 1, 3, 6, 12 months and at lags up to 6 months, scaled by the part's import exposure</td><td class="num">USD/INR ₹94.93 · +2.2% in 3 mo · +5.3% in 6 mo · +9.9% in 12 mo</td><td>The rupee has weakened steadily, and its effect arrives with a delay</td></tr>
+    <tr><td><b>Steel and metals</b></td><td>Iron ore (steel proxy), aluminium, copper returns at lags, scaled by how much of the part is that material</td><td class="num">Steel proxy +4.1% last month, −2.7% two months ago · material intensity 0.85</td><td>Raw material cost already moving through the supply chain</td></tr>
+    <tr><td><b>Freight</b></td><td>Freight index change, scaled by import dependency</td><td class="num">Freight −1.3% last month</td><td>Shipping costs are easing slightly</td></tr>
+    <tr><td><b>Geopolitics</b></td><td>Risk index, shipping chokepoint flag, active conflict, tariff and sanction events and how they fade</td><td class="num">Risk index +0.6 above normal (+1.1 a month earlier) · no active events</td><td>Tension is elevated, but no new shock</td></tr>
+    <tr><td><b>Market-wide inflation</b></td><td>US parts price index and its monthly and yearly change</td><td class="num">Index 1.049 · +1.7% year on year</td><td>The whole sector is drifting up gently</td></tr>
+    <tr><td><b>Peers</b></td><td>Average prices of the same vendor, category, programme and combinations</td><td class="num">Chassis price is below the category average, above the vendor average</td><td>What similar parts are doing</td></tr>
+    <tr><td><b>What the part is</b></td><td>Vendor, category, programme, import dependency, localisation, repricing months, volume, weight</td><td class="num">Bharat Forge · Chassis · Kushaq · 18% import · 95% localised · reprices every 6 mo</td><td>Fixed character of the part</td></tr>
+    </tbody></table></div>
+  <p class="note">The monthly retrain step ranks these clues and keeps the ones that earn their place, always retaining price history, currency, matched commodity and freight. Two seasoned models run side by side, XGBoost (machine learning) and SARIMA (classic statistics), and a seasonal baseline acts as the yardstick.</p>
+</section>
+
+<section id="e">
+  <h2>What pushed this part's forecast</h2>
+  <p>This is a per-part explanation of the XGBoost forecast, showing how much each group of clues pushed the price up or down from June 2026, on top of the model's average drift.</p>
+  <div class="cols">
+   <div class="panel"><h3 style="margin-bottom:6px">Next month (July 2026)</h3><div id="d1"></div></div>
+   <div class="panel"><h3 style="margin-bottom:6px">Six months out (December 2026)</h3><div id="d6"></div></div>
+  </div>
+  <div class="say"><b>Say this</b>For next month the model sees no strong push either way. The price is already well above its long-run average, which pulls it back, and that is offset by small lifts from peers, freight and geopolitics. Over six months, the long-run tendency of Bharat Forge chassis parts to rise, plus geopolitical risk and the rupee, outweighs that pull-back.</div>
+  <div class="watch"><b>Watch out</b>This explanation comes from re-running the same XGBoost setup on the same data. It lands close to the dashboard's forecast but is not identical (₹2,096 vs ₹2,115 for July, ₹2,201 vs ₹2,189 for December), so quote the drivers, not the exact rupee figure. A small push is not a prediction: on the Hierarchy tab, most parts are flagged low confidence for exactly this reason.</div>
+</section>
+
+<section id="f">
+  <h2>Your click path on the live dashboard</h2>
+  <ol class="steps">
+   <li><div><b>Dashboard</b><span>Show the headline cards and the "Why the forecast moved" waterfall. Say that this chassis is one of 480 parts.</span></div></li>
+   <li><div><b>Hierarchy</b><span>Expand SKODA Kushaq, then Bharat Forge, then Chassis. Bharat Forge supplies four categories on this programme: Body Stampings, Chassis, Fasteners and Powertrain. Point at the chassis row: current price, forecast, 80% range, confidence flag.</span></div></li>
+   <li><div><b>Material Cost</b><span>Search the part. Show Budget (₹1,593), SOP (₹2,098), Forecast (₹2,189) and the waterfall: currency ₹54, vendor reprice ₹543. Open the part drawer for its price path.</span></div></li>
+   <li><div><b>FX Impact</b><span>Show the rupee moving from 82 to 95 per dollar, and the shock test. Explain that steel carries dollar exposure even for a domestic vendor.</span></div></li>
+   <li><div><b>Geo Risk</b><span>Show the risk index, the event studies, and that a person confirms any news signal before it affects a forecast.</span></div></li>
+   <li><div><b>Data Source and Parameters</b><span>Close on where each input comes from, which are real, and the full list of drivers. Finish with Validation to show honest accuracy on real data.</span></div></li>
+  </ol>
+</section>
+<p class="note">Source files: demo/chassis_case.json holds the numbers on this page, taken from data/processed (dashboard.json, forecasts.csv, features.parquet) and a re-run of the project's XGBoost model. Everything about the part's price is simulated, as described above.</p>
+</div>
+
+<script>
+const D={"path": [{"m": "2023-07", "p": 1592.98}, {"m": "2023-08", "p": 1586.98}, {"m": "2023-09", "p": 1644.94}, {"m": "2023-10", "p": 1632.91}, {"m": "2023-11", "p": 1688.19}, {"m": "2023-12", "p": 1646.71}, {"m": "2024-01", "p": 1775.12}, {"m": "2024-02", "p": 1743.52}, {"m": "2024-03", "p": 1765.94}, {"m": "2024-04", "p": 1777.23}, {"m": "2024-05", "p": 1740.75}, {"m": "2024-06", "p": 1753.66}, {"m": "2024-07", "p": 1761.74}, {"m": "2024-08", "p": 1713.85}, {"m": "2024-09", "p": 1712.77}, {"m": "2024-10", "p": 1742.77}, {"m": "2024-11", "p": 1756.7}, {"m": "2024-12", "p": 1838.27}, {"m": "2025-01", "p": 1882.12}, {"m": "2025-02", "p": 1872.43}, {"m": "2025-03", "p": 1897.67}, {"m": "2025-04", "p": 1818.95}, {"m": "2025-05", "p": 1846.72}, {"m": "2025-06", "p": 1885.39}, {"m": "2025-07", "p": 1932.25}, {"m": "2025-08", "p": 1920.97}, {"m": "2025-09", "p": 1971.51}, {"m": "2025-10", "p": 1977.36}, {"m": "2025-11", "p": 1944.72}, {"m": "2025-12", "p": 1991.93}, {"m": "2026-01", "p": 2033.28}, {"m": "2026-02", "p": 2044.84}, {"m": "2026-03", "p": 2141.42}, {"m": "2026-04", "p": 2075.84}, {"m": "2026-05", "p": 2080.22}, {"m": "2026-06", "p": 2097.52}], "fc": [{"m": "2026-07", "p": 2115.497654094696, "lo": 2054.092998854715, "hi": 2183.96780253303}, {"m": "2026-08", "p": 2078.3970199632645, "lo": 1996.6946590977727, "hi": 2167.055270184645}, {"m": "2026-09", "p": 2113.20625207901, "lo": 2008.0930193846475, "hi": 2215.11752488237}, {"m": "2026-10", "p": 2141.9310417079923, "lo": 2018.9068956968408, "hi": 2261.207625485016}, {"m": "2026-11", "p": 2158.6514752292637, "lo": 2020.0325875228812, "hi": 2293.0477535914747}, {"m": "2026-12", "p": 2189.3636135292054, "lo": 2035.3537983564652, "hi": 2338.6819808379296}], "bridge": {"bgPrice": 1592.98, "sopPrice": 2097.52, "fcPrice": 2189.36, "bridgesNomToSop": {"fx": 53.63, "commodity": 0.0, "freight": 0.0, "vendorReprice": 450.91, "mix": 0.0, "seasonality": 0.0, "unexplained": 0.0}, "bridgesSopToFc": {"fx": 0.0, "commodity": 0.0, "freight": 0.0, "vendorReprice": 91.84, "mix": 0.0, "seasonality": 0.0, "unexplained": 0.0}}, "drv": {"1": {"pred": 2096.3697982025146, "groups": {"Who and what the part is (vendor, category, programme, volume)": 0.0014517358504235744, "Steel and other commodities": -0.0020641512237489223, "Own price history and calendar": -0.010978820733726025, "Market-wide parts inflation (BLS)": -0.00010181555990129709, "Currency (USD/INR, EUR/INR)": 0.0011994028463959694, "Freight": 0.001996316947042942, "Geopolitics and events": 0.0012551735853776336, "Peer prices (same vendor, category, programme)": 0.00321750994771719}, "bias": 0.0034761580172926188}, "6": {"pred": 2201.1606832695006, "groups": {"Who and what the part is (vendor, category, programme, volume)": 0.027411293238401413, "Steel and other commodities": -0.002194935455918312, "Own price history and calendar": -0.02017074264585972, "Market-wide parts inflation (BLS)": -0.00012784835416823626, "Currency (USD/INR, EUR/INR)": 0.00616901321336627, "Freight": -0.0002804888063110411, "Geopolitics and events": 0.011437319219112396, "Peer prices (same vendor, category, programme)": 0.004393650218844414}, "bias": 0.02159194089472294}}};
+const $=s=>document.querySelector(s);
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const mi=s=>{const[y,m]=s.split("-").map(Number);return y*12+m-1},ml=i=>MN[i%12]+" "+Math.floor(i/12);
+const rs=v=>"₹"+Math.round(v).toLocaleString("en-IN");
+const f=D.fc,j=f[0],dec=f[5],last=D.path[D.path.length-1],first=D.path[0];
+$("#tiles").innerHTML=[
+ ["Jul 2023 · nomination (budget)",rs(first.p),"First month of data, not a forecast"],
+ ["Jun 2026 · today",rs(last.p),"+"+((last.p/first.p-1)*100).toFixed(1)+"% vs nomination"],
+ ["Jul 2026 · next month forecast",rs(j.p),"Range "+rs(j.lo)+" to "+rs(j.hi)],
+ ["Dec 2026 · six month forecast",rs(dec.p),"Range "+rs(dec.lo)+" to "+rs(dec.hi)]
+].map(([k,v,s])=>`<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
+const b=D.bridge,n=b.bridgesNomToSop,s2=b.bridgesSopToFc;
+$("#bridge").innerHTML=[
+ ["Budget to today","+"+rs(b.sopPrice-b.bgPrice),"Currency "+rs(n.fx)+" · vendor repricing "+rs(n.vendorReprice)],
+ ["Today to Dec 2026 forecast","+"+rs(b.fcPrice-b.sopPrice),"Vendor repricing "+rs(s2.vendorReprice)],
+ ["Budget to forecast","+"+((b.fcPrice/b.bgPrice-1)*100).toFixed(1)+"%",rs(b.bgPrice)+" to "+rs(b.fcPrice)]
+].map(([k,v,s])=>`<div class="tile"><div class="k">${k}</div><div class="v num" style="font-size:24px">${v}</div><div class="s">${s}</div></div>`).join("");
+
+/* price path chart */
+(function(){
+ const W=900,H=330,L=62,R=14,T=14,B=30,el=$("#c1");
+ const pts=D.path.map(p=>({x:mi(p.m),y:p.p})),fp=f.map(r=>({x:mi(r.m),y:r.p,lo:r.lo,hi:r.hi}));
+ const lo=Math.floor(Math.min(...pts.map(p=>p.y),...fp.map(p=>p.lo))/100-.3)*100,hi=Math.ceil(Math.max(...pts.map(p=>p.y),...fp.map(p=>p.hi))/100+.3)*100;
+ const x0=pts[0].x,x1=fp[fp.length-1].x,X=x=>L+(x-x0)/(x1-x0)*(W-L-R),Y=y=>T+(hi-y)/(hi-lo)*(H-T-B);
+ let g="";for(let v=lo;v<=hi;v+=200)g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">₹${v.toLocaleString("en-IN")}</text>`;
+ for(let y=Math.ceil(x0/12);y*12<=x1;y++)g+=`<text x="${X(y*12)}" y="${H-8}" text-anchor="middle">${y}</text>`;
+ const lm=pts[pts.length-1],up=[{x:lm.x,lo:lm.y,hi:lm.y},...fp];
+ g+=`<polygon points="${up.map(p=>X(p.x)+","+Y(p.hi)).concat(up.slice().reverse().map(p=>X(p.x)+","+Y(p.lo))).join(" ")}" fill="var(--accent)" fill-opacity=".14" stroke="var(--accent)" stroke-opacity=".35"/>`;
+ g+=`<line x1="${X(x0)}" x2="${X(x0)}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-dasharray="2 4"/><text x="${X(x0)+5}" y="${T+12}">Nomination Jul 2023</text>`;
+ g+=`<line x1="${X(lm.x)}" x2="${X(lm.x)}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-dasharray="2 4"/><text x="${X(lm.x)-5}" y="${T+12}" text-anchor="end">Today Jun 2026</text>`;
+ g+=`<polyline fill="none" stroke="var(--hist)" stroke-width="2" points="${pts.map(p=>X(p.x)+","+Y(p.y)).join(" ")}"/>`;
+ g+=`<polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4" points="${[lm,...fp].map(p=>X(p.x)+","+Y(p.y)).join(" ")}"/>`;
+ [[pts[0],"var(--hist)"],[lm,"var(--hist)"],[fp[0],"var(--accent)"],[fp[5],"var(--accent)"]].forEach(([p,c])=>g+=`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4.5" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`);
+ g+=`<line id="xh" y1="${T}" y2="${H-B}" stroke="var(--muted)" style="display:none"/>`;
+ el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chassis price path from July 2023 with forecast to December 2026">${g}<rect id="hit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent"/></svg><div class="tip"></div>`;
+ const svg=el.querySelector("svg"),tip=el.querySelector(".tip"),xh=el.querySelector("#xh");
+ const all=new Map();pts.forEach(p=>all.set(p.x,{y:p.y}));fp.forEach(p=>all.set(p.x,{y:p.y,lo:p.lo,hi:p.hi,fc:1}));
+ svg.querySelector("#hit").addEventListener("pointermove",e=>{const r=svg.getBoundingClientRect(),x=Math.round(x0+((e.clientX-r.left)/r.width*W-L)/(W-L-R)*(x1-x0)),p=all.get(x);if(!p){tip.style.display="none";xh.style.display="none";return}
+  xh.setAttribute("x1",X(x));xh.setAttribute("x2",X(x));xh.style.display="";tip.innerHTML=`<b>${ml(x)}</b><br>${p.fc?"Forecast":"Actual"}: <b class="num">${rs(p.y)}</b>${p.fc?`<br>80% range ${rs(p.lo)} to ${rs(p.hi)}`:""}`;tip.style.display="block";const tx=X(x)/W*r.width;tip.style.left=(tx>r.width/2?tx-tip.offsetWidth-12:tx+12)+"px";tip.style.top="8px"});
+ svg.querySelector("#hit").addEventListener("pointerleave",()=>{tip.style.display="none";xh.style.display="none"});
+})();
+
+/* driver bars */
+function drivers(id,h,scale){
+ const o=D.drv[h],rows=Object.entries(o.groups).map(([k,v])=>[k,(Math.exp(v)-1)*100]).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).filter(r=>Math.abs(r[1])>=0.02);
+ const mx=scale;
+ $(id).innerHTML=rows.map(([k,v])=>{const w=Math.min(50,Math.abs(v)/mx*50),up=v>=0;return `<div class="bar"><span>${k}</span><div class="tr"><div class="z"></div><div class="f" style="${up?"left:50%":"right:50%"};width:${w}%;background:${up?"var(--up)":"var(--down)"}"></div></div><span class="d ${up?"up":"down"} num">${up?"▲ +":"▼ −"}${Math.abs(v).toFixed(2)}%</span></div>`}).join("")
+ +`<p class="note" style="margin-top:8px">Average drift built into the model: ${((Math.exp(o.bias)-1)*100).toFixed(2)}%. Net forecast move vs June: ${((o.pred/D.path[D.path.length-1].p-1)*100).toFixed(1)}% (explanation run).</p>`;
+}
+drivers("#d1",1,3);drivers("#d6",6,3);
+</script>
