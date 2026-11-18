@@ -121,13 +121,14 @@ ol.steps b{font-family:var(--font-d)}ol.steps span{display:block;color:var(--ink
   <h2>Your click path on the live dashboard</h2>
   <ol class="steps">
    <li><div><b>Dashboard</b><span>Show the headline cards and the "Why the forecast moved" waterfall. Say that this chassis is one of 480 parts.</span></div></li>
-   <li><div><b>Hierarchy</b><span>Expand SKODA Kushaq, then Bharat Forge, then Chassis. Bharat Forge supplies four categories on this programme: Body Stampings, Chassis, Fasteners and Powertrain. Point at the chassis row: current price, forecast, 80% range, confidence flag.</span></div></li>
-   <li><div><b>Material Cost</b><span>Search the part. Show Budget (₹1,593), SOP (₹2,098), Forecast (₹2,189) and the waterfall: currency ₹54, vendor reprice ₹543. Open the part drawer for its price path.</span></div></li>
+   <li><div><b>Hierarchy</b><span>Expand SKODA Kushaq, then Bharat Forge, then Chassis. Bharat Forge supplies four categories on this programme: Body Stampings, Chassis, Fasteners and Powertrain. Point at the chassis row: current price, forecast, 80% range, confidence flag. This tab shows the part as a buyer-friendly &quot;Front Shock Absorber&quot; with a display-scaled price (about 3.7 times the model value): ₹7,800 now, ₹8,142 forecast, range ₹7,569 to ₹8,697. The percentage change (+4.4%) and the shape of the range are the same as the model's.</span></div></li>
+   <li><div><b>Material Cost</b><span>Search the part. These screens show the model's own values: Budget (₹1,593), SOP (₹2,098), Forecast (₹2,189) and the waterfall: currency ₹54, vendor reprice ₹543. Open the part drawer for its price path.</span></div></li>
    <li><div><b>FX Impact</b><span>Show the rupee moving from 82 to 95 per dollar, and the shock test. Explain that steel carries dollar exposure even for a domestic vendor.</span></div></li>
    <li><div><b>Geo Risk</b><span>Show the risk index, the event studies, and that a person confirms any news signal before it affects a forecast.</span></div></li>
    <li><div><b>Data Source and Parameters</b><span>Close on where each input comes from, which are real, and the full list of drivers. Finish with Validation to show honest accuracy on real data.</span></div></li>
   </ol>
 </section>
+<div class="watch"><b>Watch out: two sets of rupee figures</b>The numbers on this page are the model's values, as shown on Material Cost, Dashboard and Data Source. The Hierarchy tab rescales prices for readability, so the same part reads ₹7,800 there. Tell the audience which tab you are on before quoting a rupee figure.</div>
 <p class="note">Source files: demo/chassis_case.json holds the numbers on this page, taken from data/processed (dashboard.json, forecasts.csv, features.parquet) and a re-run of the project's XGBoost model. Everything about the part's price is simulated, as described above.</p>
 </div>
 
