@@ -1,0 +1,225 @@
+<title>Forecasting Dashboard Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: guide to the dashboard, ordered like the sidebar. Each tab = what you see / how to read it / say this / watch out. */
+:root{--bg:#F5F8F6;--surface:#fff;--ink:#12211C;--ink2:#42554D;--muted:#667870;--line:#DCE5E1;--accent:#0F7A55;--accent-soft:#DDF0E8;--warn:#B4540A;--warn-soft:#FBE9D8;--font-d:"Space Grotesk",system-ui,sans-serif;--font-b:"Inter",system-ui,sans-serif}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1714;--surface:#14221D;--ink:#E8F1EE;--ink2:#A9BDB5;--muted:#86998F;--line:#25362F;--accent:#4FC795;--accent-soft:#1B3A2E;--warn:#F0A25A;--warn-soft:#3A2A1A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D1714;--surface:#14221D;--ink:#E8F1EE;--ink2:#A9BDB5;--muted:#86998F;--line:#25362F;--accent:#4FC795;--accent-soft:#1B3A2E;--warn:#F0A25A;--warn-soft:#3A2A1A;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--font-b);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 60px;display:grid;gap:34px}
+h1,h2,h3{font-family:var(--font-d);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(28px,4.6vw,42px);letter-spacing:-.02em}
+h2{font-size:clamp(22px,3vw,28px)}
+h3{font-size:19px}
+p{margin:0;max-width:70ch}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-width:0}
+.box b{font-family:var(--font-d)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips a{font-size:13px;font-weight:500;text-decoration:none;color:var(--ink2);background:var(--surface);border:1px solid var(--line);padding:5px 11px;border-radius:99px}
+.chips a:hover,.chips a:focus-visible{border-color:var(--accent);color:var(--ink);outline:none}
+.group{display:grid;gap:14px}
+.tab{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:14px;scroll-margin-top:16px;min-width:0}
+.tab header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.tab header span{font-size:13px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.cols div{display:grid;gap:3px;align-content:start;font-size:14.5px;color:var(--ink2)}
+.cols b{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.cols ul{margin:0;padding-left:18px}.cols li{margin:2px 0}
+.say{background:var(--accent-soft);border-radius:9px;padding:12px 15px;font-size:15px;color:var(--ink)}
+.say b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.watch{background:var(--warn-soft);border-radius:9px;padding:12px 15px;font-size:14.5px}
+.watch b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.real{background:var(--accent-soft);color:var(--accent)}.syn{background:var(--warn-soft);color:var(--warn)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-size:12px;text-align:left;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 26px;margin:0;font-size:14.5px}
+dt{font-weight:600}dd{margin:0 0 10px;color:var(--ink2)}
+.num{font-variant-numeric:tabular-nums}
+</style>
+
+<div class="wrap">
+<header style="display:grid;gap:14px">
+  <div class="eyebrow">Skoda parts price forecasting dashboard</div>
+  <h1>A plain-English guide to every screen</h1>
+  <p>The dashboard answers four questions a buyer or manager asks: <b>What will prices do? Why? How much money is exposed? Who do I call?</b> This guide follows the sidebar, tab by tab, with what to say out loud and what to be careful about.</p>
+  <div class="chips" id="chips"></div>
+</header>
+
+<section class="group">
+  <h2>The big picture in one minute</h2>
+  <div class="grid">
+    <div class="box"><b>1. We watch prices</b><p>Monthly history of 480 parts across 6 programmes (Kushaq, Slavia, Kylaq, Kodiaq, Taigun, Virtus), 20 vendors and 10 categories.</p></div>
+    <div class="box"><b>2. We predict the next 6 months</b><p>Statistical and machine-learning models read price trends, the rupee and commodity moves, then forecast each part with a range.</p></div>
+    <div class="box"><b>3. We explain and size it</b><p>The dashboard says why a price moves, which vendors carry the exposure, and what a currency or commodity shock would cost.</p></div>
+    <div class="box"><b>4. We say how far to trust it</b><p>Accuracy is tested on hidden data and on real published prices, and the failures are shown, not hidden.</p></div>
+  </div>
+  <div class="box">
+    <b>Real or simulated? Say this first.</b>
+    <div class="tbl"><table><tbody>
+      <tr><td><span class="pill real">Real</span></td><td>US parts price index (BLS), EUR/INR and USD/INR (ECB), commodity prices (World Bank), freight, geopolitical risk index</td></tr>
+      <tr><td><span class="pill syn">Simulated</span></td><td>The price of each individual part, vendor and programme. No public source publishes this. It sits inside SKODA purchasing systems and replaces the simulation when real purchase orders are loaded.</td></tr>
+    </tbody></table></div>
+    <p style="margin-top:8px;font-size:14.5px;color:var(--ink2)">So accuracy numbers on the simulated parts show that the method works. They are not a promise of real-world accuracy.</p>
+  </div>
+</section>
+
+<section class="group" id="tabs">
+<h2>Tab by tab</h2>
+
+<article class="tab" id="t-dashboard"><header><h3>Dashboard</h3><span>The home page. Read this first.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul>
+   <li><b style="all:unset;font-weight:600">Four headline cards:</b> basket price today (₹17.6 lakh, the sum of 480 unit prices), basket forecast six months out (₹17.8 lakh, +1.3% to Dec 2026), best model accuracy (96.7%, i.e. 3.3% average error), and spend at risk (₹2.8 lakh, 16% of the basket).</li>
+   <li><b style="all:unset;font-weight:600">Buyer brief:</b> "Hold these prices before …", the parts to act on first.</li>
+   <li><b style="all:unset;font-weight:600">Price forecast chart:</b> past prices, the forecast line and a shaded range.</li>
+   <li><b style="all:unset;font-weight:600">"Why the forecast moved" waterfall</b>, category donut, six-month horizon chart.</li>
+   <li><b style="all:unset;font-weight:600">Top parts table, risk concentration strip, alerts.</b></li></ul></div>
+  <div><b>How to read it</b><ul>
+   <li>Green or red arrows on a card show direction. "Spend at risk" counts parts forecast to rise more than 5%.</li>
+   <li>In the chart, the shaded band is the likely range. A wide band means low certainty.</li>
+   <li>The waterfall starts at today's price and adds or subtracts reasons (currency, materials, shipping, vendor reprice) until it lands on the forecast. Click a reason to see those parts.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>₹2.8 lakh of the basket is forecast to rise more than 5%. That is 73 of 480 parts, and 62% of it sits with just four vendors. Minda Industries alone is about a quarter.</div>
+ <div class="watch"><b>Watch out</b>The 96.7% accuracy card is measured on simulated parts. The card carries that note. Do not quote it as real-world accuracy.</div>
+</article>
+
+<article class="tab" id="t-forecast"><header><h3>Forecast</h3><span>Detail behind the forecast line.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>Larger price forecast chart</li><li>Six-month horizon chart</li><li>Category split of spend</li><li><b style="all:unset;font-weight:600">Model comparison:</b> XGBoost 3.31% error, SARIMA 3.33%, seasonal-naive 6.45%</li><li>Backtest stability across time</li></ul></div>
+  <div><b>How to read it</b><ul><li>Error (MAPE) is the average miss as a percentage of the price. Lower is better.</li><li>Seasonal-naive means "same as the same month last year". It is the yardstick. Beating it by a wide margin means the models add value.</li><li>Stability shows whether a model is consistently good or lucky in one period.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>We do not rely on one model. We race several, test them on months they never saw, and keep the one that wins. The two serious models roughly halve the error of the simple benchmark.</div>
+ <div class="watch"><b>Watch out</b>Again simulated parts. On real data (see Validation) the picture is less flattering.</div>
+</article>
+
+<article class="tab" id="t-impact"><header><h3>Cost Impact</h3><span>"What if" for management.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>A scenario picker for commodity and rupee moves</li><li>Chart: base forecast vs scenario</li><li>Bridge from base cost to scenario cost</li><li>Exposure by category, then part</li></ul></div>
+  <div><b>How to read it</b><ul><li>Pick a scenario, such as "rupee 10% weaker" or "steel +10%".</li><li>The gap between the two lines is the extra cost.</li><li>The bridge says which channel causes it. Drill to the parts that carry it.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>Instead of arguing about whether the rupee will move, we ask what it costs if it does, and which parts to renegotiate first.</div>
+</article>
+
+<article class="tab" id="t-hierarchy"><header><h3>Hierarchy</h3><span>Programme, then vendor, then category, then part.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>An expandable tree. Example: VW Taigun, then Bosch India, then Braking, then individual parts.</li><li>Per part: quantity, rate, monthly spend, current price, forecast, 80% range and a confidence flag.</li></ul></div>
+  <div><b>How to read it</b><ul><li>The 80% range holds the true price four times in five.</li><li>The confidence flag compares the predicted move to the model's own typical error. "Low" means the move is smaller than the usual noise, so do not act on the direction.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>This is the screen you take into a vendor meeting. Bosch supplies three categories on one programme, and each is forecast separately. We also tell you where not to trust the forecast: most parts are flagged low confidence. We would rather say that than sell false precision.</div>
+</article>
+
+<article class="tab" id="t-material"><header><h3>Material Cost</h3><span>Finance view: Budget to Forecast.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li><b style="all:unset;font-weight:600">Budget (BG):</b> the price at nomination, when the part was awarded (₹15.6 lakh)</li><li><b style="all:unset;font-weight:600">SOP:</b> start of production, the current price (₹17.4 lakh)</li><li><b style="all:unset;font-weight:600">Forecast (FC):</b> six months ahead (₹17.8 lakh)</li><li>A waterfall splitting each gap into currency, materials, shipping, vendor reprice, mix and unexplained</li><li>A price movement tracker</li></ul></div>
+  <div><b>How to read it</b><ul><li>Each bar is a reason. Currency adds ₹56K. Vendor reprice, price increases not explained by markets, adds ₹160K.</li><li>Click a bar to list the parts behind it, then open a part to see its history, vendor and award details.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>Price rose 14% from budget to forecast. A quarter of it is currency, and the largest piece is vendors repricing without a market reason. That is the negotiation list.</div>
+ <div class="watch"><b>Watch out</b>No SKODA budget file is loaded, so Budget, Nomination and SOP are derived from the history. The page says so. It is a demonstration of the walk, not an official budget.</div>
+</article>
+
+<article class="tab" id="t-fx"><header><h3>FX Impact</h3><span>How the rupee reaches part prices.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>Real EUR/INR and USD/INR history. The rupee fell about 20% against the euro and 16% against the dollar over the window.</li><li>Shock charts: move FX by ±10% and see the basket change (about ±1%).</li><li>Detectable vs attributable panel</li></ul></div>
+  <div><b>How to read it</b><ul><li><b style="all:unset;font-weight:600">Direct channel:</b> parts invoiced in euros.</li><li><b style="all:unset;font-weight:600">Indirect channel:</b> steel, copper, aluminium and oil are priced in dollars even when bought locally.</li><li>"Detectable" = the effect is visible. "Attributable" = we can prove the rupee caused it.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>The rupee effect is visible in the data, but over this window the rupee fell almost every month, so currency and the mere passing of time look identical. No model can separate them. More history, or real purchase data, fixes that.</div>
+</article>
+
+<article class="tab" id="t-geo"><header><h3>Geo Risk</h3><span>News and conflict, reviewed by a human.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>"Why prices moved" drivers with their data source</li><li>Recent signal cards: headline, date, source checks</li><li>Event studies (Ukraine, Red Sea, budget duty), then scenario results by category</li></ul></div>
+  <div><b>How to read it</b><ul><li>Conflict is not a direct price driver. It moves currency, energy, freight and insurance first, and those move prices.</li><li>Nothing is applied automatically. A person clicks <b>Yes, show price impact</b> or <b>No, dismiss</b>.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>The system proposes, the buyer decides. A news item changes the forecast only after someone confirms it is real and relevant.</div>
+</article>
+
+<article class="tab" id="t-parts"><header><h3>Parts</h3><span>Every part, ranked.</span></header>
+ <div class="cols"><div><b>What you see</b><ul><li>All parts sorted by forecast price change</li><li>Current price, forecast price, % change, vendor, a small trend line, and anomaly flags</li></ul></div>
+ <div><b>How to read it</b><ul><li>Top of the list = biggest forecast rise. Click a row to open the part in Material Cost.</li><li>An anomaly flag means the part's history looks unusual, such as a sudden jump.</li></ul></div></div>
+</article>
+
+<article class="tab" id="t-futuretest"><header><h3>Future Test</h3><span>A blind exam for the model.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>Extra months generated, hidden from the model, forecast blind, then revealed and scored</li><li>Accuracy against a "noise floor", the error nobody could beat because of pure randomness</li></ul></div>
+  <div><b>How to read it</b><ul><li>Efficiency shows how close the model gets to the best possible score. The current build sits at roughly 55 to 70% depending on the horizon.</li><li>The gap left is small, so more model tuning has limited upside. Better data is the bigger lever.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>We test the model on a future it has never seen, and we measure how close it gets to the theoretical best, not just to zero error.</div>
+ <div class="watch"><b>Watch out</b>The "future" is simulated, so this checks the method, not the market.</div>
+</article>
+
+<article class="tab" id="t-validation"><header><h3>Validation</h3><span>The only real-world accuracy test.</span></header>
+ <div class="cols">
+  <div><b>What you see</b><ul><li>Six months of actually published BLS data, held out, forecast, then compared with reality</li><li>Naive vs SARIMA, errors and whether the range captured the actual values</li></ul></div>
+  <div><b>How to read it</b><ul><li>"Naive" means carry the last value forward. It scored 0.34% error. SARIMA scored 1.40%.</li><li>No fitted model beat naive. The real index behaves close to a random walk at this horizon.</li></ul></div>
+ </div>
+ <div class="say"><b>Say this</b>We show you where the model lost, because a test that cannot fail proves nothing. Short-term, the safest guess for a smooth real index is "no change". The models earn their keep in explaining drivers and sizing risk.</div>
+</article>
+
+<article class="tab" id="t-alerts"><header><h3>Alerts</h3><span>Where to look today.</span></header>
+ <div class="cols"><div><b>What you see</b><ul><li>Parts forecast to move enough to warrant review, with severity (high, medium) and the % change</li></ul></div>
+ <div><b>How to read it</b><ul><li>Top alert: Electrical, Minda Industries, forecast +12.8%. Click to open the part and see why.</li></ul></div></div>
+</article>
+
+<article class="tab" id="t-data"><header><h3>Data Source</h3><span>Where every number came from.</span></header>
+ <div class="cols"><div><b>What you see</b><ul><li>Each source: provider, identifier, frequency, coverage, caveat, what it is used for</li><li>Flags: real or synthetic</li></ul></div>
+ <div><b>How to read it</b><ul><li>Open this when anyone asks "where did that come from?". Caveats are listed, for example that BLS caps history at about three years, so earlier months are extrapolated and excluded from the real-data test.</li></ul></div></div>
+</article>
+
+<article class="tab" id="t-faq"><header><h3>Technical FAQ</h3><span>For the technical reviewer.</span></header>
+ <p>Answers to the questions an expert will ask (leakage, validation method, model choice, what is simulated). They are generated from the same output as the dashboard, so they stay consistent with the numbers on screen.</p>
+</article>
+</section>
+
+<section class="group">
+  <h2>Extras on every page</h2>
+  <div class="grid">
+    <div class="box"><b>Date range control</b><p>Narrows the charts to a window of months.</p></div>
+    <div class="box"><b>Parameters button</b><p>The full catalogue of 39 price drivers in ten groups, such as currency, commodities, geopolitics, logistics and regulation. Some are live, the rest are listed so the extension path is clear.</p></div>
+    <div class="box"><b>Ask / chat assistant</b><p>Type a question such as "why is Minda up?" and get an answer from the dashboard's own data, optionally with web context.</p></div>
+    <div class="box"><b>Report mode</b><p>Ask for a PowerPoint or Word report and download a ready sample.</p></div>
+    <div class="box"><b>Export</b><p>Downloads the dashboard's full data file.</p></div>
+  </div>
+</section>
+
+<section class="group">
+  <h2>Suggested demo order (12 minutes)</h2>
+  <div class="tbl box"><table><thead><tr><th>Min</th><th>Tab</th><th>Message</th></tr></thead><tbody>
+    <tr><td class="num">1</td><td>Dashboard</td><td>₹2.8 lakh at risk, concentrated in four vendors</td></tr>
+    <tr><td class="num">1</td><td>Parameters</td><td>The scope of drivers: currency, commodities, geopolitics, freight</td></tr>
+    <tr><td class="num">3</td><td>Hierarchy</td><td>Drill programme, vendor, category, part. Take this into a negotiation.</td></tr>
+    <tr><td class="num">2</td><td>Cost Impact / FX</td><td>What a currency or commodity shock costs, and what we cannot prove</td></tr>
+    <tr><td class="num">2</td><td>Material Cost</td><td>Budget to forecast walk: currency vs vendor repricing</td></tr>
+    <tr><td class="num">2</td><td>Validation</td><td>Lead with the failure: honest accuracy on real data</td></tr>
+    <tr><td class="num">1</td><td>Data Source</td><td>What is real, what is simulated, and how real purchase orders plug in</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="group">
+  <h2>Words you will hear</h2>
+  <dl>
+    <div><dt>Basket</dt><dd>The sum of the unit prices of all 480 parts. It is a price index, not a purchase total.</dd></div>
+    <div><dt>MAPE</dt><dd>Average forecast miss as a percentage of the actual price.</dd></div>
+    <div><dt>80% range / interval</dt><dd>The band that should contain the true price four times out of five.</dd></div>
+    <div><dt>Naive baseline</dt><dd>Assume the next price equals the last one. The yardstick every model must beat.</dd></div>
+    <div><dt>Backtest</dt><dd>Hiding recent months, forecasting them, and scoring against what happened.</dd></div>
+    <div><dt>Noise floor</dt><dd>The error no model could beat because of pure randomness.</dd></div>
+    <div><dt>Nomination / SOP / BG / FC</dt><dd>Award of the part, start of production, budget, and forecast.</dd></div>
+    <div><dt>Pass-through</dt><dd>The share of a cost move (rupee, steel) that reaches the part price.</dd></div>
+    <div><dt>Spend at risk</dt><dd>Spend on parts forecast to rise more than 5%.</dd></div>
+    <div><dt>Human in the loop</dt><dd>A person confirms a news signal before it changes any forecast.</dd></div>
+  </dl>
+</section>
+<p style="font-size:13px;color:var(--muted)">Figures are from the dashboard data file generated 5 Aug 2026 (history Jul 2023 to Jun 2026, forecast to Dec 2026). If the pipeline is re-run they may shift slightly.</p>
+</div>
+<script>
+const t=[["dashboard","Dashboard"],["forecast","Forecast"],["impact","Cost Impact"],["hierarchy","Hierarchy"],["material","Material Cost"],["fx","FX Impact"],["geo","Geo Risk"],["parts","Parts"],["futuretest","Future Test"],["validation","Validation"],["alerts","Alerts"],["data","Data Source"],["faq","Technical FAQ"]];
+document.getElementById("chips").innerHTML=t.map(([i,l])=>`<a href="#t-${i}">${l}</a>`).join("");
+</script>
