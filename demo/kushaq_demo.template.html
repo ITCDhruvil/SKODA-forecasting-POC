@@ -1,0 +1,370 @@
+<title>Kushaq Aluminium Price Outlook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one long scroll story, sticky step bar, each step = plain-language claim + evidence + "say this" talk track. */
+:root{
+  --bg:#F5F8F6; --surface:#FFFFFF; --ink:#12211C; --ink2:#42554D; --muted:#667870; --line:#DCE5E1;
+  --accent:#0F7A55; --accent-soft:#DDF0E8; --hist:#52627F; --up:#B4540A; --up-soft:#FBE9D8; --down:#0B6E8A; --down-soft:#D9EEF4;
+  --font-d:"Space Grotesk",system-ui,sans-serif; --font-b:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1714; --surface:#14221D; --ink:#E8F1EE; --ink2:#A9BDB5; --muted:#86998F; --line:#25362F;
+  --accent:#4FC795; --accent-soft:#1B3A2E; --hist:#8FA3C7; --up:#F0A25A; --up-soft:#3A2A1A; --down:#5BC0DE; --down-soft:#173440; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1714; --surface:#14221D; --ink:#E8F1EE; --ink2:#A9BDB5; --muted:#86998F; --line:#25362F;
+  --accent:#4FC795; --accent-soft:#1B3A2E; --hist:#8FA3C7; --up:#F0A25A; --up-soft:#3A2A1A; --down:#5BC0DE; --down-soft:#173440; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--font-b);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3{font-family:var(--font-d);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,48px);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3.4vw,32px);font-weight:600;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:600}
+p{margin:0;max-width:68ch}
+.num{font-variant-numeric:tabular-nums}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-left,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav a{flex:none;color:var(--ink2);text-decoration:none;font-size:13px;font-weight:500;padding:6px 11px;border-radius:99px;white-space:nowrap}
+nav a:hover,nav a:focus-visible{background:var(--accent-soft);color:var(--ink);outline:none}
+nav a.on{background:var(--accent);color:var(--bg)}
+header.hero{padding-block:44px 28px;display:grid;gap:20px}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.answer{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.tile .k{font-size:12.5px;color:var(--muted);font-weight:500}
+.tile .v{font:600 30px/1.2 var(--font-d);margin-top:4px}
+.tile .s{font-size:13px;color:var(--ink2);margin-top:2px}
+section{padding-block:44px;border-top:1px solid var(--line);display:grid;gap:18px;scroll-margin-top:56px}
+.step{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.say{background:var(--accent-soft);border-radius:10px;padding:14px 18px;max-width:none;display:grid;gap:2px}
+.say b{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.say span{font-size:16.5px;color:var(--ink);max-width:78ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:stretch}
+.flow div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:14px;position:relative;min-width:0}
+.flow div b{display:block;font-family:var(--font-d);font-size:15px;margin-bottom:3px}
+.flow div small{color:var(--muted);display:block;margin-top:6px;font-size:12.5px}
+.flow div:not(:last-child)::after{content:"→";position:absolute;right:-10px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:700;background:var(--bg);width:14px;text-align:center;z-index:1}
+@media(max-width:700px){.flow div:not(:last-child)::after{content:"↓";right:50%;top:auto;bottom:-14px;transform:translateX(50%)}}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font-size:12px;text-align:left;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.real{background:var(--accent-soft);color:var(--accent)}
+.pill.ill{background:var(--up-soft);color:var(--up)}
+.pill.later{background:var(--line);color:var(--ink2)}
+.chart{position:relative}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font:12px var(--font-b);fill:var(--muted)}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.14);min-width:140px;z-index:3}
+.tip b{display:block;margin-bottom:3px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink2);margin-top:10px}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.legend i.band{height:10px;border:0;background:var(--accent-soft);outline:1px solid var(--accent)}
+.legend i.dash{border-top-style:dashed}
+.clue{display:grid;grid-template-columns:1fr;gap:4px}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.group{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.group h3{font-size:15px;margin-bottom:6px}
+.group ul{margin:0;padding-left:18px;font-size:14px;color:var(--ink2)}
+.group li{margin:3px 0}
+.group p{font-size:13.5px;color:var(--muted);margin-top:8px}
+.bar{display:grid;grid-template-columns:minmax(120px,230px) 1fr 120px;gap:10px;align-items:center;font-size:14px;padding:5px 0}
+.bar .track{height:14px;background:var(--line);border-radius:3px;position:relative;overflow:hidden}
+.bar .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:0 3px 3px 0}
+.bar .dir{font-size:13px;font-weight:600;white-space:nowrap}
+.bar .dir.up{color:var(--up)}.bar .dir.down{color:var(--down)}
+@media(max-width:560px){.bar{grid-template-columns:1fr 90px}.bar .track{grid-column:1/-1;order:3}}
+.verdict{display:inline-block;font-weight:600;font-size:13px}
+.good{color:var(--accent)}.warn{color:var(--up)}
+.ctl{display:grid;gap:14px}
+.row{display:grid;grid-template-columns:minmax(150px,1fr) 2fr 70px;gap:12px;align-items:center;font-size:14px}
+.row input[type=range]{width:100%;accent-color:var(--accent)}
+.row output{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+@media(max-width:560px){.row{grid-template-columns:1fr 60px}.row input{grid-column:1/-1;order:3}}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:500 13.5px var(--font-b);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 13px;cursor:pointer}
+button:hover{border-color:var(--accent)}button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.inp{display:flex;gap:14px;flex-wrap:wrap;font-size:13.5px;color:var(--ink2)}
+.inp label{display:grid;gap:3px}
+.inp input{font:500 14px var(--font-b);padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);width:130px}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.delta.up{color:var(--up)}.delta.down{color:var(--down)}
+.note{font-size:13px;color:var(--muted);max-width:80ch}
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.acts div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14.5px}
+.acts b{font-family:var(--font-d);display:block;margin-bottom:4px}
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 24px;font-size:14px}
+.gloss dt{font-weight:600}.gloss dd{margin:0 0 8px;color:var(--ink2)}
+footer{padding-block:36px 56px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);display:grid;gap:6px}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<nav><div class="wrap" id="nav"></div></nav>
+<div class="wrap">
+
+<header class="hero" id="top">
+  <div class="eyebrow">SKODA Kushaq · Commodity price outlook</div>
+  <h1>Where will aluminium prices go, and what does it mean for the cost of a Kushaq?</h1>
+  <p>Aluminium goes into alloy wheels, housings and engine parts. Its world price moves every month. This walk-through shows, in plain steps, how we forecast that price, which clues the model relies on, and where each piece of data comes from.</p>
+  <div class="answer" id="answer"></div>
+</header>
+
+<section id="s1">
+  <div class="step">The use case</div>
+  <h2>One commodity, one supplier, one car</h2>
+  <p>A cast-parts supplier makes aluminium components for the Kushaq. The supplier buys aluminium at a price tied to the world market, so when the world price moves, the price SKODA pays for the part moves too, usually a month or two later.</p>
+  <div class="flow">
+    <div><b>World aluminium price</b>US dollars per tonne, set on global markets<small>Real data</small></div>
+    <div><b>× Dollar–rupee rate</b>Converts the price into rupees<small>Real data</small></div>
+    <div><b>Supplier's metal cost</b>What the cast-parts supplier pays for aluminium<small>Illustrative supplier</small></div>
+    <div><b>Price of the part</b>Metal plus the supplier's processing and margin<small>Illustrative</small></div>
+    <div><b>Cost of one Kushaq</b>Parts added up across the car<small>Section 8 shows this</small></div>
+  </div>
+  <div class="say"><b>Say this</b><span>We cannot control the world aluminium price, but we can see it coming earlier, size the risk in rupees, and decide whether to act before the supplier's price changes.</span></div>
+</section>
+
+<section id="s2">
+  <div class="step">Where the data comes from</div>
+  <h2>Every number traces back to a public source</h2>
+  <p>This demo uses published, free data. No supplier or SKODA confidential data is involved yet.</p>
+  <div class="panel tbl"><table>
+    <thead><tr><th>Source</th><th>What it gives us</th><th>How we use it</th><th>Status</th></tr></thead>
+    <tbody>
+    <tr><td><b>World Bank Commodity Price Data ("Pink Sheet")</b><br><small>Monthly, published since 1960</small></td><td>Monthly world prices for aluminium, copper, zinc, nickel, iron ore, oil, coal and European gas</td><td>The price we forecast, plus the clues the model studies. We use <span class="num" id="nmonths"></span> months, from January 2001.</td><td><span class="pill real">Real data</span></td></tr>
+    <tr><td><b>European Central Bank rates</b><br><small>Daily, averaged to monthly</small></td><td>US dollar to Indian rupee exchange rate</td><td>Turns the dollar price into rupees. The rupee moved from <span class="num" id="fx0"></span> to <span class="num" id="fx1"></span> per dollar since mid-2023.</td><td><span class="pill real">Real data</span></td></tr>
+    <tr><td><b>Supplier price and volumes</b></td><td>Part prices, contract clauses, how many kilos of aluminium go into each car</td><td>Section 8 uses illustrative values that you can change.</td><td><span class="pill ill">Illustrative</span></td></tr>
+    <tr><td><b>Freight, geopolitical risk, events and US parts price index</b></td><td>Shipping costs, conflict and tariff signals, parts inflation</td><td>Already built into the wider forecasting system. Switched on once we use real purchase data.</td><td><span class="pill later">Available next</span></td></tr>
+    </tbody></table></div>
+  <div class="say"><b>Say this</b><span>We start from public data anyone can check. The only thing missing is your own purchase history, and that plugs in without changing the method.</span></div>
+</section>
+
+<section id="s3">
+  <div class="step">What the history looks like</div>
+  <h2>Aluminium has been through several shocks</h2>
+  <p>The model learns from how prices behaved in the past. Here are the last seven years of the world aluminium price.</p>
+  <div class="panel"><div class="chart" id="c-hist"></div>
+    <div class="legend"><span><i style="color:var(--hist)"></i>World aluminium price, US$ per tonne</span></div></div>
+  <div class="say"><b>Say this</b><span>Prices spiked after Russia invaded Ukraine in 2022 because energy and metal supplies were disrupted. Aluminium is smelted with huge amounts of electricity, so energy news moves it. The model has seen swings like these many times.</span></div>
+</section>
+
+<section id="s4">
+  <div class="step">What the model looks at</div>
+  <h2>Fourteen clues, grouped into five ideas</h2>
+  <p>Each month, the model reads these clues and asks: when the clues looked like this in the past, what did the price do next?</p>
+  <div class="groups" id="groups"></div>
+  <div class="say"><b>Say this</b><span>A buyer does the same thing in their head: "prices have been rising, energy is getting dearer, copper is rising too, so aluminium may follow." The model does it systematically across 25 years.</span></div>
+</section>
+
+<section id="s5">
+  <div class="step">What the model learned</div>
+  <h2>Which clues are driving today's forecast</h2>
+  <p>The bars show how much each clue contributes to the current three-month forecast. The arrow shows whether it pushes the price up or down.</p>
+  <div class="panel" id="imp"></div>
+  <p class="note">Method: a regularised linear model (ridge regression), chosen because every clue has a visible weight, so the result can be explained line by line. Contribution = the clue's learned weight × how unusual the clue is today. Each clue's pull on the price is small, which is why the overall forecast is a mild move, not a dramatic one.</p>
+  <div class="say"><b>Say this</b><span>Mostly the model is looking at aluminium's own recent behaviour: it rose recently, and after a rise the data shows prices tend to ease back slightly. Other metals and energy add smaller nudges. Nothing here is a black box.</span></div>
+</section>
+
+<section id="s6">
+  <div class="step">The forecast</div>
+  <h2>The next six months, with the range we should plan for</h2>
+  <p>The line is the expected price. The shaded band is the range that actual prices fell inside four times out of five in our past tests.</p>
+  <div class="panel"><div class="chart" id="c-fc"></div>
+    <div class="legend"><span><i style="color:var(--hist)"></i>Actual price</span><span><i class="dash" style="color:var(--accent)"></i>Forecast</span><span><i class="band"></i>80% range</span></div></div>
+  <div class="panel tbl"><table id="fct"></table></div>
+  <div class="say"><b>Say this</b><span id="say6"></span></div>
+</section>
+
+<section id="s7">
+  <div class="step">Can we trust it?</div>
+  <h2>We tested the model on 96 months it had not seen</h2>
+  <p>For each of the last eight years, we hid the future, trained on the past only, made a forecast, and compared it with what actually happened. The simple rival is "no change": assume next month's price equals this month's.</p>
+  <div class="panel"><h3 style="margin-bottom:10px">One month ahead: forecast vs actual, last 36 months</h3><div class="chart" id="c-bt"></div>
+    <div class="legend"><span><i style="color:var(--ink)"></i>Actual price</span><span><i class="dash" style="color:var(--accent)"></i>Model's one-month-ahead forecast</span></div></div>
+  <div class="panel tbl"><table id="score"></table></div>
+  <div class="say"><b>Say this</b><span>We are straight about this: month to month, aluminium is hard to predict. Our model is marginally better than "no change" for the next one to three months, and no better beyond that. So we use it for the range and the drivers, not for a single exact number, and we do not trust the six-month point forecast. That is why the band widens.</span></div>
+</section>
+
+<section id="s8">
+  <div class="step">What it means for the Kushaq</div>
+  <h2>Turn the price range into rupees</h2>
+  <p>Pick a scenario or move the sliders. The calculator uses the latest world aluminium price and dollar–rupee rate as the starting point.</p>
+  <div class="panel ctl">
+    <div class="btns" id="presets"></div>
+    <div class="row"><label for="sa">Aluminium price change</label><input id="sa" type="range" min="-30" max="30" step="0.5" value="0"><output id="oa"></output></div>
+    <div class="row"><label for="sf">Rupee weaker (+) or stronger (−)</label><input id="sf" type="range" min="-10" max="10" step="0.5" value="0"><output id="of"></output></div>
+    <div class="inp">
+      <label for="kg">Aluminium per car (kg) <span class="pill ill">illustrative</span><input id="kg" type="number" value="30" min="1"></label>
+      <label for="vol">Cars per year <span class="pill ill">illustrative</span><input id="vol" type="number" value="60000" min="1000" step="1000"></label>
+      <label for="pt">Share passed through to SKODA (%)<input id="pt" type="number" value="100" min="0" max="100"></label>
+    </div>
+    <div class="res" id="res"></div>
+    <p class="note">Illustrative assumptions: 30 kg of aluminium per car, 60,000 cars a year, full pass-through under an index-linked contract. Replace them with actual bill-of-material and contract data. Only the metal cost is modelled, not the supplier's processing cost or margin.</p>
+  </div>
+  <h3>Decisions this supports</h3>
+  <div class="acts">
+    <div><b>Time the contract</b>If the range points up, lock prices or volumes earlier. If it points down, hold off.</div>
+    <div><b>Set the risk budget</b>Budget at the expected price and keep a reserve for the top of the range.</div>
+    <div><b>Watch the drivers</b>If copper, energy or the rupee move sharply, the forecast updates before the supplier's invoice does.</div>
+    <div><b>Prepare the supplier talk</b>Show the supplier the same data when negotiating index clauses and lag periods.</div>
+  </div>
+  <div class="say"><b>Say this</b><span>A move of a few percent in aluminium is worth crores a year on a high-volume model. The forecast will not tell us the exact number, but it tells us how much to prepare for.</span></div>
+</section>
+
+<section id="s9">
+  <div class="step">Next steps</div>
+  <h2>From demo to a tool your buyers use</h2>
+  <div class="acts">
+    <div><b>1. Add your purchase data</b>Real part prices, supplier contracts and volumes replace the illustrative inputs.</div>
+    <div><b>2. Add more commodities</b>Steel, copper, polymers and rubber, each with its own drivers.</div>
+    <div><b>3. Add currency, freight and geopolitics</b>These inputs are already built in the full system and switch on with real data.</div>
+    <div><b>4. Monthly refresh</b>Prices, forecasts and the "why" update every month, with alerts for large moves.</div>
+  </div>
+  <h3>Plain-English glossary</h3>
+  <dl class="gloss">
+    <div><dt>Forecast</dt><dd>Our best estimate of a future price, based on patterns in the past.</dd></div>
+    <div><dt>80% range</dt><dd>The band that actual prices stayed inside four times out of five in past tests.</dd></div>
+    <div><dt>Clue (feature)</dt><dd>A piece of information the model reads, such as "copper rose 5% in three months".</dd></div>
+    <div><dt>Backtest</dt><dd>Hiding the recent past, forecasting it, then checking against what really happened.</dd></div>
+    <div><dt>Error (MAPE)</dt><dd>How far off the forecast was on average, as a percentage of the actual price.</dd></div>
+    <div><dt>"No change" baseline</dt><dd>The simple rival: assume next month's price equals this month's.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <span>Data: World Bank Commodity Price Data (Pink Sheet), updated August 2026, last observation <span id="asof"></span>. Exchange rates: European Central Bank via Frankfurter, to June 2026.</span>
+  <span>Model: ridge regression on 14 clues, one model per forecast month, retrained on all history. Ranges come from the model's own past errors over the last 96 months. Supplier, volumes and contract terms are illustrative. Code and data prep: demo/build_kushaq_demo.py in the project repository.</span>
+</footer>
+</div>
+
+<script>
+const D = __DATA__;
+const $ = s => document.querySelector(s);
+const MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const mi = s => { const [y,m] = s.split("-").map(Number); return y*12+m-1 };
+const ml = i => MN[i%12]+" "+Math.floor(i/12);
+const f0 = v => Math.round(v).toLocaleString("en-IN");
+const usd = v => "$"+f0(v);
+
+/* nav */
+const sects = [["top","Summary"],["s1","Use case"],["s2","Data sources"],["s3","History"],["s4","Clues"],["s5","What drives it"],["s6","Forecast"],["s7","Trust"],["s8","Kushaq cost"],["s9","Next steps"]];
+$("#nav").innerHTML = sects.map(([id,t])=>`<a href="#${id}" data-id="${id}">${t}</a>`).join("");
+const links=[...document.querySelectorAll("#nav a")];
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.toggle("on",l.dataset.id===e.target.id))}})},{rootMargin:"-30% 0px -60% 0px"});
+sects.forEach(([id])=>io.observe(document.getElementById(id)));
+
+/* header answer */
+const fc = D.forecast, last = D.lastPrice;
+const f3 = fc[2];
+$("#answer").innerHTML = [
+ ["Latest price ("+ml(mi(D.asOf))+")", usd(last)+"/t", "World aluminium, US dollars per tonne"],
+ ["Expected in 3 months ("+ml(mi(f3.month))+")", usd(f3.forecast)+"/t", (f3.pct>=0?"+":"")+f3.pct.toFixed(1)+"% vs today. Roughly flat."],
+ ["Range to plan for", usd(f3.lower)+" to "+usd(f3.upper), "80% of the time, in 3 months ("+((f3.lower/last-1)*100).toFixed(0)+"% to +"+((f3.upper/last-1)*100).toFixed(0)+"%)"]
+].map(([k,v,s])=>`<div class="tile"><div class="k">${k}</div><div class="v num">${v}</div><div class="s">${s}</div></div>`).join("");
+$("#nmonths").textContent = D.nHistoryMonths;
+$("#fx0").textContent = "₹"+D.usdinr.first.toFixed(1); $("#fx1").textContent = "₹"+D.usdinr.last.toFixed(1);
+$("#asof").textContent = ml(mi(D.asOf));
+
+/* generic line chart with hover */
+function lineChart(el, o){
+  const W=900,H=o.h||340,L=58,R=16,T=14,B=30;
+  let all=[]; o.series.forEach(s=>s.pts.forEach(p=>{all.push(p.y); if(p.lo!=null){all.push(p.lo,p.hi)}}));
+  let lo=Math.min(...all), hi=Math.max(...all); const pad=(hi-lo)*.06; lo-=pad; hi+=pad;
+  const step=Math.pow(10,Math.floor(Math.log10((hi-lo)/4))); const nice=[1,2,2.5,5,10].map(m=>m*step).find(s=>(hi-lo)/s<=6)||step*10;
+  lo=Math.floor(lo/nice)*nice; hi=Math.ceil(hi/nice)*nice;
+  const xs=o.series.flatMap(s=>s.pts.map(p=>p.x)); const x0=Math.min(...xs), x1=Math.max(...xs);
+  const X=x=>L+(x-x0)/(x1-x0)*(W-L-R), Y=y=>T+(hi-y)/(hi-lo)*(H-T-B);
+  let g="";
+  for(let v=lo;v<=hi+1e-6;v+=nice){g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${o.yfmt(v)}</text>`}
+  const ys=[]; for(let y=Math.ceil(x0/12);y*12<=x1;y++)ys.push(y);
+  const every=ys.length>8?2:1;
+  ys.forEach((y,i)=>{ if(i%every===0) g+=`<text x="${X(y*12)}" y="${H-8}" text-anchor="middle">${y}</text>`});
+  (o.events||[]).forEach(e=>{g+=`<line x1="${X(e.x)}" x2="${X(e.x)}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-dasharray="2 4"/><text x="${X(e.x)+5}" y="${T+(e.dy||12)}" >${e.t}</text>`});
+  o.series.forEach(s=>{
+    if(s.band){const up=s.pts.map(p=>`${X(p.x)},${Y(p.hi)}`),dn=s.pts.slice().reverse().map(p=>`${X(p.x)},${Y(p.lo)}`); g+=`<polygon points="${up.concat(dn).join(" ")}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-opacity=".35"/>`}
+    g+=`<polyline fill="none" stroke="${s.color}" stroke-width="2" ${s.dash?'stroke-dasharray="6 4"':''} stroke-linejoin="round" points="${s.pts.map(p=>X(p.x)+","+Y(p.y)).join(" ")}"/>`;
+  });
+  if(o.endDot){const s=o.series[0],p=s.pts[s.pts.length-1];g+=`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4.5" fill="${s.color}" stroke="var(--surface)" stroke-width="2"/>`}
+  g+=`<line id="xh" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-opacity=".6" style="display:none"/>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.aria}">${g}<rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent" id="hit"/></svg><div class="tip" style="display:none"></div>`;
+  const svg=el.querySelector("svg"),tip=el.querySelector(".tip"),xh=el.querySelector("#xh");
+  svg.querySelector("#hit").addEventListener("pointermove",ev=>{
+    const r=svg.getBoundingClientRect(), px=(ev.clientX-r.left)/r.width*W, x=Math.round(x0+(px-L)/(W-L-R)*(x1-x0));
+    const rows=o.series.map(s=>{const p=s.pts.find(p=>p.x===x);return p?`<div><span style="color:${s.color}">●</span> ${s.name}: <b class="num" style="display:inline">${o.yfmt(p.y)}</b>${p.lo!=null?` <span class="num">(${o.yfmt(p.lo)} to ${o.yfmt(p.hi)})</span>`:""}</div>`:""}).join("");
+    if(!rows){tip.style.display="none";xh.style.display="none";return}
+    xh.setAttribute("x1",X(x));xh.setAttribute("x2",X(x));xh.style.display="";
+    tip.innerHTML=`<b>${ml(x)}</b>${rows}`;tip.style.display="block";
+    const tx=X(x)/W*r.width; tip.style.left=(tx>r.width/2?tx-tip.offsetWidth-12:tx+12)+"px"; tip.style.top="10px";
+  });
+  svg.querySelector("#hit").addEventListener("pointerleave",()=>{tip.style.display="none";xh.style.display="none"});
+}
+const yd = v=>"$"+f0(v);
+
+/* S3 history */
+lineChart($("#c-hist"),{aria:"World aluminium price 2019 to 2026",yfmt:yd,
+  series:[{name:"Aluminium",color:"var(--hist)",pts:D.history.map(h=>({x:mi(h.month),y:h.aluminium}))}],
+  events:[{x:mi("2022-02"),t:"Ukraine invasion",dy:12},{x:mi("2020-04"),t:"COVID lockdowns",dy:12},{x:mi("2023-12"),t:"Red Sea shipping",dy:40}],endDot:true});
+
+/* S4 clue groups */
+const G=[
+ ["Aluminium's own momentum",["Change over the last 1 month","Change over the last 3 months","Change over the last 6 months","Change over the last 12 months","Distance from its 12-month average"],"Has the price been rising or falling? Is it stretched far above or below normal?"],
+ ["Calmness of the market",["How much the price has swung in the last 6 months"],"Jumpy markets behave differently from calm ones."],
+ ["Sister metals",["Copper, last 3 months","Zinc, last 3 months","Nickel, last 3 months","Iron ore, last 3 months"],"Metals often move together when industry demand shifts."],
+ ["Energy cost",["Oil, last 3 months","European natural gas, last 3 months","Coal, last 3 months"],"Smelting aluminium uses a great deal of electricity."],
+ ["Time of year",["Month of the year"],"Some seasonal patterns repeat in industrial demand."]];
+$("#groups").innerHTML=G.map(([t,l,p])=>`<div class="group"><h3>${t}</h3><ul>${l.map(x=>`<li>${x}</li>`).join("")}</ul><p>${p}</p></div>`).join("");
+
+/* S5 importance */
+const PN={"Aluminium price change, last 1 mo":"Aluminium, last month's move","Aluminium price change, last 3 mo":"Aluminium, last 3 months' move","Aluminium price change, last 6 mo":"Aluminium, last 6 months' move","Aluminium price change, last 12 mo":"Aluminium, last year's move","Aluminium vs its 12-month average":"Aluminium vs its yearly average","Aluminium volatility (last 6 mo)":"Aluminium's recent swings","Nickel price change, last 3 mo":"Nickel, last 3 months","Zinc price change, last 3 mo":"Zinc, last 3 months","Copper price change, last 3 mo":"Copper, last 3 months","Iron ore price change, last 3 mo":"Iron ore, last 3 months","Oil price change, last 3 mo":"Oil, last 3 months","European gas price change, last 3 mo":"European gas, last 3 months","Coal price change, last 3 mo":"Coal, last 3 months","Calendar: month of year":"Month of the year"};
+const imp=D.importance.slice(0,8), mx=Math.max(...imp.map(r=>r.share));
+$("#imp").innerHTML=imp.map(r=>{const up=r.push_pct>=0;return `<div class="bar"><span>${PN[r.feature]||r.feature}</span><div class="track"><div class="fill" style="width:${r.share/mx*100}%"></div></div><span class="dir ${up?"up":"down"} num">${up?"▲ pushes up":"▼ pushes down"} ${Math.abs(r.push_pct).toFixed(2)}%</span></div>`}).join("")
+ +`<p class="note" style="margin-top:10px">Bar length = share of the total pull on the three-month forecast. Top eight of 14 clues shown.</p>`;
+
+/* S6 forecast */
+const hist=D.history.filter(h=>h.month>="2024-01");
+const lastM=mi(D.asOf);
+lineChart($("#c-fc"),{aria:"Aluminium price history and six month forecast with range",yfmt:yd,
+ series:[{name:"Range",band:true,color:"transparent",pts:[{x:lastM,y:last,lo:last,hi:last},...fc.map(f=>({x:mi(f.month),y:f.forecast,lo:f.lower,hi:f.upper}))]},
+ {name:"Actual",color:"var(--hist)",pts:hist.map(h=>({x:mi(h.month),y:h.aluminium}))},
+ {name:"Forecast",color:"var(--accent)",dash:true,pts:[{x:lastM,y:last},...fc.map(f=>({x:mi(f.month),y:f.forecast,lo:f.lower,hi:f.upper}))]}],endDot:false,
+ events:[{x:lastM,t:"Today",dy:14}]});
+$("#fct").innerHTML=`<thead><tr><th>Month</th><th class="r">Expected</th><th class="r">Change vs today</th><th class="r">Low end (80%)</th><th class="r">High end (80%)</th></tr></thead><tbody>`+fc.map(f=>`<tr><td>${ml(mi(f.month))}</td><td class="r num">${usd(f.forecast)}</td><td class="r num">${f.pct>=0?"+":""}${f.pct.toFixed(1)}%</td><td class="r num">${usd(f.lower)}</td><td class="r num">${usd(f.upper)}</td></tr>`).join("")+"</tbody>";
+$("#say6").textContent=`The model does not expect a big move: about ${usd(fc[2].forecast)} per tonne in ${ml(mi(fc[2].month))}, close to today's ${usd(last)}. The useful part is the range. By ${ml(mi(fc[2].month))} the price could plausibly sit anywhere between ${usd(fc[2].lower)} and ${usd(fc[2].upper)}, and the range keeps widening the further out we look.`;
+
+/* S7 backtest */
+lineChart($("#c-bt"),{aria:"One-month-ahead forecast vs actual for the last 36 months",yfmt:yd,h:300,
+ series:[{name:"Actual",color:"var(--ink)",pts:D.backtest.map(b=>({x:mi(b.target),y:b.actual}))},
+ {name:"Forecast",color:"var(--accent)",dash:true,pts:D.backtest.map(b=>({x:mi(b.target),y:b.predicted}))}]});
+const M=D.metrics;
+$("#score").innerHTML=`<thead><tr><th>Looking ahead</th><th class="r">Model's average error</th><th class="r">"No change" error</th><th class="r">Right direction</th><th>Verdict</th></tr></thead><tbody>`+
+Object.keys(M).map(h=>{const m=M[h],ok=m.model_mape<m.naive_mape;return `<tr><td>${h} month${h>1?"s":""}</td><td class="r num">${m.model_mape.toFixed(1)}%</td><td class="r num">${m.naive_mape.toFixed(1)}%</td><td class="r num">${Math.round(m.dir_hit)}%</td><td><span class="verdict ${ok?"good":"warn"}">${ok?"✓ Slightly better":"✗ Not better"}</span></td></tr>`}).join("")+`</tbody>`;
+
+/* S8 calculator */
+const base={a:D.lastPrice,fx:D.usdinr.last};
+const P=[["Model expectation, "+ml(mi(fc[2].month)),(fc[2].forecast/last-1)*100,0],["Low end of range",(fc[2].lower/last-1)*100,0],["High end of range",(fc[2].upper/last-1)*100,0],["Rupee weakens 3%",0,3],["High end + rupee 3% weaker",(fc[2].upper/last-1)*100,3]];
+$("#presets").innerHTML=P.map((p,i)=>`<button data-i="${i}">${p[0]}</button>`).join("");
+const sa=$("#sa"),sf=$("#sf");
+function calc(){
+  const da=+sa.value,df=+sf.value,kg=+$("#kg").value,vol=+$("#vol").value,pt=Math.min(100,Math.max(0,+$("#pt").value))/100;
+  $("#oa").textContent=(da>=0?"+":"")+da.toFixed(1)+"%";$("#of").textContent=(df>=0?"+":"")+df.toFixed(1)+"%";
+  const c0=kg/1000*base.a*base.fx, c1=kg/1000*base.a*(1+da/100)*base.fx*(1+df/100), perCar=(c1-c0)*pt, ann=perCar*vol/1e7;
+  const cls=ann>0.0005?"up":ann<-0.0005?"down":"", ar=cls==="up"?"▲":cls==="down"?"▼":"";
+  $("#res").innerHTML=[
+   ["Aluminium price in this scenario",usd(base.a*(1+da/100))+"/t","Rupee rate ₹"+(base.fx*(1+df/100)).toFixed(1)+" per dollar"],
+   ["Metal cost per car, today","₹"+f0(c0),kg+" kg at "+usd(base.a)+"/t and ₹"+base.fx.toFixed(1)],
+   ["Change in cost per car",`<span class="delta ${cls}">${ar} ${perCar>=0?"+":"−"}₹${f0(Math.abs(perCar))}</span>`,"After "+Math.round(pt*100)+"% pass-through"],
+   ["Change per year",`<span class="delta ${cls}">${ar} ${ann>=0?"+":"−"}₹${Math.abs(ann).toFixed(2)} crore</span>`,f0(vol)+" cars a year"]
+  ].map(([k,v,s])=>`<div class="tile"><div class="k">${k}</div><div class="v num" style="font-size:24px">${v}</div><div class="s">${s}</div></div>`).join("");
+}
+document.querySelectorAll("#presets button").forEach(b=>b.addEventListener("click",()=>{const p=P[+b.dataset.i];sa.value=p[1].toFixed(1);sf.value=p[2];document.querySelectorAll("#presets button").forEach(x=>x.classList.toggle("on",x===b));calc()}));
+["sa","sf","kg","vol","pt"].forEach(id=>document.getElementById(id).addEventListener("input",()=>{document.querySelectorAll("#presets button").forEach(x=>x.classList.remove("on"));calc()}));
+document.querySelector("#presets button").click();
+</script>
